@@ -410,6 +410,32 @@ button.link {
 .canvas-wrap canvas {
   display: block;
 }
+/* Attribution for a borrowed reference image — pinned to the canvas corner. */
+.credit {
+  position: absolute;
+  left: 10px;
+  bottom: 8px;
+  margin: 0;
+  max-width: calc(100% - 20px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  background: rgba(13, 16, 23, 0.72);
+  border-radius: 5px;
+  padding: 3px 8px;
+  pointer-events: auto;
+}
+.credit a {
+  color: var(--muted);
+}
+.credit .lic {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 5px;
+  white-space: nowrap;
+}
 .empty {
   display: flex;
   align-items: center;

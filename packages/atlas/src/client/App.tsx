@@ -28,6 +28,11 @@ interface Session {
   typeContext?: string;
   /** Whether identity was auto-detected. */
   identityNote?: string;
+  /** Attribution, for reference images sourced from Commons/ESO/NASA rather
+   *  than shot by the annotator. Carried through save so it isn't dropped. */
+  credit?: string;
+  license?: string;
+  sourceUrl?: string;
 }
 
 function StepHead({ n, title }: { n: number; title: string }): JSX.Element {
@@ -345,6 +350,9 @@ export function App(): JSX.Element {
         wcs: entry.reference.wcs,
         width: entry.reference.width_px,
         height: entry.reference.height_px,
+        credit: entry.reference.credit,
+        license: entry.reference.license,
+        sourceUrl: entry.reference.source_url,
       });
       setStatus(t('solved'));
     }
@@ -360,6 +368,9 @@ export function App(): JSX.Element {
         wcs: session.wcs,
         width_px: session.width,
         height_px: session.height,
+        credit: session.credit,
+        license: session.license,
+        source_url: session.sourceUrl,
       },
       annotations,
       // The rev we loaded — the server rejects the save if it moved on, so we
@@ -569,6 +580,20 @@ export function App(): JSX.Element {
             />
           ) : (
             <div className="empty">{t('noImage')}</div>
+          )}
+          {/* CC BY / CC BY-SA oblige us to name the author wherever the image is
+              shown, so this rides on the canvas rather than in a settings panel. */}
+          {session?.credit && (
+            <p className="credit">
+              {session.sourceUrl ? (
+                <a href={session.sourceUrl} target="_blank" rel="noreferrer">
+                  {session.credit}
+                </a>
+              ) : (
+                session.credit
+              )}
+              {session.license && <span className="lic">{session.license}</span>}
+            </p>
           )}
         </main>
 

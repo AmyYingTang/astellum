@@ -48,6 +48,15 @@ export const Reference = z.object({
   wcs: Wcs,
   width_px: z.number(),
   height_px: z.number(),
+  /** Attribution for a reference image we didn't shoot ourselves. Most usable
+   *  sources (ESO, NOIRLab, ESA/Hubble) are CC BY 4.0, which *requires* credit;
+   *  recording it at import time is the only way it survives. Optional because
+   *  an image the annotator shot themselves needs none. */
+  credit: z.string().optional(),
+  /** SPDX-ish id, e.g. 'CC-BY-4.0' or 'public-domain'. */
+  license: z.string().optional(),
+  /** Landing page the image came from (not the direct file URL). */
+  source_url: z.string().optional(),
 });
 export type Reference = z.infer<typeof Reference>;
 
