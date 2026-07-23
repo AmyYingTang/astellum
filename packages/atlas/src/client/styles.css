@@ -230,6 +230,12 @@ select.st {
 .export button {
   width: 100%;
 }
+/* Sits above the list — keep it compact so the list gets the height. */
+.targets-panel .export {
+  flex: none;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+}
 
 .panel input,
 .panel select {

@@ -477,6 +477,10 @@ export function App(): JSX.Element {
       <div className="body">
         {/* Left — target list only */}
         <aside className="panel targets-panel">
+          <section className="export">
+            <button onClick={doExport}>{t('exportRegistry')}</button>
+            {exportMsg && <p className="status">{exportMsg}</p>}
+          </section>
           <section className="library">
             <h3>
               {t('targetsTitle')} ·{' '}
@@ -714,10 +718,6 @@ export function App(): JSX.Element {
             </section>
           )}
 
-          <section className="export">
-            <button onClick={doExport}>{t('exportRegistry')}</button>
-            {exportMsg && <p className="status">{exportMsg}</p>}
-          </section>
         </aside>
       </div>
     </div>
