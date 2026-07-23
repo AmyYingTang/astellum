@@ -137,27 +137,38 @@ select.st {
   min-height: 0;
 }
 
-.sidebar {
-  width: 320px;
+/* Three columns: target list · image · annotation steps. */
+.panel {
   flex-shrink: 0;
   overflow-y: auto;
   padding: 14px;
   background: var(--panel);
-  border-right: 1px solid var(--border);
 }
-.sidebar section {
+.targets-panel {
+  width: 300px;
+  border-right: 1px solid var(--border);
+  /* The list owns the leftover height rather than a fixed max-height. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.steps-panel {
+  width: 330px;
+  border-left: 1px solid var(--border);
+}
+.panel section {
   margin-bottom: 20px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--border);
 }
-.sidebar h3 {
+.panel h3 {
   margin: 0 0 8px;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--muted);
 }
-.sidebar h3.step {
+.panel h3.step {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -182,11 +193,11 @@ select.st {
 }
 /* Steps 2–4 are inert until an image is uploaded + solved, making the order
    obvious. */
-.sidebar section.locked {
+.panel section.locked {
   opacity: 0.4;
   pointer-events: none;
 }
-.sidebar section.locked .step-n {
+.panel section.locked .step-n {
   background: var(--border);
   color: var(--muted);
 }
@@ -204,9 +215,24 @@ select.st {
 .library h3 {
   color: var(--muted);
 }
+.panel section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+/* The target list is the whole left column — let it stretch. */
+.targets-panel .library {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.export button {
+  width: 100%;
+}
 
-.sidebar input,
-.sidebar select {
+.panel input,
+.panel select {
   width: 100%;
   margin-bottom: 8px;
   padding: 7px 9px;
@@ -215,7 +241,7 @@ select.st {
   border: 1px solid var(--border);
   border-radius: 6px;
 }
-.sidebar input.needs-value {
+.panel input.needs-value {
   border-color: #e0af68;
 }
 
@@ -427,10 +453,24 @@ button.link {
 }
 .targets {
   list-style: none;
-  margin: 0 0 10px;
-  padding: 0;
-  max-height: 40vh;
+  margin: 0;
+  /* Room for the scrollbar so it doesn't sit on top of the count column. */
+  padding: 0 8px 0 0;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.targets::-webkit-scrollbar {
+  width: 8px;
+}
+.targets::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+.targets::-webkit-scrollbar-track {
+  background: transparent;
 }
 .targets li.target {
   display: flex;

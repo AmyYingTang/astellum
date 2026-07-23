@@ -475,7 +475,101 @@ export function App(): JSX.Element {
       </header>
 
       <div className="body">
-        <aside className="sidebar">
+        {/* Left — target list only */}
+        <aside className="panel targets-panel">
+          <section className="library">
+            <h3>
+              {t('targetsTitle')} ·{' '}
+              {t('targetsDone')
+                .replace('{a}', String(targets.filter((x) => x.annotations > 0).length))
+                .replace('{b}', String(targets.length))}
+            </h3>
+            <input
+              className="target-search"
+              placeholder={t('searchPlaceholder')}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <div className="filters">
+              {(['all', 'none', 'draft', 'review', 'approved'] as const).map((f) => (
+                <button
+                  key={f}
+                  className={filter === f ? 'chip active' : 'chip'}
+                  onClick={() => setFilter(f)}
+                >
+                  {t(
+                    f === 'all'
+                      ? 'fAll'
+                      : f === 'none'
+                        ? 'fNone'
+                        : f === 'draft'
+                          ? 'fDraft'
+                          : f === 'review'
+                            ? 'fReview'
+                            : 'fApproved',
+                  )}
+                </button>
+              ))}
+            </div>
+            <ul className="targets">
+              {visibleTargets.length === 0 && <li className="muted-li">{t('noMatch')}</li>}
+              {visibleTargets.map((x) => {
+                const done = x.status.approved > 0 && x.status.approved === x.annotations;
+                return (
+                  <li
+                    key={x.key}
+                    className={x.annotations === 0 ? 'target none' : done ? 'target done' : 'target'}
+                    title={`${lang === 'zh' ? x.kind_zh : x.kind_en}\n${lang === 'zh' ? x.note_zh : x.note_en}${
+                      x.features.length ? `\n${t('suggested')}: ${x.features.join(', ')}` : ''
+                    }`}
+                  >
+                    <span className="target-desig">{x.designation}</span>
+                    {x.primary_id ? (
+                      <button className="link" onClick={() => void loadEntry(x.primary_id!)}>
+                        {lang === 'zh' ? x.name_zh : x.name_en}
+                      </button>
+                    ) : (
+                      <span className="target-name">{lang === 'zh' ? x.name_zh : x.name_en}</span>
+                    )}
+                    <span className="target-counts">
+                      {x.annotations === 0 ? (
+                        '0'
+                      ) : (
+                        <>
+                          {x.status.approved > 0 && <b className="ok">{x.status.approved}✓</b>}
+                          {x.status.in_review > 0 && <b className="rev">{x.status.in_review}⏳</b>}
+                          {x.status.draft > 0 && <b className="dft">{x.status.draft}</b>}
+                        </>
+                      )}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        </aside>
+
+        {/* Centre — the image */}
+        <main className="stage-area">
+          {session ? (
+            <Canvas
+              imageSrc={session.imageSrc}
+              imgWidth={session.width}
+              imgHeight={session.height}
+              drawing={drawing}
+              allowDelete={editable && !drawing}
+              shapes={shapes}
+              draft={draft}
+              onAddPoint={onAddPoint}
+              onDeleteShape={(id) => setAnnotations((xs) => xs.filter((y) => y.id !== id))}
+            />
+          ) : (
+            <div className="empty">{t('noImage')}</div>
+          )}
+        </main>
+
+        {/* Right — annotation steps + export */}
+        <aside className="panel steps-panel">
           {/* Step 1 — upload */}
           <section>
             <StepHead n={1} title={t('stepUpload')} />
@@ -620,97 +714,11 @@ export function App(): JSX.Element {
             </section>
           )}
 
-          <section className="library">
-            <h3>
-              {t('targetsTitle')} ·{' '}
-              {t('targetsDone')
-                .replace('{a}', String(targets.filter((x) => x.annotations > 0).length))
-                .replace('{b}', String(targets.length))}
-            </h3>
-            <input
-              className="target-search"
-              placeholder={t('searchPlaceholder')}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <div className="filters">
-              {(['all', 'none', 'draft', 'review', 'approved'] as const).map((f) => (
-                <button
-                  key={f}
-                  className={filter === f ? 'chip active' : 'chip'}
-                  onClick={() => setFilter(f)}
-                >
-                  {t(
-                    f === 'all'
-                      ? 'fAll'
-                      : f === 'none'
-                        ? 'fNone'
-                        : f === 'draft'
-                          ? 'fDraft'
-                          : f === 'review'
-                            ? 'fReview'
-                            : 'fApproved',
-                  )}
-                </button>
-              ))}
-            </div>
-            <ul className="targets">
-              {visibleTargets.length === 0 && <li className="muted-li">{t('noMatch')}</li>}
-              {visibleTargets.map((x) => {
-                const done = x.status.approved > 0 && x.status.approved === x.annotations;
-                return (
-                  <li
-                    key={x.key}
-                    className={x.annotations === 0 ? 'target none' : done ? 'target done' : 'target'}
-                    title={`${lang === 'zh' ? x.kind_zh : x.kind_en}\n${lang === 'zh' ? x.note_zh : x.note_en}${
-                      x.features.length ? `\n${t('suggested')}: ${x.features.join(', ')}` : ''
-                    }`}
-                  >
-                    <span className="target-desig">{x.designation}</span>
-                    {x.primary_id ? (
-                      <button className="link" onClick={() => void loadEntry(x.primary_id!)}>
-                        {lang === 'zh' ? x.name_zh : x.name_en}
-                      </button>
-                    ) : (
-                      <span className="target-name">{lang === 'zh' ? x.name_zh : x.name_en}</span>
-                    )}
-                    <span className="target-counts">
-                      {x.annotations === 0 ? (
-                        '0'
-                      ) : (
-                        <>
-                          {x.status.approved > 0 && <b className="ok">{x.status.approved}✓</b>}
-                          {x.status.in_review > 0 && <b className="rev">{x.status.in_review}⏳</b>}
-                          {x.status.draft > 0 && <b className="dft">{x.status.draft}</b>}
-                        </>
-                      )}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
+          <section className="export">
             <button onClick={doExport}>{t('exportRegistry')}</button>
             {exportMsg && <p className="status">{exportMsg}</p>}
           </section>
         </aside>
-
-        <main className="stage-area">
-          {session ? (
-            <Canvas
-              imageSrc={session.imageSrc}
-              imgWidth={session.width}
-              imgHeight={session.height}
-              drawing={drawing}
-              allowDelete={editable && !drawing}
-              shapes={shapes}
-              draft={draft}
-              onAddPoint={onAddPoint}
-              onDeleteShape={(id) => setAnnotations((xs) => xs.filter((y) => y.id !== id))}
-            />
-          ) : (
-            <div className="empty">{t('noImage')}</div>
-          )}
-        </main>
       </div>
     </div>
   );
