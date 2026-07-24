@@ -31,3 +31,4 @@ packages/atlas/data/refimg/
 # design/handoff docs are kept outside git (user-facing docs/ and README stay)
 *_REDESIGN.md
 *_HANDOFF.md
+packages/atlas/data/refpool/
