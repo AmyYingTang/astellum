@@ -20,6 +20,12 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '../../..');
 
+// The server reads ATLAS_PASSWORD from .env, so we have to as well — otherwise
+// every request here bounces off the password gate with a 401. Same loader the
+// CLI uses; real shell vars still win over the file.
+const { loadEnv } = await import(join(REPO, 'packages/cli/dist/env.js'));
+loadEnv(join(REPO, '.env'));
+
 const args = process.argv.slice(2);
 const flag = (name, fallback) => {
   const i = args.indexOf(`--${name}`);
@@ -47,10 +53,27 @@ const authHeaders = password
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function api(path, init = {}) {
-  const res = await fetch(`${SERVER}${path}`, {
-    ...init,
-    headers: { ...authHeaders, ...(init.body ? { 'content-type': 'application/json' } : {}), ...init.headers },
-  });
+  // The server blocks its event loop for stretches while the identify pipeline
+  // chews on a frame, and a single dropped connection used to kill the whole
+  // target. Over a 97-image overnight run that's the difference between a few
+  // retries and a morning of spurious failures.
+  let res;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      res = await fetch(`${SERVER}${path}`, {
+        ...init,
+        headers: {
+          ...authHeaders,
+          ...(init.body ? { 'content-type': 'application/json' } : {}),
+          ...init.headers,
+        },
+      });
+      break;
+    } catch (e) {
+      if (attempt >= 4) throw new Error(`${e.message} (after ${attempt + 1} tries)`);
+      await sleep(3000 * (attempt + 1));
+    }
+  }
   const text = await res.text();
   let json;
   try {

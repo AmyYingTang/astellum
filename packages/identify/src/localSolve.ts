@@ -96,8 +96,11 @@ function toWcs(w: WcsInfo, input: SolveInput): Wcs {
 export function createLocalSolveClient(opts: LocalSolveOptions = {}): SolveClient {
   const solveField = opts.solveField ?? 'solve-field';
   const wcsinfoBin = opts.wcsinfo ?? 'wcsinfo';
-  const downsample = opts.downsample ?? 2;
-  const cpuLimit = opts.cpuLimitSec ?? 90;
+  // solve-field walks its index files widest-scale-first and stops at the first
+  // match, so cpulimit is only ever spent on *failures* — a fast solve returns
+  // just as fast under a high cap. 90s was cutting off solves that were about to
+  // succeed several indexes later.
+  const cpuLimit = opts.cpuLimitSec ?? 240;
 
   async function exists(p: string): Promise<boolean> {
     try {
@@ -110,6 +113,12 @@ export function createLocalSolveClient(opts: LocalSolveOptions = {}): SolveClien
 
   async function solve(input: SolveInput): Promise<SolveResult> {
     const t0 = Date.now();
+    // Nebulosity is the enemy of source detection: at downsample 2 a large
+    // emission-nebula frame yields thousands of spurious "stars" from the
+    // mottling, burying the real star pattern the matcher needs. Shrinking
+    // harder smooths the gas away and leaves the stars. Small frames can't
+    // afford it, so scale with the image.
+    const downsample = opts.downsample ?? (Math.max(input.width, input.height) >= 3000 ? 4 : 2);
     const dir = await mkdtemp(join(tmpdir(), 'astrolens-solve-'));
     const base = join(dir, 'solve');
     try {
