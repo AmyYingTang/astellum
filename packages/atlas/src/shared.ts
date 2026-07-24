@@ -94,6 +94,10 @@ export interface TargetRow {
   /** 0 when nothing has been annotated for this target yet. */
   annotations: number;
   status: StatusCounts;
+  /** True once a solved reference image is attached — i.e. the target is ready
+   *  to draw on. Distinct from `annotations > 0`: an imported target has an
+   *  image but no annotations yet. */
+  has_image: boolean;
 }
 
 export interface TargetsResponse {

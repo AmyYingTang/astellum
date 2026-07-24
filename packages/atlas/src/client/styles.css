@@ -557,3 +557,14 @@ button.link {
 .targets li.target.done .target-desig {
   color: #7e9e5e;
 }
+
+/* "Has a reference image" marker in the target list — an imported target has an
+   image but no annotations, so it needs its own signal separate from the counts. */
+.img-dot {
+  flex: none;
+  font-size: 11px;
+  color: transparent;
+}
+.img-dot.on {
+  color: var(--accent);
+}

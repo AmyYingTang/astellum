@@ -40,6 +40,8 @@ const STRINGS = {
   fDraft: { zh: '有草稿', en: 'Has draft' },
   fReview: { zh: '待审', en: 'In review' },
   fApproved: { zh: '已批准', en: 'Approved' },
+  fNoImage: { zh: '缺图', en: 'No image' },
+  hasImage: { zh: '已有参考图，可直接标注', en: 'Reference image ready — can annotate' },
   noMatch: { zh: '没有匹配的目标', en: 'No matching targets' },
   suggested: { zh: '建议标注', en: 'Suggested' },
   currentUser: { zh: '当前用户', en: 'Current user' },

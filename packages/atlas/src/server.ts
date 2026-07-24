@@ -292,6 +292,7 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
         ...(entry ? { primary_id: entry.primary_id } : {}),
         annotations: entry?.annotations.length ?? 0,
         status: entry ? statusCounts(entry) : { draft: 0, in_review: 0, approved: 0 },
+        has_image: Boolean(entry?.reference),
       };
     });
     for (const o of atlas.objects) {
@@ -312,6 +313,7 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
         primary_id: o.primary_id,
         annotations: o.annotations.length,
         status: statusCounts(o),
+        has_image: Boolean(o.reference),
       });
     }
     res.json({ targets } satisfies TargetsResponse);

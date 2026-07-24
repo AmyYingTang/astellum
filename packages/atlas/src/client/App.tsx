@@ -115,7 +115,7 @@ export function App(): JSX.Element {
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [targets, setTargets] = useState<TargetRow[]>([]);
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<'all' | 'none' | 'draft' | 'review' | 'approved'>('all');
+  const [filter, setFilter] = useState<'all' | 'none' | 'noimg' | 'draft' | 'review' | 'approved'>('all');
   const [saveMsg, setSaveMsg] = useState('');
   const [exportMsg, setExportMsg] = useState('');
   const [solverInfo, setSolverInfo] = useState<{ solver: string; localSolver: boolean } | null>(null);
@@ -423,6 +423,7 @@ export function App(): JSX.Element {
     const q = query.trim().toLowerCase();
     return targets.filter((x) => {
       if (filter === 'none' && x.annotations !== 0) return false;
+      if (filter === 'noimg' && x.has_image) return false;
       if (filter === 'draft' && x.status.draft === 0) return false;
       if (filter === 'review' && x.status.in_review === 0) return false;
       if (filter === 'approved' && x.status.approved === 0) return false;
@@ -506,7 +507,7 @@ export function App(): JSX.Element {
               onChange={(e) => setQuery(e.target.value)}
             />
             <div className="filters">
-              {(['all', 'none', 'draft', 'review', 'approved'] as const).map((f) => (
+              {(['all', 'none', 'noimg', 'draft', 'review', 'approved'] as const).map((f) => (
                 <button
                   key={f}
                   className={filter === f ? 'chip active' : 'chip'}
@@ -517,11 +518,13 @@ export function App(): JSX.Element {
                       ? 'fAll'
                       : f === 'none'
                         ? 'fNone'
-                        : f === 'draft'
-                          ? 'fDraft'
-                          : f === 'review'
-                            ? 'fReview'
-                            : 'fApproved',
+                        : f === 'noimg'
+                          ? 'fNoImage'
+                          : f === 'draft'
+                            ? 'fDraft'
+                            : f === 'review'
+                              ? 'fReview'
+                              : 'fApproved',
                   )}
                 </button>
               ))}
@@ -546,6 +549,11 @@ export function App(): JSX.Element {
                     ) : (
                       <span className="target-name">{lang === 'zh' ? x.name_zh : x.name_en}</span>
                     )}
+                    {/* An imported target has an image but no annotations yet,
+                        so "ready to draw on" needs its own marker. */}
+                    <span className={x.has_image ? 'img-dot on' : 'img-dot'} title={t('hasImage')}>
+                      ▣
+                    </span>
                     <span className="target-counts">
                       {x.annotations === 0 ? (
                         '0'
