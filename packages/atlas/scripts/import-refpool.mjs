@@ -41,6 +41,10 @@ const ONLY = flag('only', '')
   .map((s) => s.trim())
   .filter(Boolean);
 const LIMIT = Number(flag('limit', '0')) || Infinity;
+// Overwrite the reference image of an entry that already has one — but only if
+// it carries no annotations, so a drawn-on target is still never touched. For
+// swapping in a better image after the fact (e.g. an optical frame over a JWST one).
+const REPLACE = has('replace');
 // A local solve is ~10–60s; nova can queue for minutes. Generous, but bounded
 // so one pathological image can't stall the whole overnight run.
 const SOLVE_TIMEOUT_MS = Number(flag('solve-timeout', '600')) * 1000;
@@ -132,15 +136,18 @@ async function main() {
     // this script only fills empty slots, it does not overwrite anyone's work.
     const { json: existing } = await api(`/api/object/${encodeURIComponent(id)}`);
     const entry = existing.entry;
-    if (entry?.reference) {
-      console.log(`${tag} skip — already has a reference image`);
-      skipped.push(id);
-      continue;
-    }
     if (entry?.annotations?.length) {
       console.log(`${tag} skip — has ${entry.annotations.length} annotation(s), leaving alone`);
       skipped.push(id);
       continue;
+    }
+    if (entry?.reference && !REPLACE) {
+      console.log(`${tag} skip — already has a reference image`);
+      skipped.push(id);
+      continue;
+    }
+    if (entry?.reference && REPLACE) {
+      console.log(`${tag} replacing existing reference image`);
     }
 
     if (DRY) {
