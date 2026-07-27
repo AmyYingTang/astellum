@@ -104,12 +104,13 @@ body {
 /* Review status badge / selector */
 .anno-name {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .adjust-btn {
-  margin-left: auto;
+  flex: none;
   font-size: 11px;
   padding: 1px 8px;
   border-radius: 5px;
@@ -117,7 +118,6 @@ body {
   background: var(--panel-2);
   color: var(--muted);
   width: auto;
-  flex: none;
 }
 .adjust-btn.active {
   background: var(--accent);
@@ -125,13 +125,11 @@ body {
   color: #0d1017;
   font-weight: 600;
 }
-/* When the adjust button is present it takes the auto-margin, so the status
-   pill sits right after it rather than pushing to the far edge. */
-.annos li .adjust-btn + .st {
-  margin-left: 6px;
-}
+/* The name (flex:1) grows to fill, pushing the controls to the right — so no
+   auto margins here (an auto margin would eat the free space and collapse the
+   name to zero width). */
 .st {
-  margin-left: auto;
+  flex: none;
   font-size: 11px;
   padding: 1px 6px;
   border-radius: 5px;
@@ -140,7 +138,11 @@ body {
   color: var(--muted);
   width: auto;
 }
-select.st {
+/* `.panel select.st` (0,2,1) must out-specify `.panel select { width:100% }`
+   (0,1,1) so the status dropdown sizes to its content instead of eating the
+   whole row (which collapsed the annotation name to zero width). */
+.panel select.st {
+  width: auto;
   margin-bottom: 0;
   padding: 2px 4px;
 }
