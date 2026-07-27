@@ -108,6 +108,28 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.adjust-btn {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--muted);
+  width: auto;
+  flex: none;
+}
+.adjust-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0d1017;
+  font-weight: 600;
+}
+/* When the adjust button is present it takes the auto-margin, so the status
+   pill sits right after it rather than pushing to the far edge. */
+.annos li .adjust-btn + .st {
+  margin-left: 6px;
+}
 .st {
   margin-left: auto;
   font-size: 11px;

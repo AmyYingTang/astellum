@@ -79,6 +79,12 @@ const STRINGS = {
     en: 'Someone else changed this entry — reload before saving so you don’t overwrite their work.',
   },
   required: { zh: '必填', en: 'required' },
+  adjust: { zh: '调整', en: 'Adjust' },
+  adjustDone: { zh: '完成调整', en: 'Done' },
+  adjustHint: {
+    zh: '拖顶点微调形状 · 拖图形本体整体平移',
+    en: 'Drag a vertex to reshape · drag the body to move it',
+  },
   needImage: { zh: '需先上传并定位一张参考图', en: 'Upload & solve a reference image first' },
   needId: { zh: '需先填「主 ID」才能保存', en: 'Enter a primary ID to save' },
   noImage: { zh: '先上传一张参考图开始', en: 'Upload a reference image to start' },

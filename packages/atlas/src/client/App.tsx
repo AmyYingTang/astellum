@@ -110,6 +110,9 @@ export function App(): JSX.Element {
   const [typeKey, setTypeKey] = useState('pillar');
   const [drawing, setDrawing] = useState(false);
   const [draftPx, setDraftPx] = useState<[number, number][]>([]);
+  // Which committed annotation is open for geometry editing (drag vertices /
+  // whole shape). Only honoured in edit mode when not drawing.
+  const [editShapeId, setEditShapeId] = useState<string | null>(null);
   const [labelZh, setLabelZh] = useState('');
   const [labelEn, setLabelEn] = useState('');
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
@@ -203,6 +206,7 @@ export function App(): JSX.Element {
   const onPickFile = async (file: File, opts?: { preview?: boolean }): Promise<void> => {
     const preview = opts?.preview ?? false;
     setBusy(true);
+    setEditShapeId(null);
     setStatus(t('storing'));
     try {
       const { dataUrl, filename } = await prepareUpload(file);
@@ -301,6 +305,7 @@ export function App(): JSX.Element {
   const startDraw = (): void => {
     setDraftPx([]);
     setDrawing(true);
+    setEditShapeId(null);
   };
   const endDraw = (): void => {
     setDraftPx([]);
@@ -322,6 +327,25 @@ export function App(): JSX.Element {
     );
   };
 
+  // Commit a geometry edit from the canvas: new vertices arrive in image px,
+  // convert back to ICRS via the current image's WCS (same transform the draw
+  // path uses). Metadata (id, author, status, created_at) is preserved — the
+  // whole point of editing in place rather than delete + redraw.
+  const onEditShape = (id: string, verticesPx: [number, number][]): void => {
+    if (!session) return;
+    const now = new Date().toISOString();
+    setAnnotations((xs) =>
+      xs.map((a) => {
+        if (a.id !== id) return a;
+        const vertices = verticesPx.map(([x, y]) => {
+          const s = pixelToWorld(session.wcs, x, y);
+          return [s[0], s[1]] as [number, number];
+        });
+        return { ...a, geometry: { ...a.geometry, vertices }, updated_at: now };
+      }),
+    );
+  };
+
   const doExport = async (): Promise<void> => {
     const r = await exportRegistry();
     setExportMsg(r.ok ? `${t('exported')}: ${r.objects} · ${r.annotations}` : `⚠ ${r.error ?? ''}`);
@@ -335,6 +359,7 @@ export function App(): JSX.Element {
   const loadEntry = async (id: string): Promise<void> => {
     const { entry } = await getObject(id);
     if (!entry) return;
+    setEditShapeId(null);
     setPrimaryId(entry.primary_id);
     setAliasesText(entry.aliases.join(', '));
     setAnnotations(entry.annotations);
@@ -445,6 +470,14 @@ export function App(): JSX.Element {
         <li key={a.id}>
           <span className="dot" style={{ background: types.find((x) => x.key === a.feature_type)?.hint }} />
           <span className="anno-name">{displayNames.get(a.id) ?? typeName(a.feature_type)}</span>
+          {canEdit && (
+            <button
+              className={editShapeId === a.id ? 'adjust-btn active' : 'adjust-btn'}
+              onClick={() => setEditShapeId((cur) => (cur === a.id ? null : a.id))}
+            >
+              {editShapeId === a.id ? t('adjustDone') : t('adjust')}
+            </button>
+          )}
           {canEdit ? (
             <select
               className={`st st-${a.status}`}
@@ -583,8 +616,13 @@ export function App(): JSX.Element {
               allowDelete={editable && !drawing}
               shapes={shapes}
               draft={draft}
+              editShapeId={editable && !drawing ? editShapeId : null}
               onAddPoint={onAddPoint}
-              onDeleteShape={(id) => setAnnotations((xs) => xs.filter((y) => y.id !== id))}
+              onDeleteShape={(id) => {
+                setAnnotations((xs) => xs.filter((y) => y.id !== id));
+                setEditShapeId((cur) => (cur === id ? null : cur));
+              }}
+              onEditShape={onEditShape}
             />
           ) : (
             <div className="empty">{t('noImage')}</div>
@@ -736,6 +774,7 @@ export function App(): JSX.Element {
             <section>
               <StepHead n={4} title={t('stepSave')} />
               {annoList(true)}
+              {editShapeId && <p className="hint substeps">{t('adjustHint')}</p>}
               <button className="primary" disabled={!primaryId.trim()} onClick={save}>
                 {t('save')} ({annotations.length})
               </button>
