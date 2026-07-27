@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Studio: reading an image — a circled object with its callout badge.
+       Same family as the atlas icon (dark sky, accent blue), different act:
+       atlas draws the outline, studio points at what's there. -->
+  <rect width="32" height="32" rx="7" fill="#141825"/>
+  <circle cx="7" cy="7" r="1" fill="#c8d0e0" opacity=".65"/>
+  <circle cx="26" cy="24" r="1" fill="#c8d0e0" opacity=".5"/>
+  <circle cx="6" cy="24" r="1.1" fill="#c8d0e0" opacity=".45"/>
+  <circle cx="14" cy="18" r="7.5" fill="#7aa2f7" fill-opacity=".18"
+          stroke="#7aa2f7" stroke-width="2.2"/>
+  <line x1="19.4" y1="12.6" x2="23.5" y2="8.5"
+        stroke="#7aa2f7" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="25" cy="7" r="3.6" fill="#9ab8ff"/>
+</svg>
