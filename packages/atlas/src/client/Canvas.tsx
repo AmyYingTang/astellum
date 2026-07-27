@@ -10,6 +10,9 @@ export interface Shape {
   color: string;
   closed: boolean;
   label: string;
+  /** Curator-placed label position in image px; absent → auto-anchor near the
+   *  first vertex (the historical behaviour). */
+  labelPx?: [number, number];
 }
 
 interface CanvasProps {
@@ -32,6 +35,8 @@ interface CanvasProps {
   onDeleteShape: (id: string) => void;
   /** Commit a geometry edit: the shape's full new vertex list, in image px. */
   onEditShape?: (id: string, verticesPx: [number, number][]) => void;
+  /** Commit a label move: where the name should sit, in image px. */
+  onMoveLabel?: (id: string, labelPx: [number, number]) => void;
 }
 
 function useHtmlImage(src: string): HTMLImageElement | null {
@@ -61,6 +66,7 @@ export function Canvas({
   onAddPoint,
   onDeleteShape,
   onEditShape,
+  onMoveLabel,
 }: CanvasProps): JSX.Element {
   const wrapRef = useRef<HTMLDivElement>(null);
   const groupRef = useRef<Konva.Group>(null);
@@ -176,10 +182,12 @@ export function Canvas({
           />
         )}
         {/* Name label in the shape's own colour, with a dark halo so it reads
-            over both bright and dark nebulosity. */}
+            over both bright and dark nebulosity. In edit mode it's draggable —
+            two shapes' labels often collide, and the curator's placement is
+            stored (in sky coords) and carried through to the apply output. */}
         <Text
-          x={ax + badgeR * 1.6}
-          y={ay - fontPx}
+          x={s.labelPx ? s.labelPx[0] : ax + badgeR * 1.6}
+          y={s.labelPx ? s.labelPx[1] : ay - fontPx}
           text={s.label}
           fontSize={fontPx}
           fontStyle="bold"
@@ -187,7 +195,12 @@ export function Canvas({
           stroke="#0d1017"
           strokeWidth={2.4 / scale}
           fillAfterStrokeEnabled
-          listening={false}
+          listening={editing && !!onMoveLabel}
+          draggable={editing && !!onMoveLabel}
+          onDragEnd={(e) => {
+            e.cancelBubble = true; // don't let the body-drag handler see this
+            onMoveLabel!(s.id, [e.target.x(), e.target.y()]);
+          }}
         />
 
         {editing ? (

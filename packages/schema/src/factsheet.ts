@@ -86,6 +86,10 @@ export const FactObject = z.object({
    * line / single point). When set it overrides the feature_type→shape heuristic
    * in the reader; unset for all other producers (shape inferred as before). */
   geometry_kind: z.enum(['polygon', 'polyline', 'point']).optional(),
+  /** Optional display-pixel position for the name label, projected from a
+   * curator-placed sky anchor (atlas features only). When set, the reader
+   * anchors the badge here instead of auto-placing it at the shape's top edge. */
+  label_pixel: z.tuple([z.number(), z.number()]).optional(),
   /** Where this entry came from: a catalog match (A-class), a geometric prior
    * anchored on an A object, an image CV detector, an AI/VLM pass, or the human
    * feature atlas (approved baseline annotations). Drives provenance grouping. */

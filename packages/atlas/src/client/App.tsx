@@ -346,6 +346,29 @@ export function App(): JSX.Element {
     );
   };
 
+  // Move a feature's name label. Stored as an ICRS anchor like the geometry, so
+  // the placement survives reprojection onto any other image (and is carried
+  // into the exported registry → apply output).
+  const onMoveLabel = (id: string, labelPx: [number, number]): void => {
+    if (!session) return;
+    const sky = pixelToWorld(session.wcs, labelPx[0], labelPx[1]);
+    const now = new Date().toISOString();
+    setAnnotations((xs) =>
+      xs.map((a) =>
+        a.id === id ? { ...a, label_anchor: [sky[0], sky[1]] as [number, number], updated_at: now } : a,
+      ),
+    );
+  };
+
+  // Rename a feature in place — keeps id / author / status / created_at, unlike
+  // delete + redraw.
+  const onRename = (id: string, which: 'zh' | 'en', value: string): void => {
+    const now = new Date().toISOString();
+    setAnnotations((xs) =>
+      xs.map((a) => (a.id === id ? { ...a, label: { ...a.label, [which]: value }, updated_at: now } : a)),
+    );
+  };
+
   const doExport = async (): Promise<void> => {
     const r = await exportRegistry();
     setExportMsg(r.ok ? `${t('exported')}: ${r.objects} · ${r.annotations}` : `⚠ ${r.error ?? ''}`);
@@ -427,6 +450,11 @@ export function App(): JSX.Element {
         if (p) px.push([p[0], p[1]]);
       }
       if (px.length === 0) continue;
+      let labelPx: [number, number] | undefined;
+      if (a.label_anchor) {
+        const lp = worldToPixel(session.wcs, a.label_anchor[0], a.label_anchor[1]);
+        if (lp) labelPx = [lp[0], lp[1]];
+      }
       out.push({
         id: a.id,
         type: a.geometry.type,
@@ -434,6 +462,7 @@ export function App(): JSX.Element {
         color: types.find((x) => x.key === a.feature_type)?.hint ?? '#7aa2f7',
         closed: a.geometry.type === 'polygon',
         label: displayNames.get(a.id) ?? '',
+        ...(labelPx ? { labelPx } : {}),
       });
     }
     return out;
@@ -490,6 +519,22 @@ export function App(): JSX.Element {
             </select>
           ) : (
             <span className={`st st-${a.status}`}>{statusLabel(a.status)}</span>
+          )}
+          {/* Renaming lives inside the adjust panel: same in-place-edit idea as
+              the geometry, so id / author / status / created_at all survive. */}
+          {canEdit && editShapeId === a.id && (
+            <div className="anno-edit">
+              <input
+                placeholder={t('labelZh')}
+                value={a.label.zh}
+                onChange={(e) => onRename(a.id, 'zh', e.target.value)}
+              />
+              <input
+                placeholder={t('labelEn')}
+                value={a.label.en}
+                onChange={(e) => onRename(a.id, 'en', e.target.value)}
+              />
+            </div>
           )}
         </li>
       ))}
@@ -623,6 +668,7 @@ export function App(): JSX.Element {
                 setEditShapeId((cur) => (cur === id ? null : cur));
               }}
               onEditShape={onEditShape}
+              onMoveLabel={onMoveLabel}
             />
           ) : (
             <div className="empty">{t('noImage')}</div>

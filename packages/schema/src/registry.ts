@@ -20,6 +20,9 @@ export const RegistryAnnotation = z.object({
   feature_type: z.string(),
   geometry: RegistryGeometry,
   label: z.object({ zh: z.string(), en: z.string() }),
+  /** Optional ICRS [RA_deg, Dec_deg] for the name label; apply reprojects it so
+   *  the curator's placement carries onto the user image. Absent → auto-anchor. */
+  label_anchor: z.tuple([z.number(), z.number()]).optional(),
   note: z.object({ zh: z.string(), en: z.string() }).optional(),
 });
 export type RegistryAnnotation = z.infer<typeof RegistryAnnotation>;

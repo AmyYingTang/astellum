@@ -378,6 +378,7 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
               feature_type: a.feature_type,
               geometry: a.geometry,
               label: a.label,
+              ...(a.label_anchor ? { label_anchor: a.label_anchor } : {}),
               ...(a.note ? { note: a.note } : {}),
             })),
         }))

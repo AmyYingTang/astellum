@@ -178,6 +178,14 @@ function entryToFeatures(entry: RegistryEntry, host: AtlasHost, wcs: Wcs): Array
     const cy = Math.round(px.reduce((s, p) => s + p[1], 0) / px.length);
     const [craDeg, cdecDeg] = pixelToWorld(wcs, cx, cy);
 
+    // A curator-placed label anchor (sky) projects onto this image so the name
+    // sits where they put it, not at the auto top-edge position.
+    let labelPixel: [number, number] | undefined;
+    if (anno.label_anchor) {
+      const lp = worldToPixel(wcs, anno.label_anchor[0], anno.label_anchor[1]);
+      if (lp) labelPixel = [Math.round(lp[0]), Math.round(lp[1])];
+    }
+
     out.push({
       id: `atlas_${host.id}_${k + 1}`,
       role: 'context',
@@ -192,6 +200,7 @@ function entryToFeatures(entry: RegistryEntry, host: AtlasHost, wcs: Wcs): Array
       coord: { ra_deg: craDeg, dec_deg: cdecDeg, pixel: [cx, cy] as [number, number] },
       geometry_kind: anno.geometry.type,
       ...(anno.geometry.type === 'point' ? {} : { polygon: px }),
+      ...(labelPixel ? { label_pixel: labelPixel } : {}),
       catalog_ids: {},
       confidence: 1,
       type_confidence: 1,

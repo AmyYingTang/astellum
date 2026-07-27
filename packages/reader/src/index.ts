@@ -94,21 +94,34 @@ const BADGE_ANCHOR = 0.7071;
 interface Spreadable {
   circle: { cx: number; cy: number; r: number };
   badge: { offset_x: number; offset_y: number; bubble_r: number };
+  /** Curator-placed label position (display px), from an atlas label_anchor.
+   *  Pinned: seeded here and never pushed by the spread. */
+  label_pixel?: [number, number];
 }
 
 /** Push overlapping badge anchors apart (so labels don't pile up), writing the
- * delta into each badge's offset. The badge anchor mirrors the renderer's. */
+ * delta into each badge's offset. The badge anchor mirrors the renderer's.
+ * A badge with an explicit label_pixel is pinned — a human put it there. */
 function spreadBadges(features: Spreadable[], width: number, height: number): void {
   const pts = features.map((f) => {
     const ax = f.circle.cx + (f.circle.r + f.badge.bubble_r) * BADGE_ANCHOR;
     const ay = f.circle.cy - (f.circle.r + f.badge.bubble_r) * BADGE_ANCHOR;
-    return { x: ax, y: ay, r: f.badge.bubble_r, ax, ay };
+    const pinned = !!f.label_pixel;
+    return {
+      x: pinned ? f.label_pixel![0] : ax,
+      y: pinned ? f.label_pixel![1] : ay,
+      r: f.badge.bubble_r,
+      ax,
+      ay,
+      pinned,
+    };
   });
   for (let it = 0; it < 60; it++) {
     for (let i = 0; i < pts.length; i++) {
       for (let j = i + 1; j < pts.length; j++) {
         const a = pts[i]!;
         const b = pts[j]!;
+        if (a.pinned && b.pinned) continue;
         let dx = b.x - a.x;
         let dy = b.y - a.y;
         let d = Math.hypot(dx, dy);
@@ -119,11 +132,16 @@ function spreadBadges(features: Spreadable[], width: number, height: number): vo
             dy = Math.sin(i + j);
             d = 1;
           }
-          const push = (min - d) / 2;
-          a.x -= (dx / d) * push;
-          a.y -= (dy / d) * push;
-          b.x += (dx / d) * push;
-          b.y += (dy / d) * push;
+          // A pinned badge stays put; the other one absorbs the whole push.
+          const push = a.pinned || b.pinned ? min - d : (min - d) / 2;
+          if (!a.pinned) {
+            a.x -= (dx / d) * push;
+            a.y -= (dy / d) * push;
+          }
+          if (!b.pinned) {
+            b.x += (dx / d) * push;
+            b.y += (dy / d) * push;
+          }
         }
       }
     }
@@ -323,6 +341,8 @@ function buildReading(
       ...(arrow_to ? { arrow_to } : {}),
       ...(arc ? { arc } : {}),
       ...(polygon ? { polygon } : {}),
+      // Carried only through spreadBadges (which pins it), not into the Reading.
+      ...(obj.label_pixel ? { label_pixel: obj.label_pixel } : {}),
       badge: { num: String(i + 1), offset_x: 0, offset_y: 0, bubble_r: bubbleR },
       explanation: t?.explanation ?? { zh: '', en: '' },
       physics: t?.physics,

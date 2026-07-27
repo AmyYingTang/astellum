@@ -82,8 +82,8 @@ const STRINGS = {
   adjust: { zh: '调整', en: 'Adjust' },
   adjustDone: { zh: '完成调整', en: 'Done' },
   adjustHint: {
-    zh: '拖顶点微调形状 · 拖图形本体整体平移',
-    en: 'Drag a vertex to reshape · drag the body to move it',
+    zh: '拖顶点微调形状 · 拖图形本体整体平移 · 拖文字挪标签位置 · 下方可改名',
+    en: 'Drag a vertex to reshape · the body to move it · the text to place the label · rename below',
   },
   needImage: { zh: '需先上传并定位一张参考图', en: 'Upload & solve a reference image first' },
   needId: { zh: '需先填「主 ID」才能保存', en: 'Enter a primary ID to save' },

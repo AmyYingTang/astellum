@@ -32,6 +32,10 @@ export const Annotation = z.object({
   feature_type: z.string(),
   geometry: Geometry,
   label: Bilingual,
+  /** Optional ICRS [RA_deg, Dec_deg] where the name label sits. Stored in sky
+   *  coords like everything else, so a curator-placed label reprojects onto any
+   *  image. Absent → the consumer auto-anchors it (top vertex). */
+  label_anchor: Vertex.optional(),
   note: Bilingual.optional(),
   status: AnnoStatus.default('draft'),
   author: z.string().optional(),
