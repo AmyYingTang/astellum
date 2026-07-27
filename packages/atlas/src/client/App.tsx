@@ -113,6 +113,11 @@ export function App(): JSX.Element {
   // Which committed annotation is open for geometry editing (drag vertices /
   // whole shape). Only honoured in edit mode when not drawing.
   const [editShapeId, setEditShapeId] = useState<string | null>(null);
+  // In the existing-entry flow the draw controls start collapsed — reviewing is
+  // the common case there, adding another feature is the exception.
+  const [addOpen, setAddOpen] = useState(false);
+  // Identity fields are collapsed to a summary line for an existing entry.
+  const [idOpen, setIdOpen] = useState(false);
   const [labelZh, setLabelZh] = useState('');
   const [labelEn, setLabelEn] = useState('');
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
@@ -383,6 +388,8 @@ export function App(): JSX.Element {
     const { entry } = await getObject(id);
     if (!entry) return;
     setEditShapeId(null);
+    setAddOpen(false);
+    setIdOpen(false);
     setPrimaryId(entry.primary_id);
     setAliasesText(entry.aliases.join(', '));
     setAnnotations(entry.annotations);
@@ -541,6 +548,57 @@ export function App(): JSX.Element {
     </ul>
   );
 
+  // The draw controls, shared by both flows: a numbered step in the new-image
+  // wizard, a collapsible extra in the existing-entry flow.
+  const drawControls = (
+    <>
+      <p className="hint substeps">{t('drawSteps')}</p>
+      <label className="field-label">{t('featureType')}</label>
+      <select value={typeKey} disabled={drawing} onChange={(e) => setTypeKey(e.target.value)}>
+        {types.map((ft) => (
+          <option key={ft.key} value={ft.key}>
+            {ft.zh} · {ft.en} ({ft.geometry})
+          </option>
+        ))}
+      </select>
+      <label className="field-label">
+        {t('labelName')}
+        <HelpIcon text={t('labelHelp')} />
+      </label>
+      <input placeholder={t('labelZh')} value={labelZh} onChange={(e) => setLabelZh(e.target.value)} />
+      <input placeholder={t('labelEn')} value={labelEn} onChange={(e) => setLabelEn(e.target.value)} />
+      {drawing ? (
+        <>
+          <p className="status">{t('pointsPlaced').replace('{n}', String(draftPx.length))}</p>
+          <div className="row">
+            <button className="primary" disabled={!canFinish} onClick={finishSave}>
+              {t('finishSave')}
+            </button>
+            <button onClick={endDraw}>{t('endDraw')}</button>
+          </div>
+        </>
+      ) : (
+        <div className="btn-help-row">
+          <button className="primary" onClick={startDraw}>
+            {t('startDraw')}
+          </button>
+          <HelpIcon align="right" text={`${t('navHint')}\n${t('listHint')}`} />
+        </div>
+      )}
+    </>
+  );
+
+  const saveBlock = (n: number): JSX.Element => (
+    <section>
+      <StepHead n={n} title={t('stepSave')} />
+      <button className="primary" disabled={!primaryId.trim()} onClick={save}>
+        {t('save')} ({annotations.length})
+      </button>
+      {!primaryId.trim() && <p className="hint">⚠ {t('needId')}</p>}
+      {saveMsg && <p className="status">{saveMsg}</p>}
+    </section>
+  );
+
   return (
     <div className="app">
       <header className="topbar">
@@ -691,151 +749,185 @@ export function App(): JSX.Element {
 
         {/* Right — annotation steps + export */}
         <aside className="panel steps-panel">
-          {/* Step 1 — upload */}
-          <section>
-            <StepHead n={1} title={t('stepUpload')} />
-            <button className="primary" disabled={busy} onClick={() => fileRef.current?.click()}>
-              {t('upload')}
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void onPickFile(f);
-                e.target.value = '';
-              }}
-            />
-            <input
-              ref={previewFileRef}
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void onPickFile(f, { preview: true });
-                e.target.value = '';
-              }}
-            />
-            {status && <p className="status">{status}</p>}
-          </section>
+          {/* The pickers must exist in every flow; the visible upload block is
+              placed per-flow (step ① of the wizard, or a trailing secondary
+              action while reviewing). */}
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void onPickFile(f);
+              e.target.value = '';
+            }}
+          />
+          <input
+            ref={previewFileRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void onPickFile(f, { preview: true });
+              e.target.value = '';
+            }}
+          />
 
-          {/* Step 2 — identity (locked until an image is solved) */}
-          <section className={session ? '' : 'locked'}>
-            <StepHead n={2} title={t('stepIdentity')} />
-            <label className="field-label">
-              {t('primaryId')} <span className="req">* {t('required')}</span>
-            </label>
-            <input
-              className={editable && !primaryId.trim() ? 'needs-value' : ''}
-              placeholder={t('primaryId')}
-              value={primaryId}
-              disabled={!editable}
-              onChange={(e) => setPrimaryId(e.target.value)}
-            />
-            <input
-              placeholder={t('aliases')}
-              value={aliasesText}
-              disabled={!editable}
-              onChange={(e) => setAliasesText(e.target.value)}
-            />
-            {session?.typeContext && (
-              <p className="type-context">
-                {t('typeLabel')}: {session.typeContext}
-              </p>
-            )}
-            {session?.identityNote && <p className="hint">{session.identityNote}</p>}
-          </section>
-
-          {/* Read-only preview banner + actions (library entry / verify mode) */}
-          {session && !editable && (
+          {kind === 'new' && (
             <section>
-              <p className={`banner ${kind === 'other' ? 'banner-check' : 'banner-preview'}`}>
-                {kind === 'other' ? t('checkingOther') : t('previewOnly')}
-              </p>
-              {annoList(false)}
-              <div className="row">
-                {kind === 'canonical' && (
-                  <button className="primary" onClick={() => setEditable(true)}>
-                    {t('editCanonical')}
-                  </button>
-                )}
-                {kind === 'other' ? (
-                  <button onClick={exitCheck}>{t('exitCheck')}</button>
-                ) : (
-                  <button onClick={() => previewFileRef.current?.click()}>{t('checkOther')}</button>
-                )}
-              </div>
+              <StepHead n={1} title={t('stepUpload')} />
+              <button className="primary" disabled={busy} onClick={() => fileRef.current?.click()}>
+                {t('upload')}
+              </button>
+              {status && <p className="status">{status}</p>}
             </section>
           )}
 
-          {/* Step 3 — draw features (edit mode only) */}
-          {session && editable && (
-            <section>
-              <StepHead n={3} title={t('stepDraw')} />
-              {kind === 'canonical' && <p className="banner banner-edit">{t('editingCanonical')}</p>}
-              <p className="hint substeps">{t('drawSteps')}</p>
+          {/* ── Flow A · a NEW image: the full wizard ─────────────────────── */}
+          {kind === 'new' && (
+            <>
+              <section className={session ? '' : 'locked'}>
+                <StepHead n={2} title={t('stepIdentity')} />
+                <label className="field-label">
+                  {t('primaryId')} <span className="req">* {t('required')}</span>
+                </label>
+                <input
+                  className={editable && !primaryId.trim() ? 'needs-value' : ''}
+                  placeholder={t('primaryId')}
+                  value={primaryId}
+                  onChange={(e) => setPrimaryId(e.target.value)}
+                />
+                <input
+                  placeholder={t('aliases')}
+                  value={aliasesText}
+                  onChange={(e) => setAliasesText(e.target.value)}
+                />
+                {session?.typeContext && (
+                  <p className="type-context">
+                    {t('typeLabel')}: {session.typeContext}
+                  </p>
+                )}
+                {session?.identityNote && <p className="hint">{session.identityNote}</p>}
+              </section>
 
-              <label className="field-label">{t('featureType')}</label>
-              <select value={typeKey} disabled={drawing} onChange={(e) => setTypeKey(e.target.value)}>
-                {types.map((ft) => (
-                  <option key={ft.key} value={ft.key}>
-                    {ft.zh} · {ft.en} ({ft.geometry})
-                  </option>
-                ))}
-              </select>
-
-              <label className="field-label">
-                {t('labelName')}
-                <HelpIcon text={t('labelHelp')} />
-              </label>
-              <input placeholder={t('labelZh')} value={labelZh} onChange={(e) => setLabelZh(e.target.value)} />
-              <input placeholder={t('labelEn')} value={labelEn} onChange={(e) => setLabelEn(e.target.value)} />
-
-              {drawing ? (
+              {session ? (
                 <>
-                  <p className="status">{t('pointsPlaced').replace('{n}', String(draftPx.length))}</p>
-                  <div className="row">
-                    <button className="primary" disabled={!canFinish} onClick={finishSave}>
-                      {t('finishSave')}
-                    </button>
-                    <button onClick={endDraw}>{t('endDraw')}</button>
-                  </div>
+                  <section>
+                    <StepHead n={3} title={t('stepDraw')} />
+                    {drawControls}
+                  </section>
+                  <section>
+                    <StepHead n={4} title={t('stepSave')} />
+                    {annoList(true)}
+                    {editShapeId && <p className="hint substeps">{t('adjustHint')}</p>}
+                  </section>
+                  {saveBlock(5)}
                 </>
               ) : (
-                <div className="btn-help-row">
-                  <button className="primary" onClick={startDraw}>
-                    {t('startDraw')}
-                  </button>
-                  <HelpIcon align="right" text={`${t('navHint')}\n${t('listHint')}`} />
-                </div>
+                <section className="locked">
+                  <StepHead n={3} title={t('stepDraw')} />
+                  <p className="hint">{t('needImage')}</p>
+                </section>
               )}
-            </section>
+            </>
           )}
 
-          {/* Step 4 — review status + save (edit mode only) */}
-          {session && editable && (
+          {/* ── Flow B · an EXISTING entry: review its annotations ────────── */}
+          {session && kind === 'canonical' && (
+            <>
+              {/* Identity is already known — one summary line, expandable. */}
+              <section className="ident-summary">
+                <div className="ident-row">
+                  <span className="ident-id">{primaryId}</span>
+                  <span className="ident-meta">
+                    {t('solvedSummary')} · {annotations.length}
+                  </span>
+                  <button className="adjust-btn" onClick={() => setIdOpen((v) => !v)}>
+                    {idOpen ? t('collapse') : t('editIdentity')}
+                  </button>
+                </div>
+                {idOpen && (
+                  <>
+                    <input value={primaryId} disabled={!editable} onChange={(e) => setPrimaryId(e.target.value)} />
+                    <input
+                      placeholder={t('aliases')}
+                      value={aliasesText}
+                      disabled={!editable}
+                      onChange={(e) => setAliasesText(e.target.value)}
+                    />
+                  </>
+                )}
+              </section>
+
+              {!editable ? (
+                <section>
+                  <p className="banner banner-preview">{t('previewOnly')}</p>
+                  {annoList(false)}
+                  <div className="row">
+                    <button className="primary" onClick={() => setEditable(true)}>
+                      {t('editCanonical')}
+                    </button>
+                    <button onClick={() => previewFileRef.current?.click()}>{t('checkOther')}</button>
+                  </div>
+                </section>
+              ) : (
+                <>
+                  <section className="review-main">
+                    <StepHead n={1} title={t('stepReview')} />
+                    <p className="banner banner-edit">{t('editingCanonical')}</p>
+                    {annoList(true)}
+                    <p className="hint substeps">{editShapeId ? t('adjustHint') : t('reviewHint')}</p>
+                  </section>
+
+                  {/* Adding another feature is the exception here — keep it shut. */}
+                  <section>
+                    <StepHead n={2} title={t('stepAddMore')} />
+                    {addOpen ? (
+                      <>
+                        {drawControls}
+                        {!drawing && (
+                          <button className="wide-ghost" onClick={() => setAddOpen(false)}>
+                            {t('collapse')}
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <button className="wide-ghost" onClick={() => setAddOpen(true)}>
+                        {t('addMore')}
+                      </button>
+                    )}
+                  </section>
+
+                  {saveBlock(3)}
+                </>
+              )}
+            </>
+          )}
+
+          {/* ── Flow C · verifying on another image: read-only ───────────── */}
+          {session && kind === 'other' && (
             <section>
-              <StepHead n={4} title={t('stepSave')} />
-              {annoList(true)}
-              {editShapeId && <p className="hint substeps">{t('adjustHint')}</p>}
-              <button className="primary" disabled={!primaryId.trim()} onClick={save}>
-                {t('save')} ({annotations.length})
+              <p className="banner banner-check">{t('checkingOther')}</p>
+              {annoList(false)}
+              <button className="primary" onClick={exitCheck}>
+                {t('exitCheck')}
               </button>
-              {!primaryId.trim() && <p className="hint">⚠ {t('needId')}</p>}
-              {saveMsg && <p className="status">{saveMsg}</p>}
             </section>
           )}
 
-          {!session && (
-            <section className="locked">
-              <StepHead n={3} title={t('stepDraw')} />
-              <p className="hint">{t('needImage')}</p>
+          {/* Starting a different task — last, so it never pushes the review
+              work down the panel. */}
+          {kind !== 'new' && (
+            <section className="secondary-action">
+              <h3>{t('flowNew')}</h3>
+              <button className="wide-ghost" disabled={busy} onClick={() => fileRef.current?.click()}>
+                {t('upload')}
+              </button>
+              {status && <p className="status">{status}</p>}
             </section>
           )}
-
         </aside>
       </div>
     </div>

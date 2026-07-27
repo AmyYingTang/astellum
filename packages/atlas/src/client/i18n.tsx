@@ -79,6 +79,20 @@ const STRINGS = {
     en: 'Someone else changed this entry — reload before saving so you don’t overwrite their work.',
   },
   required: { zh: '必填', en: 'required' },
+  // Entry-point framing: uploading a new image is a wizard; opening an existing
+  // library entry is a review flow with its own (shorter) steps.
+  flowNew: { zh: '上传新图标注', en: 'Annotate a new image' },
+  flowExisting: { zh: '已有标注', en: 'Existing annotations' },
+  stepReview: { zh: '逐条调整', en: 'Adjust annotations' },
+  stepAddMore: { zh: '新增标注', en: 'Add an annotation' },
+  addMore: { zh: '＋ 再画一条', en: '+ Draw another' },
+  collapse: { zh: '收起', en: 'Collapse' },
+  solvedSummary: { zh: '已定位', en: 'Solved' },
+  editIdentity: { zh: '改身份', en: 'Edit identity' },
+  reviewHint: {
+    zh: '点某条的「调整」→ 在图上拖顶点/本体/文字，下方可改名；再定状态。',
+    en: 'Click Adjust on a row → drag its vertices / body / label on the image, rename below, then set its status.',
+  },
   adjust: { zh: '调整', en: 'Adjust' },
   adjustDone: { zh: '完成调整', en: 'Done' },
   adjustHint: {

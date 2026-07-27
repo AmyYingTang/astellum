@@ -254,6 +254,48 @@ body {
 .export button {
   width: 100%;
 }
+
+/* Existing-entry flow: identity collapses to one line so the annotation list
+   (where all the review work happens) gets the height instead. */
+.ident-summary .ident-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ident-id {
+  font-weight: 600;
+  color: var(--text);
+}
+.ident-meta {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ident-summary input {
+  margin-top: 8px;
+}
+/* The review list owns the leftover column height and scrolls internally, so
+   the save button below it stays reachable without scrolling the panel. */
+.steps-panel .review-main .annos {
+  max-height: 46vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.steps-panel .review-main .annos::-webkit-scrollbar {
+  width: 8px;
+}
+.steps-panel .review-main .annos::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+.wide-ghost {
+  width: 100%;
+}
 /* Sits above the list — keep it compact so the list gets the height. */
 .targets-panel .export {
   flex: none;
@@ -605,4 +647,13 @@ button.link {
 }
 .img-dot.on {
   color: var(--accent);
+}
+
+/* A section that isn't part of the numbered flow (e.g. "upload a new image"
+   while reviewing an existing entry) — visually recessive. */
+.secondary-action {
+  opacity: 0.75;
+}
+.secondary-action:hover {
+  opacity: 1;
 }
