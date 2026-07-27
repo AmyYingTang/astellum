@@ -1,6 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <!-- The tool's own visual language: an annotation outline with vertex handles
-       over dark sky. Colours match the app (--bg / --accent). -->
+       over dark sky, in the app's own bg / accent colours.
+       (Careful: XML forbids a double hyphen inside a comment, so CSS variable
+       names can't be written here verbatim — it makes the whole file unparseable
+       and the browser silently falls back to a blank icon.) -->
   <rect width="32" height="32" rx="7" fill="#141825"/>
   <circle cx="8" cy="8" r="1" fill="#c8d0e0" opacity=".7"/>
   <circle cx="25" cy="10" r="1.1" fill="#c8d0e0" opacity=".55"/>
