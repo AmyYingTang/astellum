@@ -657,3 +657,62 @@ button.link {
 .secondary-action:hover {
   opacity: 1;
 }
+
+/* Left panel: the target list is the primary surface, export trails it. */
+.add-target {
+  margin-bottom: 8px;
+}
+.add-target.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0d1017;
+  font-weight: 600;
+}
+.targets li.target.picked {
+  background: rgba(122, 162, 247, 0.14);
+  border-radius: 4px;
+}
+
+/* The two ways in, on the empty canvas. */
+.intro {
+  max-width: 380px;
+  text-align: left;
+  line-height: 1.7;
+}
+.intro h2 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  color: var(--accent-strong);
+}
+.intro p {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+.intro b {
+  color: var(--accent);
+  margin-right: 4px;
+}
+
+/* Three parallel actions on an existing entry, each labelled with what it does. */
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  width: 100%;
+  text-align: left;
+  padding: 7px 10px;
+}
+.choice span {
+  font-size: 11px;
+  opacity: 0.75;
+  font-weight: 400;
+}
+.choice.primary b {
+  color: #0d1017;
+}

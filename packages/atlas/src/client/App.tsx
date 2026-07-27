@@ -118,6 +118,12 @@ export function App(): JSX.Element {
   const [addOpen, setAddOpen] = useState(false);
   // Identity fields are collapsed to a summary line for an existing entry.
   const [idOpen, setIdOpen] = useState(false);
+  // The left panel is the only entry point: nothing on the right is actionable
+  // until a target is picked here (or "add a new target" is chosen). `target`
+  // holds the picked row so an image-less target can still be set up.
+  const [sel, setSel] = useState<{ mode: 'none' } | { mode: 'newTarget' } | { mode: 'target'; row: TargetRow }>(
+    { mode: 'none' },
+  );
   const [labelZh, setLabelZh] = useState('');
   const [labelEn, setLabelEn] = useState('');
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
@@ -384,6 +390,47 @@ export function App(): JSX.Element {
     if (loadedId) void loadEntry(loadedId);
   };
 
+  /** Reset the working state so a fresh selection can't inherit the last one. */
+  const clearWorkspace = (): void => {
+    setSession(null);
+    setAnnotations([]);
+    setEditShapeId(null);
+    setDrawing(false);
+    setDraftPx([]);
+    setAddOpen(false);
+    setIdOpen(false);
+    setEntryRev(0);
+    setLoadedId(null);
+    setStatus('');
+    setSaveMsg('');
+  };
+
+  /** Start a brand-new target: a blank identity the curator fills in. */
+  const startNewTarget = (): void => {
+    clearWorkspace();
+    setPrimaryId('');
+    setAliasesText('');
+    setEditable(true);
+    setKind('new');
+    setSel({ mode: 'newTarget' });
+  };
+
+  /** Pick a target from the list. One with an entry loads it; one without (no
+   *  reference image yet) still opens — prefilled from the seed row — so it can
+   *  be set up by uploading an image. */
+  const selectTarget = (row: TargetRow): void => {
+    setSel({ mode: 'target', row });
+    if (row.primary_id) {
+      void loadEntry(row.primary_id);
+      return;
+    }
+    clearWorkspace();
+    setPrimaryId(row.designation);
+    setAliasesText(row.match.filter((m) => m !== row.designation).join(', '));
+    setEditable(true);
+    setKind('new'); // no entry yet → it behaves like a new one, minus the identity guesswork
+  };
+
   const loadEntry = async (id: string): Promise<void> => {
     const { entry } = await getObject(id);
     if (!entry) return;
@@ -623,12 +670,8 @@ export function App(): JSX.Element {
       </header>
 
       <div className="body">
-        {/* Left — target list only */}
+        {/* Left — the only entry point: pick a target (top), export (bottom). */}
         <aside className="panel targets-panel">
-          <section className="export">
-            <button onClick={doExport}>{t('exportRegistry')}</button>
-            {exportMsg && <p className="status">{exportMsg}</p>}
-          </section>
           <section className="library">
             <h3>
               {t('targetsTitle')} ·{' '}
@@ -636,6 +679,12 @@ export function App(): JSX.Element {
                 .replace('{a}', String(targets.filter((x) => x.annotations > 0).length))
                 .replace('{b}', String(targets.length))}
             </h3>
+            <button
+              className={sel.mode === 'newTarget' ? 'wide-ghost add-target on' : 'wide-ghost add-target'}
+              onClick={startNewTarget}
+            >
+              {t('addTarget')}
+            </button>
             <input
               className="target-search"
               placeholder={t('searchPlaceholder')}
@@ -672,19 +721,20 @@ export function App(): JSX.Element {
                 return (
                   <li
                     key={x.key}
-                    className={x.annotations === 0 ? 'target none' : done ? 'target done' : 'target'}
+                    className={
+                      (x.annotations === 0 ? 'target none' : done ? 'target done' : 'target') +
+                      (sel.mode === 'target' && sel.row.key === x.key ? ' picked' : '')
+                    }
                     title={`${lang === 'zh' ? x.kind_zh : x.kind_en}\n${lang === 'zh' ? x.note_zh : x.note_en}${
                       x.features.length ? `\n${t('suggested')}: ${x.features.join(', ')}` : ''
                     }`}
                   >
                     <span className="target-desig">{x.designation}</span>
-                    {x.primary_id ? (
-                      <button className="link" onClick={() => void loadEntry(x.primary_id!)}>
-                        {lang === 'zh' ? x.name_zh : x.name_en}
-                      </button>
-                    ) : (
-                      <span className="target-name">{lang === 'zh' ? x.name_zh : x.name_en}</span>
-                    )}
+                    {/* Every row is selectable — one without a reference image
+                        opens too, so it can be set up by uploading one. */}
+                    <button className="link" onClick={() => selectTarget(x)}>
+                      {lang === 'zh' ? x.name_zh : x.name_en}
+                    </button>
                     {/* An imported target has an image but no annotations yet,
                         so "ready to draw on" needs its own marker. */}
                     <span className={x.has_image ? 'img-dot on' : 'img-dot'} title={t('hasImage')}>
@@ -705,6 +755,12 @@ export function App(): JSX.Element {
                 );
               })}
             </ul>
+          </section>
+
+          {/* Export is the end of the whole workflow — bottom, out of the way. */}
+          <section className="export">
+            <button onClick={doExport}>{t('exportRegistry')}</button>
+            {exportMsg && <p className="status">{exportMsg}</p>}
           </section>
         </aside>
 
@@ -729,7 +785,23 @@ export function App(): JSX.Element {
               onMoveLabel={onMoveLabel}
             />
           ) : (
-            <div className="empty">{t('noImage')}</div>
+            <div className="empty">
+              {sel.mode === 'none' ? (
+                // The two ways in — stated up front, since the left panel is the
+                // only entry point and neither path is obvious from the chrome.
+                <div className="intro">
+                  <h2>{t('startHere')}</h2>
+                  <p>
+                    <b>①</b> {t('introOotb')}
+                  </p>
+                  <p>
+                    <b>②</b> {t('introAdd')}
+                  </p>
+                </div>
+              ) : (
+                <p>{t('needImage')}</p>
+              )}
+            </div>
           )}
           {/* CC BY / CC BY-SA oblige us to name the author wherever the image is
               shown, so this rides on the canvas rather than in a settings panel. */}
@@ -775,9 +847,19 @@ export function App(): JSX.Element {
             }}
           />
 
-          {kind === 'new' && (
+          {/* Nothing is actionable until the left panel says what we're on. */}
+          {sel.mode === 'none' && (
+            <section className="locked">
+              <h3>{t('pickFirst')}</h3>
+              <p className="hint">{t('pickFirstHint')}</p>
+            </section>
+          )}
+
+          {sel.mode !== 'none' && kind === 'new' && (
             <section>
               <StepHead n={1} title={t('stepUpload')} />
+              {/* A seed target with no reference image yet: say why we're asking. */}
+              {sel.mode === 'target' && !session && <p className="hint">{t('needRefFirst')}</p>}
               <button className="primary" disabled={busy} onClick={() => fileRef.current?.click()}>
                 {t('upload')}
               </button>
@@ -786,7 +868,7 @@ export function App(): JSX.Element {
           )}
 
           {/* ── Flow A · a NEW image: the full wizard ─────────────────────── */}
-          {kind === 'new' && (
+          {sel.mode !== 'none' && kind === 'new' && (
             <>
               <section className={session ? '' : 'locked'}>
                 <StepHead n={2} title={t('stepIdentity')} />
@@ -865,12 +947,25 @@ export function App(): JSX.Element {
                 <section>
                   <p className="banner banner-preview">{t('previewOnly')}</p>
                   {annoList(false)}
-                  <div className="row">
-                    <button className="primary" onClick={() => setEditable(true)}>
-                      {t('editCanonical')}
+                  {/* Three ways to work on an existing entry, side by side with
+                      what each one actually does — they were previously two
+                      buttons plus an unrelated upload block elsewhere. */}
+                  <h3>{t('chooseAction')}</h3>
+                  <div className="choices">
+                    <button className="choice primary" onClick={() => setEditable(true)}>
+                      <b>{t('actEdit')}</b>
+                      <span>{t('actEditSub')}</span>
                     </button>
-                    <button onClick={() => previewFileRef.current?.click()}>{t('checkOther')}</button>
+                    <button className="choice" onClick={() => previewFileRef.current?.click()}>
+                      <b>{t('actVerify')}</b>
+                      <span>{t('actVerifySub')}</span>
+                    </button>
+                    <button className="choice" onClick={() => fileRef.current?.click()}>
+                      <b>{t('actReplace')}</b>
+                      <span>{t('actReplaceSub')}</span>
+                    </button>
                   </div>
+                  {status && <p className="status">{status}</p>}
                 </section>
               ) : (
                 <>
@@ -917,17 +1012,6 @@ export function App(): JSX.Element {
             </section>
           )}
 
-          {/* Starting a different task — last, so it never pushes the review
-              work down the panel. */}
-          {kind !== 'new' && (
-            <section className="secondary-action">
-              <h3>{t('flowNew')}</h3>
-              <button className="wide-ghost" disabled={busy} onClick={() => fileRef.current?.click()}>
-                {t('upload')}
-              </button>
-              {status && <p className="status">{status}</p>}
-            </section>
-          )}
         </aside>
       </div>
     </div>

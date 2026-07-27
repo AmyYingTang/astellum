@@ -82,6 +82,32 @@ const STRINGS = {
   // Entry-point framing: uploading a new image is a wizard; opening an existing
   // library entry is a review flow with its own (shorter) steps.
   flowNew: { zh: '上传新图标注', en: 'Annotate a new image' },
+  addTarget: { zh: '＋ 添加新目标', en: '+ Add a new target' },
+  pickFirst: { zh: '请先从左边选一个目标', en: 'Pick a target on the left first' },
+  pickFirstHint: {
+    zh: '选一个已有目标即可查看/修改它的基准标注；库里没有的，点「添加新目标」。',
+    en: 'Pick an existing target to view or edit its baseline annotations — or click "Add a new target".',
+  },
+  startHere: { zh: '从左边开始', en: 'Start on the left' },
+  introOotb: {
+    zh: '库里已有的目标，点开就能直接看到并修改现成的标注。',
+    en: 'Targets already in the atlas open with their ready-made annotations, editable right away.',
+  },
+  introAdd: {
+    zh: '库里没有的，用「添加新目标」上传自己的图来标。',
+    en: 'For anything not in the atlas, use "Add a new target" and upload your own image.',
+  },
+  needRefFirst: {
+    zh: '这个目标还没有参考图 — 先上传一张才能标注。',
+    en: 'This target has no reference image yet — upload one to start annotating.',
+  },
+  chooseAction: { zh: '选择操作', en: 'Choose an action' },
+  actEdit: { zh: '编辑真值', en: 'Edit canonical' },
+  actEditSub: { zh: '在库里那张参考图上改', en: 'On the stored reference image' },
+  actVerify: { zh: '用另一张图核对', en: 'Verify on another image' },
+  actVerifySub: { zh: '投到你的图上看落点（只读）', en: 'Project onto your image (read-only)' },
+  actReplace: { zh: '换参考图', en: 'Replace reference image' },
+  actReplaceSub: { zh: '上传新图并重新标注', en: 'Upload a new one and re-annotate' },
   flowExisting: { zh: '已有标注', en: 'Existing annotations' },
   stepReview: { zh: '逐条调整', en: 'Adjust annotations' },
   stepAddMore: { zh: '新增标注', en: 'Add an annotation' },
