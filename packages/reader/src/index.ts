@@ -1,5 +1,12 @@
 import { Reading, categoryColorKey, featureColorKey, otypeLabel } from '@astrolens/schema';
-import type { FactSheet, FactObject, LocalizedString } from '@astrolens/schema';
+import type {
+  FactSheet,
+  FactObject,
+  LocalizedString,
+  PredefinedLibrary,
+  ReadingFallback,
+} from '@astrolens/schema';
+import { resolvePredefinedText, type PredefinedResult } from './predefinedText.js';
 import { buildTailorPrompt } from './prompt.js';
 import { runClaude, type RunClaudeOptions } from './claudeCli.js';
 import { parseTailoring, type LlmTailoring } from './parseJson.js';
@@ -8,6 +15,26 @@ export { buildTailorPrompt } from './prompt.js';
 export { runClaude } from './claudeCli.js';
 export { parseTailoring, extractJson, LlmTailoring } from './parseJson.js';
 export { lookupSimbad, parseSimbadAscii, type SimbadFacts } from './simbad.js';
+export {
+  buildDraftPrompt,
+  draftPredefinedStyle,
+  draftToEntry,
+  draftWordCount,
+  type DraftOptions,
+} from './draft.js';
+export {
+  resolvePredefinedText,
+  coverageSummary,
+  loadReadingLibrary,
+  loadReadingLibraries,
+  defaultReadingsPath,
+  userReadingsPath,
+  defaultReadingsPaths,
+  ALL_FALLBACKS,
+  type PredefinedResult,
+  type PredefinedText,
+  type PredefinedOptions,
+} from './predefinedText.js';
 
 export class ReaderError extends Error {
   /** Raw claude output, attached when parsing failed, for debugging. */
@@ -87,6 +114,8 @@ interface BuildOptions {
   displayLanguage?: 'zh' | 'en';
   imageSrc?: string;
   llm: string;
+  /** Sense-of-scale / cultural / fun-fact lines from a predefined entry. */
+  extraFacts?: LocalizedString[];
 }
 
 const BADGE_ANCHOR = 0.7071;
@@ -145,13 +174,20 @@ function spreadBadges(features: Spreadable[], width: number, height: number): vo
         }
       }
     }
+    // Keep every iteration inside the frame. Clamping only at the end let badges
+    // pushed toward the same corner both land on the same edge coordinate and
+    // overlap again; clamping here means the next pass sees the collision and
+    // slides them apart along the edge instead of stacking them.
+    for (const p of pts) {
+      if (p.pinned) continue;
+      p.x = Math.max(p.r, Math.min(width - p.r, p.x));
+      p.y = Math.max(p.r, Math.min(height - p.r, p.y));
+    }
   }
   features.forEach((f, i) => {
     const p = pts[i]!;
-    const bx = Math.max(p.r, Math.min(width - p.r, p.x));
-    const by = Math.max(p.r, Math.min(height - p.r, p.y));
-    f.badge.offset_x = Math.round(bx - p.ax);
-    f.badge.offset_y = Math.round(by - p.ay);
+    f.badge.offset_x = Math.round(p.x - p.ax);
+    f.badge.offset_y = Math.round(p.y - p.ay);
   });
 }
 
@@ -371,7 +407,7 @@ function buildReading(
     },
     narrative,
     features,
-    extra_facts: [],
+    extra_facts: opts.extraFacts ?? [],
     created_at: new Date().toISOString(),
     generator: { tool: 'astrolens', tool_version: opts.toolVersion, llm: opts.llm },
   });
@@ -397,6 +433,45 @@ export function readingFromFactsheet(
     imageSrc: opts.imageSrc,
     llm: 'none (facts-only)',
   });
+}
+
+/**
+ * Stage 2 with NO LLM: assemble a Reading whose text comes from the curated
+ * predefined library, falling through target text → the annotation's note →
+ * the type-level generic note → a facts template. This is the onsite path —
+ * offline, deterministic, and fast enough to run in front of an audience.
+ *
+ * Returns the coverage alongside the Reading so the operator UI can say which
+ * annotations got bespoke text and which got a generic note.
+ */
+export function readingFromPredefined(
+  factsheet: FactSheet,
+  library: PredefinedLibrary | null,
+  opts: {
+    toolVersion: string;
+    displayLanguage?: 'zh' | 'en';
+    imageSrc?: string;
+    style?: string;
+    fallback?: ReadingFallback[];
+  },
+): { reading: Reading; coverage: PredefinedResult } {
+  if (!factsheet.objects.some((o) => o.tier !== 'B')) {
+    throw new ReaderError(
+      `FactSheet has no grounded objects (solve=${factsheet.solve.status}); nothing to show.`,
+    );
+  }
+  const coverage = resolvePredefinedText(factsheet, library, {
+    style: opts.style,
+    fallback: opts.fallback,
+  });
+  const reading = buildReading(factsheet, coverage.narrative, coverage.byId, {
+    toolVersion: opts.toolVersion,
+    displayLanguage: opts.displayLanguage,
+    imageSrc: opts.imageSrc,
+    extraFacts: coverage.extraFacts,
+    llm: `none (predefined${coverage.style ? `:${coverage.style}` : ''})`,
+  });
+  return { reading, coverage };
 }
 
 /** Run the LLM and parse its JSON, retrying with the parse error fed back (up to 3 attempts). */
@@ -427,7 +502,16 @@ async function runTailoring(
  */
 export async function tailorReading(
   reading: Reading,
-  opts: { model?: string; imagePath?: string; tone?: string; runner?: (o: RunClaudeOptions) => Promise<string> },
+  opts: {
+    model?: string;
+    imagePath?: string;
+    tone?: string;
+    /** Source fact sheet, when available — lets the prompt carry each feature's
+     *  precise taxonomy type so the model writes about that structure, not the
+     *  broad category. */
+    factsheet?: FactSheet;
+    runner?: (o: RunClaudeOptions) => Promise<string>;
+  },
 ): Promise<Reading> {
   if (reading.features.length === 0) {
     throw new ReaderError('Reading has no annotations to explain.');
@@ -435,11 +519,17 @@ export async function tailorReading(
   const runner = opts.runner ?? runClaude;
   const prompt = buildTailorPrompt({
     headline: `${reading.object.name.zh} / ${reading.object.name.en}`,
-    items: reading.features.map((f) => ({
-      id: f.id,
-      name: `${f.label.zh} / ${f.label.en}`,
-      type: f.color_key,
-    })),
+    items: reading.features.map((f) => {
+      // The reading has no taxonomy key of its own; recover it from the fact
+      // sheet entry it was grounded on, when one is supplied.
+      const ft = opts.factsheet?.objects.find((o) => o.id === f.fact_ref?.object_id)?.feature_type;
+      return {
+        id: f.id,
+        name: `${f.label.zh} / ${f.label.en}`,
+        type: f.color_key,
+        ...(ft ? { featureType: ft } : {}),
+      };
+    }),
     imagePath: opts.imagePath,
     tone: opts.tone,
   });
@@ -491,7 +581,12 @@ export async function generateReading(
     headline: displayLabel(primary).zh,
     items: aObjects.map((obj) => {
       const l = displayLabel(obj);
-      return { id: obj.id, name: `${l.zh} / ${l.en}`, type: obj.type.en };
+      return {
+        id: obj.id,
+        name: `${l.zh} / ${l.en}`,
+        type: obj.type.en,
+        ...(obj.feature_type ? { featureType: obj.feature_type } : {}),
+      };
     }),
     imagePath: opts.imagePath,
     tone: opts.tone,
