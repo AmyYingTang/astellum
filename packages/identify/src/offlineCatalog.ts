@@ -260,6 +260,28 @@ export function bandsForField(minFieldArcmin: number): IndexBand[] {
   return INDEX_BANDS.filter((b) => b.maxArcmin >= floor);
 }
 
+/**
+ * The distinct choices worth offering, generated from the band table so the
+ * label and the size can never drift apart. Each entry is "the narrowest field
+ * this set can solve" and the cumulative download for it; two different numbers
+ * that pull the same bands would be two ways of saying the same thing.
+ */
+export function indexChoices(): { minFieldArcmin: number; mb: number; bands: number[] }[] {
+  const out: { minFieldArcmin: number; mb: number; bands: number[] }[] = [];
+  let mb = 0;
+  const bands: number[] = [];
+  for (const b of INDEX_BANDS) {
+    mb += b.approxMb;
+    bands.push(b.scale);
+    // A band whose widest scale is X can be the finest one needed by a field of
+    // about 4X — the same relation bandsForField uses.
+    out.push({ minFieldArcmin: Math.round(b.maxArcmin * 4), mb, bands: [...bands] });
+  }
+  // Only the useful end of the range: below ~20′ the download runs to gigabytes
+  // for fields most deep-sky rigs never shoot.
+  return out.filter((o) => o.minFieldArcmin <= 2000 && o.minFieldArcmin >= 20);
+}
+
 export function indexUrls(bands: IndexBand[]): { url: string; file: string; mb: number }[] {
   const out: { url: string; file: string; mb: number }[] = [];
   for (const b of bands) {

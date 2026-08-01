@@ -10,7 +10,17 @@ import {
   type Profile,
 } from '@astrolens/schema';
 import { loadConfig, userConfigPath } from '@astrolens/schema/node';
-import { offlineCatalogStatus, isOfflineReady, catalogCacheStatus } from '@astrolens/identify';
+import {
+  offlineCatalogStatus,
+  isOfflineReady,
+  catalogCacheStatus,
+  bandsForField,
+  indexUrls,
+  indexChoices,
+} from '@astrolens/identify';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+import { stat } from 'node:fs/promises';
 
 /**
  * The front door for the whole tool.
@@ -42,6 +52,21 @@ interface Child {
   name: string;
   port: number;
   proc: ChildProcess;
+}
+
+/** Index downloads are measured in gigabytes, so they run in the background and
+ *  the page polls. Kept in memory: a half-finished download is resumable from
+ *  what is already on disk, so there is nothing worth persisting. */
+interface IndexJob {
+  running: boolean;
+  total: number;
+  done: number;
+  skipped: number;
+  failed: number;
+  mb: number;
+  current: string;
+  dir: string;
+  error?: string;
 }
 
 const esc = (s: string): string =>
@@ -182,6 +207,22 @@ function settingsPage(o: {
     <p class="hint">缺失的用 <code>./quickastrolens prefetch</code> 下载。</p>
   </fieldset>
 
+  <fieldset id="idx"${p.solve.mode === 'local' ? '' : ' style="display:none"'}><legend>解析索引 Plate-solve indexes</legend>
+    <p class="hint">只有本地解析需要。大小完全由<b>你要支持的最小视场</b>决定
+      —— 越窄的视场需要越细的索引档,而每细一档大小翻倍。</p>
+    <div id="idx-state" class="hint">读取中…</div>
+    <label>最小视场(角分)
+      <select id="idx-arcmin"></select>
+    </label>
+    <label>存放目录
+      <input type="text" id="idx-dir" placeholder="~/astrometry-indexes">
+    </label>
+    <p class="hint">下载后需要让解析器知道这个目录:
+      <code>echo "add_path &lt;目录&gt;" &gt;&gt; "$(brew --prefix)/etc/astrometry.cfg"</code></p>
+    <button type="button" id="idx-go">下载索引</button>
+    <p class="status" id="idx-status"></p>
+  </fieldset>
+
   <fieldset><legend>解读 Reading</legend>
     <label>文字来源
       <select name="reading.mode">
@@ -207,6 +248,57 @@ function settingsPage(o: {
   <p class="status" id="st"></p>
 </form>
 <script>
+// --- plate-solve indexes ---------------------------------------------------
+var idxSel=document.getElementById('idx-arcmin'), idxDir=document.getElementById('idx-dir'),
+    idxState=document.getElementById('idx-state'), idxStatus=document.getElementById('idx-status'),
+    idxGo=document.getElementById('idx-go'), idxTimer=null;
+function mb(n){ return n>=1024 ? (n/1024).toFixed(1)+' GB' : Math.round(n)+' MB'; }
+async function idxRefresh(){
+  var r=await fetch('/api/indexes'), j=await r.json();
+  if(!idxSel.options.length){
+    j.options.forEach(function(o){
+      var op=document.createElement('option');
+      op.value=o.arcmin; op.textContent=o.arcmin+'′ 以上的视场 — 约 '+mb(o.mb);
+      idxSel.appendChild(op);
+    });
+    idxSel.value='60';
+  }
+  if(!idxDir.value) idxDir.value=j.dir;
+  idxState.textContent = j.onDisk
+    ? '已有 '+j.onDisk+' 个索引文件,'+j.gb.toFixed(2)+' GB — '+j.dir
+    : '还没有索引文件 — '+j.dir;
+  var job=j.job;
+  if(job){
+    var pct=job.total?Math.round((job.done+job.skipped)/job.total*100):0;
+    idxStatus.className='status';
+    idxStatus.textContent = job.running
+      ? '下载中 '+pct+'%('+(job.done+job.skipped)+'/'+job.total+')'+(job.current?' · '+job.current:'')
+      : '完成:新下载 '+job.done+',已存在 '+job.skipped+(job.failed?',失败 '+job.failed:'');
+    if(job.failed && !job.running) idxStatus.className='status err';
+    idxGo.disabled=job.running;
+    if(!job.running && idxTimer){ clearInterval(idxTimer); idxTimer=null; }
+  }
+}
+idxGo.addEventListener('click', async function(){
+  idxGo.disabled=true;
+  idxStatus.className='status'; idxStatus.textContent='启动中…';
+  var r=await fetch('/api/indexes',{method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({arcmin:Number(idxSel.value), dir:idxDir.value.trim()||undefined})});
+  var j=await r.json();
+  if(!j.ok){ idxStatus.className='status err'; idxStatus.textContent=j.error; idxGo.disabled=false; return; }
+  if(!idxTimer) idxTimer=setInterval(idxRefresh, 1500);
+  idxRefresh();
+});
+if(document.getElementById('idx').style.display!=='none') idxRefresh();
+
+// Switching to local solving is exactly when someone needs the indexes, so the
+// section appears the moment they choose it rather than after a save+reload.
+document.querySelector('[name="solve.mode"]').addEventListener('change', function(e){
+  var on = e.target.value==='local';
+  document.getElementById('idx').style.display = on ? '' : 'none';
+  if(on) idxRefresh();
+});
+
 document.getElementById('f').addEventListener('submit', async function(e){
   e.preventDefault();
   var f=new FormData(e.target), body={};
@@ -348,6 +440,94 @@ export async function runHub(args: HubArgs = {}): Promise<void> {
         snapshotFields: s.snapshotFields,
       }),
     );
+  });
+
+  // --- plate-solving indexes ---------------------------------------------
+  // The only download here big enough to need a progress bar, and the only one
+  // whose size is a decision rather than a constant.
+  let indexJob: IndexJob | null = null;
+
+  const runIndexDownload = async (arcmin: number, dir: string): Promise<void> => {
+    const files = indexUrls(bandsForField(arcmin));
+    indexJob = {
+      running: true,
+      total: files.length,
+      done: 0,
+      skipped: 0,
+      failed: 0,
+      mb: files.reduce((n, f) => n + f.mb, 0),
+      current: '',
+      dir,
+    };
+    const job = indexJob;
+    try {
+      await mkdir(dir, { recursive: true });
+      for (const f of files) {
+        job.current = f.file;
+        const dest = join(dir, f.file);
+        try {
+          const st = await stat(dest);
+          if (st.size > 0) {
+            job.skipped += 1;
+            continue;
+          }
+        } catch {
+          // not downloaded yet
+        }
+        try {
+          const r = await fetch(f.url);
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          await writeFile(dest, Buffer.from(await r.arrayBuffer()));
+          job.done += 1;
+        } catch {
+          job.failed += 1;
+        }
+      }
+    } catch (e) {
+      job.error = (e as Error).message;
+    } finally {
+      job.running = false;
+      job.current = '';
+    }
+  };
+
+  app.get('/api/indexes', async (_req, res) => {
+    const dir = process.env.ASTROMETRY_INDEX_DIR ?? join(homedir(), 'astrometry-indexes');
+    let onDisk = 0;
+    let bytes = 0;
+    try {
+      const { readdir } = await import('node:fs/promises');
+      for (const n of await readdir(dir)) {
+        if (!/^index-\d+/.test(n)) continue;
+        onDisk += 1;
+        bytes += (await stat(join(dir, n))).size;
+      }
+    } catch {
+      // directory not created yet
+    }
+    res.json({
+      dir,
+      onDisk,
+      gb: bytes / 1073741824,
+      job: indexJob,
+      // Generated from the band table: every option pulls a different set, so
+      // there are never two choices that cost the same.
+      options: indexChoices().map((c) => ({ arcmin: c.minFieldArcmin, mb: c.mb })),
+    });
+  });
+
+  app.post('/api/indexes', (req, res) => {
+    try {
+      if (indexJob?.running) throw new Error('已经在下载了');
+      const body = req.body as { arcmin?: number; dir?: string };
+      const arcmin = Number(body.arcmin);
+      if (!Number.isFinite(arcmin) || arcmin <= 0) throw new Error('请给一个有效的最小视场(角分)');
+      const dir = (body.dir ?? '').trim() || join(homedir(), 'astrometry-indexes');
+      void runIndexDownload(arcmin, dir);
+      res.json({ ok: true });
+    } catch (e) {
+      res.status(400).json({ ok: false, error: (e as Error).message });
+    }
   });
 
   app.post('/api/settings', async (req, res) => {
