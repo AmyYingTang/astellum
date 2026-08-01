@@ -143,10 +143,13 @@ export function generateKioskHtml(report: Reading, opts: KioskOptions): string {
     .map((e) => `<p class="k-extra">${esc(e[lang])}</p>`)
     .join('');
 
-  const banner =
+  // Not a banner. The status matters to whoever is running the screen, not to
+  // the person reading it, so it lives as a corner dot that explains itself.
+  const info =
     state === 'ok'
       ? ''
-      : `<div class="k-banner" data-zh="${esc(UI.zh[state])}" data-en="${esc(UI.en[state])}">${esc(UI[lang][state])}</div>`;
+      : `<button id="k-info" aria-label="status">i</button>
+<div id="k-note" data-zh="${esc(UI.zh[state])}" data-en="${esc(UI.en[state])}">${esc(UI[lang][state])}</div>`;
 
   const styleSwitch =
     opts.styles && opts.styles.length > 1
@@ -179,21 +182,21 @@ export function generateKioskHtml(report: Reading, opts: KioskOptions): string {
 html,body{height:100%;overflow:hidden;background:#05070c;
   font-family:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
   -webkit-tap-highlight-color:transparent;user-select:none;}
-/* The panel must not cover what was just tapped — you touch a thing and the
-   thing vanishes behind the text about it. Reserve the panel's space instead,
-   so the image shrinks aside and the tapped label stays in view. */
-#k{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-  transition:padding .28s cubic-bezier(.22,.61,.36,1);}
-body.k-open #k{padding-right:min(460px,92vw);}
+/* A fixed two-pane split: picture on one side, words on the other, neither
+   moving when something is tapped. An earlier version sized the image down to
+   make room for a sliding panel; watching it, the movement was the problem —
+   the picture an audience is reading jumps every time somebody touches a label.
+   Nothing here animates except the text swap. */
+#k{position:fixed;inset:0;display:flex;align-items:stretch;}
+#k-view{flex:1 1 auto;min-width:0;position:relative;display:flex;
+  align-items:center;justify-content:center;padding:12px;}
 /* The overlay is a 100%×100% SVG over the stage, so the stage box must have the
    image's exact proportions — otherwise every circle renders as an ellipse.
-   Pin it with aspect-ratio rather than letting the img size the box.
-   Set width + aspect-ratio only: giving it an explicit height as well would
-   override the ratio, and the moment the panel narrows the container the box
-   would keep its full height while the photo letterboxed inside it — leaving
-   the overlay floating off the picture. */
+   Width + aspect-ratio only: an explicit height as well would override the
+   ratio, letterboxing the photo inside a taller box and leaving the overlay
+   floating off the picture. */
 #k-stage{position:relative;aspect-ratio:${width}/${height};width:100%;
-  max-width:calc(100vh * ${width} / ${height});max-height:100%;line-height:0;}
+  max-width:calc((100vh - 24px) * ${width} / ${height});max-height:100%;line-height:0;}
 #k-stage img{width:100%;height:100%;display:block;object-fit:contain;}
 #k-svg{position:absolute;inset:0;width:100%;height:100%;}
 .k-feat{cursor:pointer;}
@@ -203,79 +206,98 @@ body.k-open #k{padding-right:min(460px,92vw);}
 .k-feat.active .k-badge{transform:scale(1.18);}
 .k-feat:focus{outline:none;}
 /* The first touch has to be invited — a ring on a dark photo reads as decoration. */
-#k-hint{position:absolute;left:50%;bottom:5%;transform:translateX(-50%);
-  padding:14px 26px;border-radius:999px;background:rgba(10,14,22,.82);
-  border:1px solid #2a3346;color:#e6e9f0;font-size:clamp(15px,2.1vw,22px);
+#k-hint{position:absolute;left:50%;bottom:3%;transform:translateX(-50%);
+  padding:12px 24px;border-radius:999px;background:rgba(10,14,22,.82);
+  border:1px solid #2a3346;color:#e6e9f0;font-size:clamp(14px,1.8vw,20px);
   line-height:1;white-space:nowrap;animation:k-pulse 2.6s ease-in-out infinite;}
 @keyframes k-pulse{0%,100%{opacity:.55;}50%{opacity:1;}}
 #k-hint.gone{display:none;}
-#k-panel{position:fixed;right:0;top:0;bottom:0;width:min(460px,92vw);
-  background:rgba(9,12,19,.96);border-left:1px solid #232c3d;color:#e6e9f0;
-  transform:translateX(100%);transition:transform .28s cubic-bezier(.22,.61,.36,1);
-  overflow-y:auto;-webkit-overflow-scrolling:touch;padding:26px 24px 40px;z-index:10;}
-#k-panel.open{transform:none;}
-#k-title{font-size:clamp(20px,2.6vw,30px);font-weight:700;line-height:1.25;}
-#k-narr{margin-top:10px;color:#c3cbdb;font-size:clamp(14px,1.6vw,18px);line-height:1.75;}
-.k-extra{margin-top:12px;color:#93a0b8;font-size:clamp(13px,1.4vw,16px);line-height:1.7;
+
+/* The reading pane. Always there, always the same width. */
+#k-panel{flex:0 0 min(460px,38vw);display:flex;flex-direction:column;
+  background:#090c13;border-left:1px solid #232c3d;color:#e6e9f0;}
+#k-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:14px 22px;border-bottom:1px solid #1b2231;}
+#k-head button,.k-style{background:#141925;border:1px solid #2a3346;color:#cfd6e4;
+  border-radius:9px;padding:8px 14px;font-size:14px;cursor:pointer;}
+#k-head button:hover{background:#1c2333;}
+#k-back{display:none;}
+#k-back.show{display:inline-block;}
+.k-style{display:flex;gap:8px;align-items:center;font-size:13px;color:#8a93a8;padding:6px 10px;}
+.k-style select{background:transparent;border:0;color:#cfd6e4;font-size:14px;}
+#k-body{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:22px 22px 40px;}
+#k-title{font-size:clamp(20px,2.4vw,30px);font-weight:700;line-height:1.25;}
+#k-narr{margin-top:10px;color:#c3cbdb;font-size:clamp(14px,1.5vw,18px);line-height:1.75;}
+.k-extra{margin-top:12px;color:#93a0b8;font-size:clamp(13px,1.3vw,16px);line-height:1.7;
   padding-left:12px;border-left:2px solid #2a3346;}
 .k-card{display:none;}
 .k-card.show{display:block;}
 .k-card header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
-.k-card h2{font-size:clamp(18px,2.2vw,26px);font-weight:700;}
+.k-card h2{font-size:clamp(18px,2.1vw,26px);font-weight:700;}
 .k-dot{flex:0 0 auto;width:34px;height:34px;border-radius:50%;color:#0b0e14;
   font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;}
 .k-tag{font-size:12px;color:#8a93a8;border:1px solid #2a3346;border-radius:999px;padding:3px 9px;}
-.k-card p{margin-top:12px;font-size:clamp(15px,1.7vw,19px);line-height:1.8;color:#ccd4e3;}
-.k-banner{position:fixed;left:0;right:0;top:0;padding:12px 18px;z-index:20;
-  background:rgba(60,44,12,.92);border-bottom:1px solid #6b5220;color:#f3e2bd;
-  font-size:clamp(13px,1.5vw,17px);line-height:1.5;text-align:center;}
-#k-bar{position:fixed;left:14px;top:14px;z-index:20;display:flex;gap:10px;align-items:center;}
-#k-bar button,.k-style{background:rgba(10,14,22,.8);border:1px solid #2a3346;color:#cfd6e4;
-  border-radius:10px;padding:10px 16px;font-size:15px;cursor:pointer;}
-.k-style{display:flex;gap:8px;align-items:center;font-size:14px;color:#8a93a8;}
-.k-style select{background:transparent;border:0;color:#cfd6e4;font-size:15px;}
-#k-back{position:sticky;top:0;float:right;background:rgba(20,26,38,.9);border:1px solid #2a3346;
-  color:#cfd6e4;border-radius:10px;padding:9px 16px;font-size:15px;cursor:pointer;}
-@media (max-width:760px){
-  #k-panel{width:100vw;top:auto;height:74vh;border-left:0;border-top:1px solid #232c3d;
-    transform:translateY(100%);border-radius:18px 18px 0 0;}
-  #k-panel.open{transform:none;}
-  body.k-open #k{padding-right:0;padding-bottom:74vh;}
+.k-card p{margin-top:12px;font-size:clamp(15px,1.6vw,19px);line-height:1.8;color:#ccd4e3;}
+
+/* Status is for the operator, not the audience: a quiet dot in the corner that
+   explains itself when tapped, rather than a banner across the top of the
+   reading. It only exists at all when something is less than complete. */
+#k-info{position:absolute;right:14px;bottom:12px;width:26px;height:26px;
+  border-radius:50%;border:1px solid #39415a;background:rgba(10,14,22,.7);
+  color:#8a93a8;font-size:14px;font-style:italic;font-weight:700;line-height:24px;
+  text-align:center;cursor:pointer;padding:0;}
+#k-info:hover{color:#cfd6e4;}
+#k-note{position:absolute;right:14px;bottom:46px;max-width:min(420px,70vw);
+  display:none;padding:12px 14px;border-radius:10px;background:rgba(18,22,32,.97);
+  border:1px solid #2a3346;color:#c3cbdb;font-size:14px;line-height:1.6;}
+#k-note.show{display:block;}
+
+@media (max-width:820px){
+  #k{flex-direction:column;}
+  #k-view{flex:0 0 52vh;padding:8px;}
+  #k-stage{max-width:100%;max-height:100%;
+    width:min(100%, calc((52vh - 16px) * ${width} / ${height}));}
+  #k-panel{flex:1 1 auto;border-left:0;border-top:1px solid #232c3d;}
 }
 </style>
 </head>
 <body>
-${banner}
 <div id="k">
-  <div id="k-stage">
-    <img src="${opts.imageDataUri}" alt="${esc(report.object.name[lang])}">
-    <svg id="k-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+  <div id="k-view">
+    <div id="k-stage">
+      <img src="${opts.imageDataUri}" alt="${esc(report.object.name[lang])}">
+      <svg id="k-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
 ${overlay}
-    </svg>
-    <div id="k-hint" data-zh="${esc(UI.zh.tapHint)}" data-en="${esc(UI.en.tapHint)}">${esc(UI[lang].tapHint)}</div>
+      </svg>
+      <div id="k-hint" data-zh="${esc(UI.zh.tapHint)}" data-en="${esc(UI.en.tapHint)}">${esc(UI[lang].tapHint)}</div>
+    </div>
+    ${info}
   </div>
-</div>
-<div id="k-bar">
-  <button id="k-lang" data-zh="${esc(UI.zh.langBtn)}" data-en="${esc(UI.en.langBtn)}">${esc(UI[lang].langBtn)}</button>
-  ${styleSwitch}
-</div>
-<aside id="k-panel">
-  <button id="k-back" data-zh="${esc(UI.zh.back)}" data-en="${esc(UI.en.back)}">${esc(UI[lang].back)}</button>
-  <div id="k-intro">
-    <h1 id="k-title" data-zh="${esc(report.object.name.zh)}" data-en="${esc(report.object.name.en)}">${esc(report.object.name[lang])}</h1>
-    <p id="k-narr" data-zh="${esc(report.narrative.zh)}" data-en="${esc(report.narrative.en)}">${esc(report.narrative[lang])}</p>
-    ${extras}
-  </div>
+  <aside id="k-panel">
+    <div id="k-head">
+      <button id="k-back" data-zh="${esc(UI.zh.back)}" data-en="${esc(UI.en.back)}">${esc(UI[lang].back)}</button>
+      <button id="k-lang" data-zh="${esc(UI.zh.langBtn)}" data-en="${esc(UI.en.langBtn)}">${esc(UI[lang].langBtn)}</button>
+      ${styleSwitch}
+    </div>
+    <div id="k-body">
+      <div id="k-intro">
+        <h1 id="k-title" data-zh="${esc(report.object.name.zh)}" data-en="${esc(report.object.name.en)}">${esc(report.object.name[lang])}</h1>
+        <p id="k-narr" data-zh="${esc(report.narrative.zh)}" data-en="${esc(report.narrative.en)}">${esc(report.narrative[lang])}</p>
+        ${extras}
+      </div>
 ${cards}
-</aside>
+    </div>
+  </aside>
+</div>
 <script>
 (function(){
   var LANG=${JSON.stringify(lang)};
   var TEXT=${JSON.stringify(i18nData)};
   var IDLE=${idle};
-  var panel=document.getElementById('k-panel');
   var hint=document.getElementById('k-hint');
   var intro=document.getElementById('k-intro');
+  var back=document.getElementById('k-back');
+  var body=document.getElementById('k-body');
   var timer=null, active=null;
 
   function idleReset(){
@@ -293,9 +315,8 @@ ${cards}
       c.classList.toggle('show', c.getAttribute('data-f')===id);
     });
     intro.style.display = id ? 'none' : '';
-    panel.classList.toggle('open', !!id);
-    document.body.classList.toggle('k-open', !!id);
-    panel.scrollTop=0;
+    back.classList.toggle('show', !!id);
+    body.scrollTop=0;
     if(id) hint.classList.add('gone');
     idleReset();
   }
@@ -306,8 +327,20 @@ ${cards}
     g.addEventListener('click', pick);
     g.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' ') pick(e); });
   });
-  document.getElementById('k-back').addEventListener('click', function(){ show(null); });
+  back.addEventListener('click', function(){ show(null); });
   document.getElementById('k-stage').addEventListener('click', function(){ show(null); });
+
+  // The status dot: quiet until asked.
+  var infoBtn=document.getElementById('k-info');
+  var note=document.getElementById('k-note');
+  if(infoBtn && note){
+    infoBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      note.classList.toggle('show');
+      idleReset();
+    });
+    document.addEventListener('click', function(){ note.classList.remove('show'); });
+  }
 
   // Both languages are already in the page, so this never needs the network.
   document.getElementById('k-lang').addEventListener('click', function(){
