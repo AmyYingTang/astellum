@@ -1,6 +1,7 @@
 import { resolve, join } from 'node:path';
 import { homedir } from 'node:os';
 import { spawn } from 'node:child_process';
+import { exitWhenOrphaned } from '../supervised.js';
 import { startStudioServer } from '@astrolens/editor';
 import { startAtlasServer } from '@astrolens/atlas';
 import { solverName } from '@astrolens/identify';
@@ -35,6 +36,7 @@ export async function studio(args: StudioArgs): Promise<void> {
   console.log(`Workspace: ${workspace}`);
   console.log(`Plate-solver: ${solverName()}`);
   console.log('Press Ctrl+C to stop.');
+  exitWhenOrphaned();
 
   if (args.open) {
     spawn('open', [handle.url], { stdio: 'ignore', detached: true }).unref();

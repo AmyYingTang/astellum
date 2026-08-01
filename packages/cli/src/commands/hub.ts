@@ -261,7 +261,7 @@ function applySettings(file: AstrolensConfig, body: Record<string, unknown>): As
 function launch(name: string, args: string[], port: number, hubUrl: string): Child {
   const proc = spawn(process.execPath, [process.argv[1]!, ...args], {
     stdio: ['ignore', 'inherit', 'inherit'],
-    env: { ...process.env, ASTROLENS_HUB_URL: hubUrl },
+    env: { ...process.env, ASTROLENS_HUB_URL: hubUrl, ASTROLENS_SUPERVISED: '1' },
   });
   return { name, port, proc };
 }

@@ -6,6 +6,7 @@ import { loadConfig } from '@astrolens/schema/node';
 import { profileNames } from '@astrolens/schema';
 import { offlineCatalogStatus, isOfflineReady } from '@astrolens/identify';
 import { runKiosk } from './kiosk.js';
+import { exitWhenOrphaned } from '../supervised.js';
 
 /**
  * The kiosk's own front door.
@@ -234,6 +235,7 @@ export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
   console.log(`Kiosk front door: ${url}`);
   console.log(`Profile "${cfg.profileName}" · frames written to ${workdir}`);
   console.log('Ctrl+C to stop.');
+  exitWhenOrphaned();
   if (args.open !== false) {
     const cmd =
       process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
