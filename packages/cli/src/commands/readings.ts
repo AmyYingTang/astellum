@@ -82,7 +82,9 @@ export async function readingsStatus(args: ReadingsArgs = {}): Promise<void> {
     console.log(`  ${tag} ${entry.primary_id.padEnd(20)} (${entry.annotations.length} 条标注)${src}${gaps}`);
   }
   console.log(`\n  已审核 ${done} · 待审草稿 ${draft} · 未录入 ${none}`);
-  if (none) console.log(`  用 \`astrolens readings draft --all\` 批量起草。`);
+  if (none) {
+    console.log('  批量起草: `astrolens readings-draft --all`  (或 `./quickastrolens draft all`)');
+  }
 }
 
 /** Draft one or every uncovered target with the LLM. */
