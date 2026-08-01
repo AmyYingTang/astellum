@@ -716,3 +716,14 @@ button.link {
 .choice.primary b {
   color: #0d1017;
 }
+
+/* Back to the hub, shown only when the hub launched this. */
+.hub-link {
+  color: #8a93a8;
+  text-decoration: none;
+  font-size: 13px;
+  padding: 5px 10px;
+  border: 1px solid #2a3346;
+  border-radius: 8px;
+}
+.hub-link:hover { color: #cfd6e4; border-color: #3a4a6b; }

@@ -175,6 +175,8 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
       profiles: profileNames(config.file),
       profile: config.profile,
       offlineCatalog: isOfflineCatalog(config.profile.catalog.sources),
+      // Set when launched from the hub, so the UI can offer a way back.
+      hubUrl: process.env.ASTROLENS_HUB_URL || undefined,
       readiness: await readiness().catch(() => undefined),
     });
   });

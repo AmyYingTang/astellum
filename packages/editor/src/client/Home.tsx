@@ -123,14 +123,13 @@ export function Home(): React.JSX.Element {
               )}
             </div>
           )}
-          <a
-            className="atlas-link"
-            href={`http://${window.location.hostname}:3100`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {t.atlasLink} ↗
-          </a>
+          {/* The atlas has its own card on the hub now; a second entry point
+              here only muddled which surface you were in. */}
+          {config?.hubUrl && (
+            <a className="atlas-link" href={config.hubUrl}>
+              ← {t.backToHub}
+            </a>
+          )}
           <LangToggle />
         </div>
       </div>

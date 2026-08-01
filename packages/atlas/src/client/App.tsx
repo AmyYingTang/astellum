@@ -132,7 +132,7 @@ export function App(): JSX.Element {
   const [filter, setFilter] = useState<'all' | 'none' | 'noimg' | 'draft' | 'review' | 'approved'>('all');
   const [saveMsg, setSaveMsg] = useState('');
   const [exportMsg, setExportMsg] = useState('');
-  const [solverInfo, setSolverInfo] = useState<{ solver: string; localSolver: boolean } | null>(null);
+  const [solverInfo, setSolverInfo] = useState<{ solver: string; localSolver: boolean; hubUrl?: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const previewFileRef = useRef<HTMLInputElement>(null);
 
@@ -654,6 +654,11 @@ export function App(): JSX.Element {
           <span className="sub">{t('subtitle')}</span>
         </div>
         <div className="topbar-right">
+          {solverInfo?.hubUrl && (
+            <a className="hub-link" href={solverInfo.hubUrl}>
+              ← astrolens
+            </a>
+          )}
           {solverInfo && (
             <span className={solverInfo.localSolver ? 'solver-badge local' : 'solver-badge'}>
               {t('solverLabel')}: {solverInfo.solver}

@@ -8,8 +8,13 @@ import {
   createCatalogFromSources,
   loadRegistries,
   defaultRegistryPaths,
+  bandsForField,
+  indexUrls,
 } from '@astrolens/identify';
 import { loadConfig } from '@astrolens/schema/node';
+import { mkdir, writeFile, stat } from 'node:fs/promises';
+import { join } from 'node:path';
+import { homedir } from 'node:os';
 
 /**
  * Build the offline star-table pack, or report on it.
@@ -25,6 +30,10 @@ export interface PrefetchArgs {
   check?: boolean;
   /** Also warm the online-answer snapshot for every annotated target. */
   targets?: boolean;
+  /** Download plate-solving indexes down to this field width, in arcminutes. */
+  indexes?: number;
+  /** Where index files go (must be on astrometry.cfg's add_path). */
+  indexDir?: string;
 }
 
 const kb = (b?: number): string => (b == null ? '—' : `${(b / 1024).toFixed(1)} KB`);
@@ -62,6 +71,62 @@ export async function prefetchCatalogs(args: PrefetchArgs = {}): Promise<void> {
       console.log('NOT ready — run `astrolens prefetch` while you still have a network.');
       if (offline) process.exitCode = 1; // the active profile depends on it
     }
+    return;
+  }
+
+  if (args.indexes) {
+    // The only large download here, and its size is set entirely by the
+    // narrowest field you need to solve — so ask, rather than guess.
+    const bands = bandsForField(args.indexes);
+    const files = indexUrls(bands);
+    const mb = files.reduce((n, f) => n + f.mb, 0);
+    const dir = args.indexDir ?? join(homedir(), 'astrometry-indexes');
+    console.log(
+      `Plate-solving indexes for fields down to ${args.indexes}′:\n` +
+        `  bands ${bands[bands.length - 1]!.scale}–${bands[0]!.scale}, ` +
+        `${files.length} files, about ${mb >= 1024 ? (mb / 1024).toFixed(1) + ' GB' : mb.toFixed(0) + ' MB'}\n` +
+        `  → ${dir}\n`,
+    );
+    await mkdir(dir, { recursive: true });
+    let got = 0;
+    let skipped = 0;
+    const failed: string[] = [];
+    for (const [i, f] of files.entries()) {
+      const dest = join(dir, f.file);
+      // Resume-friendly: an interrupted run picks up where it stopped, which
+      // matters when the total is measured in gigabytes.
+      try {
+        const st = await stat(dest);
+        if (st.size > 0) {
+          skipped += 1;
+          continue;
+        }
+      } catch {
+        // not there yet
+      }
+      process.stdout.write(`  [${i + 1}/${files.length}] ${f.file} … `);
+      try {
+        const res = await fetch(f.url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        await writeFile(dest, Buffer.from(await res.arrayBuffer()));
+        const { size } = await stat(dest);
+        console.log(`${(size / 1048576).toFixed(1)} MB`);
+        got += 1;
+      } catch (e) {
+        console.log('FAILED');
+        failed.push(`${f.file}: ${(e as Error).message}`);
+      }
+    }
+    console.log(`\n  ${got} downloaded, ${skipped} already present.`);
+    if (failed.length) {
+      for (const f of failed) console.log(`  ✗ ${f}`);
+      console.log('  Re-run to retry — completed files are skipped.');
+      process.exitCode = 1;
+    }
+    console.log(
+      `\nPoint the solver at them if you have not already:\n` +
+        `  echo "add_path ${dir}" >> "$(brew --prefix)/etc/astrometry.cfg"`,
+    );
     return;
   }
 

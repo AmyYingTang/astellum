@@ -13,7 +13,9 @@ usage() {
   cat <<'EOF'
 astrolens 便捷运行脚本
 
-  ./quickastrolens                              打开 studio(首页:新建 / 打开已有)
+  ./quickastrolens                              打开导航页(工作台 / 标注库 / 现场 / 设置)
+  ./quickastrolens settings                     直接打开设置页
+  ./quickastrolens studio [端口]                 只开工作台(做图:识别 → 微调 → AI 解读 → 海报)
   ./quickastrolens setup                        安装依赖并构建所有包(首次使用)
   ./quickastrolens build                        重新构建
   ./quickastrolens identify <图片> [对象名]       只识别(plate-solve+查目录)→ factsheet.json
@@ -25,9 +27,13 @@ astrolens 便捷运行脚本
 
 现场(onsite)相关 —— 离线、预定义解读、全屏展示:
 
-  ./quickastrolens prefetch [check|targets]     下载离线星表包(出发前联网跑一次)
-                                                  check   = 只报告磁盘上有什么,不下载
-                                                  targets = 预热在线答案快照(按标注库目标)
+  ./quickastrolens prefetch [check|targets|indexes <角分>]
+                                                下载离线所需数据(出发前联网跑一次)
+                                                  (无参数) = 星表包,约 4.5 MB
+                                                  check    = 只报告磁盘上有什么,不下载
+                                                  targets  = 预热在线答案快照(按标注库目标)
+                                                  indexes  = 解析索引;参数是最小视场角分
+                                                             90′≈220MB 60′≈530MB 30′≈2.4GB
   ./quickastrolens kiosk                        打开现场入口页(选文件:FITS/JPG/PNG,自动出图)
   ./quickastrolens kiosk <图片> [对象名]          一键:识别 → 预定义解读 → 全屏可点页面(自动开浏览器)
   ./quickastrolens watch <目录> [对象名]          监听目录,每来一张新图自动出一张全屏页
@@ -61,12 +67,26 @@ ensure_built() {
   fi
 }
 
-cmd="${1:-studio}"
+cmd="${1:-hub}"
 case "$cmd" in
-  studio)
+  hub)
     ensure_built
-    # Curator context → the co-launched atlas edits the shipped seed.
-    node "$CLI" studio --atlas-data-dir "$ROOT/packages/atlas/data"
+    # One page in front of the three surfaces. Curator context throughout →
+    # the atlas edits the shipped seed, not ~/.astrolens.
+    node "$CLI" hub --atlas-data-dir "$ROOT/packages/atlas/data"
+    ;;
+
+  settings)
+    ensure_built
+    node "$CLI" hub --atlas-data-dir "$ROOT/packages/atlas/data" --settings
+    ;;
+
+  studio)
+    shift
+    ensure_built
+    args=(studio --atlas-data-dir "$ROOT/packages/atlas/data")
+    if [ $# -ge 1 ]; then args+=(--port "$1"); fi
+    node "$CLI" "${args[@]}"
     ;;
 
   setup)
@@ -177,9 +197,17 @@ case "$cmd" in
     case "${1:-}" in
       check)   node "$CLI" prefetch --check ;;
       targets) node "$CLI" prefetch --targets ;;
+      indexes)
+        if [ $# -lt 2 ]; then
+          echo "用法: ./quickastrolens prefetch indexes <最小视场角分>" >&2
+          echo "  例如 60 = 支持 1 度以上的视场,约 530 MB" >&2
+          exit 1
+        fi
+        node "$CLI" prefetch --indexes "$2"
+        ;;
       "")      node "$CLI" prefetch ;;
       *)
-        echo "用法: ./quickastrolens prefetch [check|targets]" >&2
+        echo "用法: ./quickastrolens prefetch [check|targets|indexes <角分>]" >&2
         exit 1
         ;;
     esac
@@ -190,7 +218,7 @@ case "$cmd" in
     ensure_built
     # No file named → the operator wants the front door, not a one-shot run.
     if [ $# -lt 1 ]; then
-      node "$CLI" kiosk-serve --profile onsite
+      node "$CLI" kiosk-serve --profile kiosk
       exit 0
     fi
     image="$1"
@@ -200,7 +228,7 @@ case "$cmd" in
     out="$ROOT/out/$name-kiosk"
     # This wrapper is the curator entry point, so the onsite profile is what's
     # wanted here even if the config file says otherwise.
-    args=(kiosk "$image" --profile onsite --out "$out")
+    args=(kiosk "$image" --profile kiosk --out "$out")
     if [ -n "$target" ]; then args+=(--target "$target"); fi
     echo "==> 现场识别: $image -> $out/kiosk.html"
     node "$CLI" "${args[@]}"
@@ -215,7 +243,7 @@ case "$cmd" in
     ensure_built
     dir="$1"
     target="${2:-}"
-    args=(kiosk-watch "$dir" --profile onsite --out "$ROOT/out/kiosk")
+    args=(kiosk-watch "$dir" --profile kiosk --out "$ROOT/out/kiosk")
     if [ -n "$target" ]; then args+=(--target "$target"); fi
     node "$CLI" "${args[@]}"
     ;;

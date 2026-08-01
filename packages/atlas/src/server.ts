@@ -155,7 +155,12 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
 
   // Which plate-solver is configured — shown in the tool's UI.
   app.get('/api/config', (_req, res) =>
-    res.json({ solver: solverName(), localSolver: isLocalSolver() }),
+    res.json({
+      solver: solverName(),
+      localSolver: isLocalSolver(),
+      // Set when launched from the hub, so the UI can offer a way back.
+      hubUrl: process.env.ASTROLENS_HUB_URL || undefined,
+    }),
   );
 
   // Static feature-type vocabulary — one source for client + server.

@@ -207,3 +207,78 @@ export function createOfflineCatalogClient(opts: OfflineCatalogOptions = {}): Ca
 }
 
 export { OPENNGC_CSV_URL };
+
+/**
+ * astrometry.net index files, by scale band.
+ *
+ * These are the only genuinely large thing an offline install needs — the star
+ * tables and the atlas together are under 5 MB, while the indexes run from a
+ * couple of hundred megabytes to tens of gigabytes. The size is decided entirely
+ * by the *smallest* field you must solve: a band covers roughly a quarter of its
+ * own scale in field width, and each finer band is about twice the size of the
+ * one above it.
+ *
+ * So this is deliberately a question rather than a download button: tell it the
+ * narrowest field you shoot, and it fetches that band and everything wider.
+ */
+export interface IndexBand {
+  scale: number;
+  /** Field widths this band solves, in arcminutes. */
+  minArcmin: number;
+  maxArcmin: number;
+  /** Split into 12 or 48 healpix files below this scale; one file above. */
+  parts: number;
+  /** Approximate download size, MB. */
+  approxMb: number;
+}
+
+/** The 4200 (Tycho-2) series — the general-purpose set for deep-sky work. */
+export const INDEX_BANDS: IndexBand[] = [
+  { scale: 4219, minArcmin: 1400, maxArcmin: 2000, parts: 1, approxMb: 0.1 },
+  { scale: 4218, minArcmin: 1000, maxArcmin: 1400, parts: 1, approxMb: 0.2 },
+  { scale: 4217, minArcmin: 680, maxArcmin: 1000, parts: 1, approxMb: 0.2 },
+  { scale: 4216, minArcmin: 480, maxArcmin: 680, parts: 1, approxMb: 0.3 },
+  { scale: 4215, minArcmin: 340, maxArcmin: 480, parts: 1, approxMb: 0.6 },
+  { scale: 4214, minArcmin: 240, maxArcmin: 340, parts: 1, approxMb: 1 },
+  { scale: 4213, minArcmin: 170, maxArcmin: 240, parts: 1, approxMb: 2 },
+  { scale: 4212, minArcmin: 120, maxArcmin: 170, parts: 1, approxMb: 4 },
+  { scale: 4211, minArcmin: 85, maxArcmin: 120, parts: 1, approxMb: 8 },
+  { scale: 4210, minArcmin: 60, maxArcmin: 85, parts: 1, approxMb: 20 },
+  { scale: 4209, minArcmin: 42, maxArcmin: 60, parts: 1, approxMb: 39 },
+  { scale: 4208, minArcmin: 30, maxArcmin: 42, parts: 1, approxMb: 78 },
+  { scale: 4207, minArcmin: 22, maxArcmin: 30, parts: 12, approxMb: 158 },
+  { scale: 4206, minArcmin: 16, maxArcmin: 22, parts: 12, approxMb: 313 },
+  { scale: 4205, minArcmin: 11, maxArcmin: 16, parts: 12, approxMb: 629 },
+  { scale: 4204, minArcmin: 8, maxArcmin: 11, parts: 48, approxMb: 1238 },
+  { scale: 4203, minArcmin: 5.6, maxArcmin: 8, parts: 48, approxMb: 2506 },
+];
+
+/** Measured on real solves: the band that matches is about a third of the
+ *  field's width, so a frame this wide needs bands down to width/4. */
+export function bandsForField(minFieldArcmin: number): IndexBand[] {
+  const floor = minFieldArcmin / 4;
+  return INDEX_BANDS.filter((b) => b.maxArcmin >= floor);
+}
+
+export function indexUrls(bands: IndexBand[]): { url: string; file: string; mb: number }[] {
+  const out: { url: string; file: string; mb: number }[] = [];
+  for (const b of bands) {
+    if (b.parts === 1) {
+      out.push({
+        url: `http://data.astrometry.net/4200/index-${b.scale}.fits`,
+        file: `index-${b.scale}.fits`,
+        mb: b.approxMb,
+      });
+    } else {
+      for (let i = 0; i < b.parts; i++) {
+        const h = String(i).padStart(2, '0');
+        out.push({
+          url: `http://data.astrometry.net/4200/index-${b.scale}-${h}.fits`,
+          file: `index-${b.scale}-${h}.fits`,
+          mb: b.approxMb / b.parts,
+        });
+      }
+    }
+  }
+  return out;
+}

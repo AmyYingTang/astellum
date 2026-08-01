@@ -1,4 +1,4615 @@
 {
   "schema_version": 1,
-  "objects": []
+  "objects": [
+    {
+      "primary_id": "NGC 3372",
+      "aliases": [
+        "船底座星雲",
+        "Carina Nebula",
+        "[HJH2016] G287.41-00.64",
+        "IRAS 10419-5925",
+        "RCW 53",
+        "Ced 109",
+        "RCW 52"
+      ],
+      "reference": {
+        "image_ref": "upload_mrujjxul-2.jpg",
+        "wcs": {
+          "ra0_deg": 161.2834797435465,
+          "dec0_deg": -59.86563506963405,
+          "crpix_x": 2048,
+          "crpix_y": 1394.5,
+          "scale_deg": 0.0006560996576646386,
+          "orientation_deg": 184.8064353713205,
+          "parity": -1,
+          "width": 4096,
+          "height": 2789
+        },
+        "width_px": 4096,
+        "height_px": 2789
+      },
+      "annotations": [
+        {
+          "id": "anno_mrujm3n9",
+          "feature_type": "bright_rim",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                159.9043034461016,
+                -60.25291946657598
+              ],
+              [
+                160.02541628237964,
+                -60.09750501671085
+              ],
+              [
+                160.08646552963933,
+                -59.99508261415992
+              ],
+              [
+                160.15156345707362,
+                -59.931541524542865
+              ],
+              [
+                160.28258342620995,
+                -59.87307865661709
+              ],
+              [
+                160.37220669920146,
+                -59.80328145342448
+              ],
+              [
+                160.48596050781077,
+                -59.808465377435795
+              ],
+              [
+                160.32552780438334,
+                -59.88385833138067
+              ],
+              [
+                160.1310183606015,
+                -59.977726309585776
+              ],
+              [
+                160.09949522666466,
+                -60.084685212765436
+              ],
+              [
+                160.10409924651003,
+                -60.18213842314891
+              ],
+              [
+                160.1937113328604,
+                -60.22692955571256
+              ],
+              [
+                160.17364162294928,
+                -60.25857777352015
+              ],
+              [
+                159.95884524174994,
+                -60.286498689696515
+              ],
+              [
+                160.01053685586476,
+                -60.21332674978027
+              ]
+            ]
+          },
+          "label": {
+            "zh": "",
+            "en": ""
+          },
+          "status": "approved",
+          "author": "amy",
+          "reviewed_by": "amy",
+          "created_at": "2026-07-21T11:01:02.325Z",
+          "updated_at": "2026-07-28T10:49:54.694Z"
+        },
+        {
+          "id": "anno_mrujmm81",
+          "feature_type": "dust_lane",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                161.22590650219718,
+                -59.793191255004196
+              ],
+              [
+                161.477097392769,
+                -59.71586757732741
+              ],
+              [
+                161.7245226358325,
+                -59.646510225850626
+              ],
+              [
+                162.04792487903126,
+                -59.570900355089066
+              ],
+              [
+                162.2363682908217,
+                -59.588699442299834
+              ],
+              [
+                161.8568730006225,
+                -59.69448168650592
+              ],
+              [
+                161.47299470551786,
+                -59.89226600806373
+              ],
+              [
+                161.28081945170948,
+                -59.923976960832476
+              ],
+              [
+                161.1423629110334,
+                -59.835959104682146
+              ]
+            ]
+          },
+          "label": {
+            "zh": "",
+            "en": ""
+          },
+          "label_anchor": [
+            161.23772799532298,
+            -59.66874454817744
+          ],
+          "status": "approved",
+          "author": "amy",
+          "reviewed_by": "amy",
+          "created_at": "2026-07-21T11:01:26.401Z",
+          "updated_at": "2026-07-28T10:50:06.702Z"
+        },
+        {
+          "id": "anno_ms4jcv4i",
+          "feature_type": "pillar",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                161.96864223299804,
+                -60.17685574405242
+              ],
+              [
+                161.91832024586824,
+                -60.10356573315992
+              ],
+              [
+                161.7940718596086,
+                -60.08813594592917
+              ],
+              [
+                161.78634533389845,
+                -60.046134845018926
+              ],
+              [
+                161.81408966075026,
+                -59.99947879977792
+              ],
+              [
+                161.90239332975125,
+                -59.98630181849172
+              ],
+              [
+                161.9740217404817,
+                -60.01319297012504
+              ],
+              [
+                162.00601170610196,
+                -60.05404406114452
+              ],
+              [
+                162.01688398111264,
+                -60.111027011839646
+              ],
+              [
+                162.0266436586968,
+                -60.16201053572616
+              ],
+              [
+                161.9631808954448,
+                -60.1801384354885
+              ]
+            ]
+          },
+          "label": {
+            "zh": "",
+            "en": ""
+          },
+          "status": "draft",
+          "author": "amy",
+          "created_at": "2026-07-28T10:51:33.138Z",
+          "updated_at": "2026-07-28T10:51:33.138Z"
+        }
+      ],
+      "rev": 1
+    },
+    {
+      "primary_id": "B 59",
+      "aliases": [
+        "Pipe Nebula",
+        "Barnard 59",
+        "LDN 1773"
+      ],
+      "reference": {
+        "image_ref": "upload_mryvyn1o-d.jpg",
+        "wcs": {
+          "ra0_deg": 257.937159151,
+          "dec0_deg": -27.4376463967,
+          "crpix_x": 1920,
+          "crpix_y": 1796.5,
+          "scale_deg": 0.0002728420264113889,
+          "orientation_deg": 0.11342999999999392,
+          "parity": -1,
+          "width": 3840,
+          "height": 3593
+        },
+        "width_px": 3840,
+        "height_px": 3593,
+        "credit": "ESO",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:The_mouthpiece_of_the_Pipe_Nebula_(eso1233a).tif"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1r2yaq_0",
+          "feature_type": "silhouette",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                258.11359981533246,
+                -27.271746720570107
+              ],
+              [
+                257.93676752356896,
+                -27.261800606849285
+              ],
+              [
+                257.7599902345546,
+                -27.28819269726343
+              ],
+              [
+                257.6420777980163,
+                -27.340587039476045
+              ],
+              [
+                257.6125173533346,
+                -27.44534374294255
+              ],
+              [
+                257.671527006504,
+                -27.550134707472775
+              ],
+              [
+                257.8193307715578,
+                -27.628655952044213
+              ],
+              [
+                257.99671292944674,
+                -27.62838189000471
+              ],
+              [
+                258.14431434309404,
+                -27.57559653871819
+              ],
+              [
+                258.2324461644432,
+                -27.470512340684536
+              ],
+              [
+                258.2614248827347,
+                -27.36562623571637
+              ],
+              [
+                258.2021493839301,
+                -27.30310142995921
+              ]
+            ]
+          },
+          "label": {
+            "zh": "烟斗嘴（剪影）",
+            "en": "Pipe mouthpiece silhouette"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "M 104",
+      "aliases": [
+        "M104",
+        "NGC 4594",
+        "Sombrero Galaxy",
+        "Messier 104"
+      ],
+      "reference": {
+        "image_ref": "upload_mrywie2x-l.jpg",
+        "wcs": {
+          "ra0_deg": 190.002152406,
+          "dec0_deg": -11.6258577704,
+          "crpix_x": 1920,
+          "crpix_y": 1217,
+          "scale_deg": 0.00027612503875833335,
+          "orientation_deg": 0.004919999999998481,
+          "parity": -1,
+          "width": 3840,
+          "height": 2434
+        },
+        "width_px": 3840,
+        "height_px": 2434,
+        "credit": "CTIO/NOIRLab/DOE/NSF/AURA; Image Processing: T.A. Rector (University of Alaska Anchorage/NSF NOIRLab), D. de Martin &amp; M. Zamani (NSF NOIRLab)",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Noirlab2612a.jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1nzxt8_0",
+          "feature_type": "dust_lane",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                190.07685881840553,
+                -11.627774747328962
+              ],
+              [
+                190.05853514034766,
+                -11.629437176211896
+              ],
+              [
+                190.03598229521162,
+                -11.629994828634665
+              ],
+              [
+                190.01061008644,
+                -11.629446561307082
+              ],
+              [
+                189.98805707029783,
+                -11.628343738987898
+              ],
+              [
+                189.96550427350246,
+                -11.62641078930455
+              ],
+              [
+                189.94577090136988,
+                -11.624200287433288
+              ],
+              [
+                189.92744742615264,
+                -11.621712568393184
+              ]
+            ]
+          },
+          "label": {
+            "zh": "尘埃带",
+            "en": "Dust lane"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "NGC 4038/4039",
+      "aliases": [
+        "NGC 4038",
+        "NGC 4039",
+        "Antennae Galaxies",
+        "Caldwell 60"
+      ],
+      "reference": {
+        "image_ref": "upload_mrywkkwe-m.jpg",
+        "wcs": {
+          "ra0_deg": 180.514855885,
+          "dec0_deg": -18.9239814894,
+          "crpix_x": 640,
+          "crpix_y": 884.5,
+          "scale_deg": 0.00022899876795083333,
+          "orientation_deg": 119.76306600000001,
+          "parity": -1,
+          "width": 1280,
+          "height": 1769
+        },
+        "width_px": 1280,
+        "height_px": 1769,
+        "credit": "Brad Whitmore (STScI), and NASA/ESA",
+        "license": "Public domain",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Colliding_Galaxies_NGC_4038_and_NGC_4039_(ground-based_image)_(opo9734c).tiff"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1qlalh_0",
+          "feature_type": "tidal_tail",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                180.4730742375175,
+                -18.930749462950043
+              ],
+              [
+                180.45986215412506,
+                -18.9642664705546
+              ],
+              [
+                180.43793325106685,
+                -18.99721364415505
+              ],
+              [
+                180.407827395534,
+                -19.016635933520195
+              ],
+              [
+                180.36973167010274,
+                -19.01821214494807
+              ],
+              [
+                180.34405307440034,
+                -19.00570044315067
+              ]
+            ]
+          },
+          "label": {
+            "zh": "潮汐尾（上）",
+            "en": "Tidal tail (N)"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        },
+        {
+          "id": "claude_ms1qlalh_1",
+          "feature_type": "tidal_tail",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                180.51509329246358,
+                -18.871093552093566
+              ],
+              [
+                180.53819187082684,
+                -18.840125061246376
+              ],
+              [
+                180.55708236619353,
+                -18.81142833173361
+              ],
+              [
+                180.56877033904323,
+                -18.789266970049656
+              ],
+              [
+                180.5743096258991,
+                -18.77307357288134
+              ]
+            ]
+          },
+          "label": {
+            "zh": "潮汐尾（下）",
+            "en": "Tidal tail (S)"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 3
+    },
+    {
+      "primary_id": "M 16",
+      "aliases": [
+        "M16",
+        "NGC 6611",
+        "Eagle Nebula",
+        "Messier 16"
+      ],
+      "reference": {
+        "image_ref": "upload_mryxkbk1-3.jpg",
+        "wcs": {
+          "ra0_deg": 274.705770757,
+          "dec0_deg": -13.7639781819,
+          "crpix_x": 1920,
+          "crpix_y": 1920,
+          "scale_deg": 0.00013911044218305554,
+          "orientation_deg": 0.00012000000000966793,
+          "parity": -1,
+          "width": 3840,
+          "height": 3840
+        },
+        "width_px": 3840,
+        "height_px": 3840,
+        "credit": "ESO",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Eagle_Nebula_from_ESO.jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1ny1ej_0",
+          "feature_type": "pillar",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                274.71436593681915,
+                -13.809884451074046
+              ],
+              [
+                274.7115011695221,
+                -13.819622263156331
+              ],
+              [
+                274.72152976154985,
+                -13.827968423677223
+              ],
+              [
+                274.7243963754797,
+                -13.844661443777262
+              ],
+              [
+                274.7272632677814,
+                -13.859963315977993
+              ],
+              [
+                274.7301303873195,
+                -13.873874041464585
+              ],
+              [
+                274.7344311855421,
+                -13.890566749488618
+              ],
+              [
+                274.7444650363566,
+                -13.907258511635973
+              ],
+              [
+                274.7544985599618,
+                -13.915603273947408
+              ],
+              [
+                274.75019693946797,
+                -13.904475338925659
+              ],
+              [
+                274.74446083789655,
+                -13.882218768578129
+              ],
+              [
+                274.73872602675306,
+                -13.861353126209657
+              ],
+              [
+                274.7365743625387,
+                -13.843269097007637
+              ],
+              [
+                274.73299091895785,
+                -13.829358505241784
+              ],
+              [
+                274.7243943270672,
+                -13.819621601349466
+              ]
+            ]
+          },
+          "label": {
+            "zh": "创生之柱（主柱）",
+            "en": "Pillars of Creation (main)"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        },
+        {
+          "id": "claude_ms1nypsz_0",
+          "feature_type": "pillar",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                274.7050545797389,
+                -13.831446715591955
+              ],
+              [
+                274.70218920621755,
+                -13.837706656849566
+              ],
+              [
+                274.7064873233687,
+                -13.85022658840918
+              ],
+              [
+                274.71365105170355,
+                -13.848139796927986
+              ],
+              [
+                274.71150163317566,
+                -13.837011046281537
+              ]
+            ]
+          },
+          "label": {
+            "zh": "创生之柱（第二柱）",
+            "en": "Pillars of Creation (2nd)"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 8
+    },
+    {
+      "primary_id": "M 8",
+      "aliases": [
+        "M8",
+        "NGC 6523",
+        "Lagoon Nebula",
+        "Messier 8"
+      ],
+      "reference": {
+        "image_ref": "upload_mryxkuc6-4.jpg",
+        "wcs": {
+          "ra0_deg": 270.951424718,
+          "dec0_deg": -24.1375512805,
+          "crpix_x": 1920,
+          "crpix_y": 1286,
+          "scale_deg": 0.0004057122705972222,
+          "orientation_deg": 0.22387000000000512,
+          "parity": -1,
+          "width": 3840,
+          "height": 2572
+        },
+        "width_px": 3840,
+        "height_px": 2572,
+        "credit": "ESO/S. Guisard",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Lagoon_Nebula_(ESO).jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "NGC 2237",
+      "aliases": [
+        "NGC 2244",
+        "Rosette Nebula",
+        "Caldwell 49"
+      ],
+      "reference": {
+        "image_ref": "upload_mryxr000-6.jpg",
+        "wcs": {
+          "ra0_deg": 98.077615006,
+          "dec0_deg": 5.05484031153,
+          "crpix_x": 1920,
+          "crpix_y": 1920,
+          "scale_deg": 0.00025137567393222223,
+          "orientation_deg": 359.79319,
+          "parity": -1,
+          "width": 3840,
+          "height": 3840
+        },
+        "width_px": 3840,
+        "height_px": 3840,
+        "credit": "T. A. Rector/University of Alaska Anchorage, WIYN and NOIRLab/NSF/AURA",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Rosette_emission-line_image_(noao0403a).jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "NGC 6334",
+      "aliases": [
+        "Cat's Paw Nebula",
+        "Bear Claw Nebula"
+      ],
+      "reference": {
+        "image_ref": "upload_mryxxb1u-8.jpg",
+        "wcs": {
+          "ra0_deg": 260.037666464,
+          "dec0_deg": -35.9482484446,
+          "crpix_x": 1920,
+          "crpix_y": 1994.5,
+          "scale_deg": 0.0001333555249311111,
+          "orientation_deg": 0.12880000000001246,
+          "parity": -1,
+          "width": 3840,
+          "height": 3989
+        },
+        "width_px": 3840,
+        "height_px": 3989,
+        "credit": "ESO",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:The_Cat%27s_Paw_Nebula_(eso1003a).tif"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "NGC 6357",
+      "aliases": [
+        "War and Peace Nebula",
+        "Lobster Nebula"
+      ],
+      "reference": {
+        "image_ref": "upload_mryxxtjt-9.jpg",
+        "wcs": {
+          "ra0_deg": 261.252260262,
+          "dec0_deg": -34.2077289624,
+          "crpix_x": 1920,
+          "crpix_y": 1592,
+          "scale_deg": 0.0004127866025527778,
+          "orientation_deg": 0.12579999999999814,
+          "parity": -1,
+          "width": 3840,
+          "height": 3184
+        },
+        "width_px": 3840,
+        "height_px": 3184,
+        "credit": "CTIO/NOIRLab/DOE/NSF/AURA T.A. Rector (University of Alaska Anchorage/NSF’s NOIRLab), J. Miller (Gemini Observatory/NSF’s NOIRLab), M. Zamani &amp; D. de Martin (NSF’s NOIRLab)",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:NGC_6357.jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "NGC 3576",
+      "aliases": [
+        "Statue of Liberty Nebula",
+        "RCW 57"
+      ],
+      "reference": {
+        "image_ref": "upload_mryxyrje-a.jpg",
+        "wcs": {
+          "ra0_deg": 168.463085477,
+          "dec0_deg": -61.2202347025,
+          "crpix_x": 1920,
+          "crpix_y": 1029,
+          "scale_deg": 0.0002637370652897222,
+          "orientation_deg": 359.00406,
+          "parity": -1,
+          "width": 3840,
+          "height": 2058
+        },
+        "width_px": 3840,
+        "height_px": 2058,
+        "credit": "ESO/G. Beccari",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Star_formation_in_the_southern_Milky_Way.jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "IC 4628",
+      "aliases": [
+        "Prawn Nebula",
+        "Gum 56"
+      ],
+      "reference": {
+        "image_ref": "upload_mryxz2bu-b.jpg",
+        "wcs": {
+          "ra0_deg": 254.305805184,
+          "dec0_deg": -40.4131370519,
+          "crpix_x": 1920,
+          "crpix_y": 1387.5,
+          "scale_deg": 0.0002737384645038889,
+          "orientation_deg": 0.0022199999999941156,
+          "parity": -1,
+          "width": 3840,
+          "height": 2775
+        },
+        "width_px": 3840,
+        "height_px": 2775,
+        "credit": "ESO",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Detailed_view_of_the_Prawn_Nebula_from_ESO%E2%80%99s_VST.jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "IC 2944",
+      "aliases": [
+        "Running Chicken Nebula",
+        "Lambda Centauri Nebula"
+      ],
+      "reference": {
+        "image_ref": "upload_mryxzgf3-c.jpg",
+        "wcs": {
+          "ra0_deg": 173.799717553,
+          "dec0_deg": -63.1752947759,
+          "crpix_x": 1920,
+          "crpix_y": 1689.5,
+          "scale_deg": 0.000651049559675,
+          "orientation_deg": 0.8829700000000003,
+          "parity": -1,
+          "width": 3840,
+          "height": 3379
+        },
+        "width_px": 3840,
+        "height_px": 3379,
+        "credit": "ESO/VPHAS+ team. Acknowledgement: CASU",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Running_Chicken_Nebula_-_Eso2320a.jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "B 33",
+      "aliases": [
+        "Barnard 33",
+        "Horsehead Nebula",
+        "IC 434"
+      ],
+      "reference": {
+        "image_ref": "upload_mryy5onz-e.jpg",
+        "wcs": {
+          "ra0_deg": 85.1658110855,
+          "dec0_deg": -2.53199094425,
+          "crpix_x": 1920,
+          "crpix_y": 1920,
+          "scale_deg": 0.00017801162977777778,
+          "orientation_deg": 91.535102,
+          "parity": -1,
+          "width": 3840,
+          "height": 3840
+        },
+        "width_px": 3840,
+        "height_px": 3840,
+        "credit": "ESA/Euclid/Euclid Consortium/NASA image processing by J.-C. Cuillandre (CEA Paris-Saclay) G. Anselmi",
+        "license": "CC BY-SA 3.0 igo",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Euclid%E2%80%99s_view_of_the_Horsehead_Nebula_ESA25170866.jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1o1klc_0",
+          "feature_type": "silhouette",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                85.21331898179739,
+                -2.4425707763147746
+              ],
+              [
+                85.21817803616665,
+                -2.4575768964834417
+              ],
+              [
+                85.2247944262702,
+                -2.471645504678955
+              ],
+              [
+                85.23921086975895,
+                -2.4774914417247573
+              ],
+              [
+                85.26243740957557,
+                -2.47953921811018
+              ],
+              [
+                85.29086368079754,
+                -2.476104625012531
+              ],
+              [
+                85.32107085608186,
+                -2.4726215361939885
+              ],
+              [
+                85.34773956371612,
+                -2.47012336860284
+              ],
+              [
+                85.37440808982706,
+                -2.4676246741323227
+              ],
+              [
+                85.37907903218854,
+                -2.442568404461017
+              ],
+              [
+                85.34680394172881,
+                -2.435423926481601
+              ],
+              [
+                85.31472083320409,
+                -2.4353964971364754
+              ],
+              [
+                85.28619977588909,
+                -2.435272616014148
+              ],
+              [
+                85.26297402450496,
+                -2.433225227418666
+              ],
+              [
+                85.252072264346,
+                -2.4255044819977787
+              ],
+              [
+                85.24297559952345,
+                -2.418625593479689
+              ],
+              [
+                85.2368375633115,
+                -2.4223517747585586
+              ],
+              [
+                85.23166175512472,
+                -2.428723245214438
+              ],
+              [
+                85.22114265694813,
+                -2.4352379935210493
+              ]
+            ]
+          },
+          "label": {
+            "zh": "马头（剪影）",
+            "en": "Horsehead silhouette"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "NGC 2736",
+      "aliases": [
+        "Pencil Nebula",
+        "Herschel's Ray"
+      ],
+      "reference": {
+        "image_ref": "upload_mryyhskx-h.jpg",
+        "wcs": {
+          "ra0_deg": 134.951088606,
+          "dec0_deg": -46.0101210011,
+          "crpix_x": 1920,
+          "crpix_y": 1920,
+          "scale_deg": 0.00014386453970055554,
+          "orientation_deg": 89.863192,
+          "parity": -1,
+          "width": 3840,
+          "height": 3840
+        },
+        "width_px": 3840,
+        "height_px": 3840,
+        "credit": "Credit: ESO",
+        "license": "CC BY 3.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:The_Pencil_Nebula,_a_strangely_shaped_leftover_from_a_vast_explosion.jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1qnza9_0",
+          "feature_type": "filament",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                135.13793973299408,
+                -45.81145913898379
+              ],
+              [
+                135.08257580250324,
+                -45.85834321831854
+              ],
+              [
+                135.03868045657873,
+                -45.91355589965769
+              ],
+              [
+                135.01084224467178,
+                -45.968771500143
+              ],
+              [
+                134.97088883325068,
+                -46.03777417949394
+              ],
+              [
+                134.93078291645327,
+                -46.1205737409055
+              ],
+              [
+                134.89845536048074,
+                -46.2033757033325
+              ]
+            ]
+          },
+          "label": {
+            "zh": "铅笔状丝",
+            "en": "Pencil filament"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "Gum 16",
+      "aliases": [
+        "Vela SNR",
+        "Vela Supernova Remnant"
+      ],
+      "reference": {
+        "image_ref": "upload_mryyk4w5-i.jpg",
+        "wcs": {
+          "ra0_deg": 127.858267267,
+          "dec0_deg": -43.9869486374,
+          "crpix_x": 1920,
+          "crpix_y": 1920,
+          "scale_deg": 0.0003645967485916667,
+          "orientation_deg": 359.95362,
+          "parity": -1,
+          "width": 3840,
+          "height": 3840
+        },
+        "width_px": 3840,
+        "height_px": 3840,
+        "credit": "(Credit) ESO/TIMER survey",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Vela_supernova_-_VST_-_Eso2214a.jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1r9ti9_0",
+          "feature_type": "filament",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                127.2611471165232,
+                -43.460039467229265
+              ],
+              [
+                127.16204448383832,
+                -43.669419667836785
+              ],
+              [
+                127.10019718536756,
+                -43.9139982599607
+              ],
+              [
+                127.11612204866901,
+                -44.19412241075333
+              ],
+              [
+                127.19087451294524,
+                -44.4396270884506
+              ]
+            ]
+          },
+          "label": {
+            "zh": "丝状结构",
+            "en": "Filament"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        },
+        {
+          "id": "claude_ms1r9tia_1",
+          "feature_type": "filament",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                128.29282896824236,
+                -43.46137635343739
+              ],
+              [
+                128.10046603833115,
+                -43.63682622215144
+              ],
+              [
+                127.90696739065447,
+                -43.811960792755045
+              ],
+              [
+                127.76107054405878,
+                -43.951849505806564
+              ]
+            ]
+          },
+          "label": {
+            "zh": "丝状结构",
+            "en": "Filament"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "NGC 7293",
+      "aliases": [
+        "Helix Nebula",
+        "Caldwell 63"
+      ],
+      "reference": {
+        "image_ref": "upload_mryym2gh-j.jpg",
+        "wcs": {
+          "ra0_deg": 337.41594693,
+          "dec0_deg": -20.8388986791,
+          "crpix_x": 1920,
+          "crpix_y": 1920,
+          "scale_deg": 0.00011547197140527777,
+          "orientation_deg": 0.4256499999999903,
+          "parity": -1,
+          "width": 3840,
+          "height": 3840
+        },
+        "width_px": 3840,
+        "height_px": 3840,
+        "credit": "NASA Hubble",
+        "license": "CC BY 2.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Caldwell_63_-_3.jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1pfnno_0",
+          "feature_type": "shell",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                337.41518924441334,
+                -20.743521549150472
+              ],
+              [
+                337.3441851728886,
+                -20.759589016208757
+              ],
+              [
+                337.29709944918716,
+                -20.806426263212252
+              ],
+              [
+                337.2832547631733,
+                -20.85755191928943
+              ],
+              [
+                337.2978620446802,
+                -20.912888793089515
+              ],
+              [
+                337.3456107524046,
+                -20.950228268079552
+              ],
+              [
+                337.41693446119905,
+                -20.96302742590254
+              ],
+              [
+                337.4833478988936,
+                -20.949273824627497
+              ],
+              [
+                337.5256770307607,
+                -20.911313350475154
+              ],
+              [
+                337.5394058199963,
+                -20.855780502439416
+              ],
+              [
+                337.524734330609,
+                -20.802658012813623
+              ],
+              [
+                337.4817479772021,
+                -20.75863576454096
+              ]
+            ]
+          },
+          "label": {
+            "zh": "主环壳",
+            "en": "Main ring shell"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "NGC 5128",
+      "aliases": [
+        "Centaurus A",
+        "Cen A",
+        "Caldwell 77"
+      ],
+      "reference": {
+        "image_ref": "upload_mryyt8me-l.jpg",
+        "wcs": {
+          "ra0_deg": 201.433198851,
+          "dec0_deg": -42.983964624,
+          "crpix_x": 1806,
+          "crpix_y": 1765.5,
+          "scale_deg": 0.00013221514397222223,
+          "orientation_deg": 0.04490999999998735,
+          "parity": -1,
+          "width": 3612,
+          "height": 3531
+        },
+        "width_px": 3612,
+        "height_px": 3531,
+        "credit": "ESO",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Centaurus_A_(NGC_5128)_(eso0315a).jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1oljx4_0",
+          "feature_type": "dust_lane",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                201.49763810101285,
+                -43.0301188234576
+              ],
+              [
+                201.45242704020643,
+                -43.03478872329439
+              ],
+              [
+                201.4162471318084,
+                -43.03084335837203
+              ],
+              [
+                201.3836880367212,
+                -43.02291969115797
+              ],
+              [
+                201.35113875432137,
+                -43.009698198493965
+              ],
+              [
+                201.31860193617672,
+                -42.998450719979644
+              ],
+              [
+                201.28607182570443,
+                -42.99116048696587
+              ],
+              [
+                201.25354092094085,
+                -42.98848856900341
+              ],
+              [
+                201.22100346977106,
+                -42.989773878369256
+              ]
+            ]
+          },
+          "label": {
+            "zh": "尘埃带",
+            "en": "Dust lane"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 6
+    },
+    {
+      "primary_id": "IC 1396",
+      "aliases": [
+        "Elephant's Trunk Nebula",
+        "IC 1396A"
+      ],
+      "reference": {
+        "image_ref": "upload_mryz5qd5-o.jpg",
+        "wcs": {
+          "ra0_deg": 323.898739103,
+          "dec0_deg": 57.4812099412,
+          "crpix_x": 1920,
+          "crpix_y": 1903.5,
+          "scale_deg": 0.000131395205315,
+          "orientation_deg": 270.515109,
+          "parity": -1,
+          "width": 3840,
+          "height": 3807
+        },
+        "width_px": 3840,
+        "height_px": 3807,
+        "credit": "T.A. Rector (University of Alaska Anchorage) and H. Schweiker (WIYN and NOIRLab/NSF/AURA)",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:IC_1396A_Elephant_Trunk_Nebula_(noao1507a).jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "NGC 1499",
+      "aliases": [
+        "California Nebula"
+      ],
+      "reference": {
+        "image_ref": "upload_mryzccd2-q.jpg",
+        "wcs": {
+          "ra0_deg": 60.22931184,
+          "dec0_deg": 36.3837986969,
+          "crpix_x": 586,
+          "crpix_y": 871.5,
+          "scale_deg": 0.0014517481931361112,
+          "orientation_deg": 56.30706000000001,
+          "parity": -1,
+          "width": 1172,
+          "height": 1743
+        },
+        "width_px": 1172,
+        "height_px": 1743,
+        "credit": "KPNO/NOIRLab/NSF/AURA/Adam Block",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:NGC_1499-_The_California_Nebula_(noao-n1499block).jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "IC 405 + IC 410",
+      "aliases": [
+        "IC 405",
+        "IC 410",
+        "Flaming Star Nebula",
+        "Tadpoles"
+      ],
+      "reference": {
+        "image_ref": "upload_mryzcl9p-r.jpg",
+        "wcs": {
+          "ra0_deg": 79.0756858614,
+          "dec0_deg": 34.3125788103,
+          "crpix_x": 1920,
+          "crpix_y": 1920.5,
+          "scale_deg": 0.00019103688289000002,
+          "orientation_deg": 269.756167,
+          "parity": 1,
+          "width": 3840,
+          "height": 3841
+        },
+        "width_px": 3840,
+        "height_px": 3841,
+        "credit": "T.A.Rector and B.A.Wolpa/NOIRLab/NSF/AURA",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:AE_Aurigae_(noao0157a).jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "NGC 7380",
+      "aliases": [
+        "Wizard Nebula",
+        "Sh2-142"
+      ],
+      "reference": {
+        "image_ref": "upload_mryzdxgz-s.jpg",
+        "wcs": {
+          "ra0_deg": 341.888574709,
+          "dec0_deg": 58.0470074524,
+          "crpix_x": 1920,
+          "crpix_y": 1825.5,
+          "scale_deg": 0.00016538530675333334,
+          "orientation_deg": 90.409668,
+          "parity": -1,
+          "width": 3840,
+          "height": 3651
+        },
+        "width_px": 3840,
+        "height_px": 3651,
+        "credit": "T.A. Rector (University of Alaska Anchorage) and H. Schweiker (WIYN and NOIRLab/NSF/AURA)",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Wizard_Nebula,_NGC_7380_(noao-ngc7380).jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "Sh2-155",
+      "aliases": [
+        "Cave Nebula",
+        "Caldwell 9"
+      ],
+      "reference": {
+        "image_ref": "upload_mryzhkmo-t.jpg",
+        "wcs": {
+          "ra0_deg": 344.476508,
+          "dec0_deg": 62.521561474,
+          "crpix_x": 1920,
+          "crpix_y": 1870,
+          "scale_deg": 0.00015801449499083334,
+          "orientation_deg": 90.475672,
+          "parity": -1,
+          "width": 3840,
+          "height": 3740
+        },
+        "width_px": 3840,
+        "height_px": 3740,
+        "credit": "T.A. Rector (University of Alaska Anchorage) and H. Schweiker (WIYN and NOIRLab/NSF/AURA)",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Sh2-155,_Cave_Nebula_(noao-sh2-155).jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "M 42",
+      "aliases": [
+        "M42",
+        "NGC 1976",
+        "Orion Nebula",
+        "Messier 42"
+      ],
+      "reference": {
+        "image_ref": "upload_mryznzaw-v.jpg",
+        "wcs": {
+          "ra0_deg": 83.7904469465,
+          "dec0_deg": -5.41422906143,
+          "crpix_x": 1920,
+          "crpix_y": 1920,
+          "scale_deg": 0.00013019321615527778,
+          "orientation_deg": 0.02294000000000551,
+          "parity": -1,
+          "width": 3840,
+          "height": 3840
+        },
+        "width_px": 3840,
+        "height_px": 3840,
+        "credit": "NASA, ESA, M. Robberto (Space Telescope Science Institute/ESA) and the Hubble Space Telescope Orion Treasury Project Team",
+        "license": "Public domain",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Orion_Nebula_-_Hubble_2006_mosaic_18000.jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "NGC 6888",
+      "aliases": [
+        "Crescent Nebula",
+        "Caldwell 27"
+      ],
+      "reference": {
+        "image_ref": "upload_mryzolec-w.jpg",
+        "wcs": {
+          "ra0_deg": 303.122113497,
+          "dec0_deg": 38.418355917,
+          "crpix_x": 1920,
+          "crpix_y": 1836.5,
+          "scale_deg": 0.0002636189853872222,
+          "orientation_deg": 269.99352,
+          "parity": 1,
+          "width": 3840,
+          "height": 3673
+        },
+        "width_px": 3840,
+        "height_px": 3673,
+        "credit": "T.A. Rector (NRAO/AUI/NSF and NOIRLab/NSF/AURA)",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Crescent,_NGC_6888_(noao-04494).jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1pjb45_0",
+          "feature_type": "shell",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                303.2167181054215,
+                38.34238729923365
+              ],
+              [
+                303.19074355550947,
+                38.25646820969328
+              ],
+              [
+                303.0940704229681,
+                38.205879144304085
+              ],
+              [
+                302.97800470325274,
+                38.20053241557291
+              ],
+              [
+                302.90708154322283,
+                38.25104486906726
+              ],
+              [
+                302.89400537297024,
+                38.35752283932329
+              ],
+              [
+                302.9452545404256,
+                38.4385373285746
+              ],
+              [
+                303.06168636077086,
+                38.4639518237243
+              ],
+              [
+                303.15863320836957,
+                38.43864567565888
+              ],
+              [
+                303.20367413637405,
+                38.39301300923126
+              ]
+            ]
+          },
+          "label": {
+            "zh": "新月壳",
+            "en": "Crescent shell"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "Sh2-240",
+      "aliases": [
+        "Simeis 147",
+        "Spaghetti Nebula"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz09eb8-10.jpg",
+        "wcs": {
+          "ra0_deg": 85.2017803818,
+          "dec0_deg": 27.9680759133,
+          "crpix_x": 1920,
+          "crpix_y": 2176.5,
+          "scale_deg": 0.0009606726802944445,
+          "orientation_deg": 1.0408799999999871,
+          "parity": -1,
+          "width": 3840,
+          "height": 4353
+        },
+        "width_px": 3840,
+        "height_px": 4353,
+        "credit": "Georges Attard",
+        "license": "CC BY-SA 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:S147_SH2-240_GeorgesAttard_Apod1012020.jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1rajh9_0",
+          "feature_type": "filament",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                85.95206993755448,
+                28.70767375058798
+              ],
+              [
+                86.00715666654662,
+                28.184714874881973
+              ],
+              [
+                85.96628425873791,
+                27.660730078358963
+              ],
+              [
+                85.83191645216755,
+                27.135709887496038
+              ]
+            ]
+          },
+          "label": {
+            "zh": "丝状结构",
+            "en": "Filament"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        },
+        {
+          "id": "claude_ms1rajh9_1",
+          "feature_type": "filament",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                84.29628743575853,
+                28.994481595230038
+              ],
+              [
+                83.95441159721372,
+                28.46273690240308
+              ],
+              [
+                83.85624682220362,
+                27.831836989524255
+              ],
+              [
+                83.99448305354736,
+                27.20695792153511
+              ]
+            ]
+          },
+          "label": {
+            "zh": "丝状结构",
+            "en": "Filament"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "NGC 6543",
+      "aliases": [
+        "Cat's Eye Nebula",
+        "Caldwell 6"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz0q295-13.jpg",
+        "wcs": {
+          "ra0_deg": 269.640566496,
+          "dec0_deg": 66.6297013238,
+          "crpix_x": 1920,
+          "crpix_y": 1053.5,
+          "scale_deg": 0.00009555042558416665,
+          "orientation_deg": 0.35726999999999975,
+          "parity": -1,
+          "width": 3840,
+          "height": 2107
+        },
+        "width_px": 3840,
+        "height_px": 2107,
+        "credit": "ESA/Hubble &amp; NASA, ESA Euclid/Euclid Consortium/NASA/Q1-2025, J.-C. Cuillandre &amp; E. Bertin (CEA Paris-Saclay), Z. Tsvetanov",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Euclid_and_Hubble%27s_view_of_Cat%27s_Eye_Nebula_(potm2602c).jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1r7v7y_0",
+          "feature_type": "shell",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                269.60265343136825,
+                66.67704486273676
+              ],
+              [
+                269.51017432804224,
+                66.66759401785383
+              ],
+              [
+                269.4553709541668,
+                66.63806858269017
+              ],
+              [
+                269.4653224512392,
+                66.60322728095844
+              ],
+              [
+                269.54889614166973,
+                66.5869744638379
+              ],
+              [
+                269.65039836600727,
+                66.58543690429401
+              ],
+              [
+                269.7148226653587,
+                66.60574068858197
+              ],
+              [
+                269.73295634274496,
+                66.63883678801554
+              ],
+              [
+                269.7003248179642,
+                66.664475292015
+              ],
+              [
+                269.6490181365655,
+                66.67534816929157
+              ]
+            ]
+          },
+          "label": {
+            "zh": "外晕壳",
+            "en": "Outer halo shell"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        },
+        {
+          "id": "claude_ms1r7v7y_1",
+          "feature_type": "region",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                269.64039744676734,
+                66.64045053748285
+              ],
+              [
+                269.6173239256111,
+                66.63676077864427
+              ],
+              [
+                269.6174767161858,
+                66.62758813813242
+              ],
+              [
+                269.64065734623944,
+                66.62392063542953
+              ],
+              [
+                269.6637082503214,
+                66.62856246211292
+              ],
+              [
+                269.66117585242137,
+                66.63686958189425
+              ]
+            ]
+          },
+          "label": {
+            "zh": "猫眼内星云",
+            "en": "Inner nebula"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "M 81 + M 82",
+      "aliases": [
+        "M 81",
+        "M81",
+        "M 82",
+        "M82",
+        "NGC 3031",
+        "NGC 3034",
+        "Bode's Galaxy",
+        "Cigar Galaxy"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz17nwe-17.jpg",
+        "wcs": {
+          "ra0_deg": 148.823309003,
+          "dec0_deg": 69.3192177281,
+          "crpix_x": 1920,
+          "crpix_y": 1072,
+          "scale_deg": 0.00025551855660444444,
+          "orientation_deg": 269.771949,
+          "parity": -1,
+          "width": 3840,
+          "height": 2144
+        },
+        "width_px": 3840,
+        "height_px": 2144,
+        "credit": "T.A. Rector (University of Alaska Anchorage) and NOIRLab/NSF/AURA/",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Galaxies_M81_%26_M82_(noao-m81m82).jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1r24xd_0",
+          "feature_type": "filament",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                149.03634375532488,
+                69.64253471715652
+              ],
+              [
+                148.95892527692888,
+                69.66724813881301
+              ],
+              [
+                148.87470105993475,
+                69.69193849965997
+              ]
+            ]
+          },
+          "label": {
+            "zh": "M82 电离外流",
+            "en": "M82 outflow"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "M 65/66 + NGC 3628",
+      "aliases": [
+        "M 66",
+        "M66",
+        "M 65",
+        "M65",
+        "NGC 3628",
+        "Leo Triplet"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz1jzf3-1a.jpg",
+        "wcs": {
+          "ra0_deg": 169.95315701,
+          "dec0_deg": 13.2872794231,
+          "crpix_x": 1200,
+          "crpix_y": 1500,
+          "scale_deg": 0.000281712139925,
+          "orientation_deg": 1.9621099999999956,
+          "parity": -1,
+          "width": 2400,
+          "height": 3000
+        },
+        "width_px": 2400,
+        "height_px": 3000,
+        "credit": "REU program/NOIRLab/NSF/AURA/",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Leo_Triplet_(M66_group)_(noao-m65a66).jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1qz9j9_0",
+          "feature_type": "dust_lane",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                170.1520136803232,
+                13.568651458561586
+              ],
+              [
+                170.1037177771699,
+                13.581733621868887
+              ],
+              [
+                170.05106172615262,
+                13.594945115003853
+              ],
+              [
+                169.9984096499353,
+                13.607864017447783
+              ],
+              [
+                169.95892677471625,
+                13.617264386896695
+              ]
+            ]
+          },
+          "label": {
+            "zh": "NGC 3628 尘埃带",
+            "en": "NGC 3628 dust lane"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        },
+        {
+          "id": "claude_ms1qz9ja_1",
+          "feature_type": "dust_lane",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                169.71520411718757,
+                13.139702456300595
+              ],
+              [
+                169.72339513581449,
+                13.08924442816281
+              ],
+              [
+                169.73187174207692,
+                13.038796284987404
+              ],
+              [
+                169.74134837037695,
+                12.992610657215003
+              ]
+            ]
+          },
+          "label": {
+            "zh": "M65 尘埃带",
+            "en": "M65 dust lane"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "NGC 281",
+      "aliases": [
+        "Pacman Nebula",
+        "IC 1590"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz1qc6r-1c.jpg",
+        "wcs": {
+          "ra0_deg": 13.4323100284,
+          "dec0_deg": 56.595178477,
+          "crpix_x": 1920,
+          "crpix_y": 1307.5,
+          "scale_deg": 0.0007162406917888888,
+          "orientation_deg": 272.50361399999997,
+          "parity": 1,
+          "width": 3840,
+          "height": 2615
+        },
+        "width_px": 3840,
+        "height_px": 2615,
+        "credit": "Stephen Rahn from Macon, GA, USA",
+        "license": "CC0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:The_Pacman_Nebula_(48818503407).jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "NGC 7822",
+      "aliases": [
+        "Ced 214",
+        "Sh2-171"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz1rlue-1d.jpg",
+        "wcs": {
+          "ra0_deg": 0.898755796983,
+          "dec0_deg": 67.3281187254,
+          "crpix_x": 475.5,
+          "crpix_y": 511.5,
+          "scale_deg": 0.003542457642777778,
+          "orientation_deg": 0.9580699999999922,
+          "parity": -1,
+          "width": 951,
+          "height": 1023
+        },
+        "width_px": 951,
+        "height_px": 1023,
+        "credit": "Cederblad_214_and_NGC_7822_Nebulae_-_Davidedemartin_6.jpg: Credit: Davide De Martin &amp; the ESA/ESO/NASA Photoshop FITS Liberator derivative work: Roberto Mura",
+        "license": "CC BY 3.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Sh2-171.jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "IC 2177",
+      "aliases": [
+        "Seagull Nebula",
+        "Sh2-292"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz1rv4z-1e.jpg",
+        "wcs": {
+          "ra0_deg": 106.299934394,
+          "dec0_deg": -11.1001390322,
+          "crpix_x": 1920,
+          "crpix_y": 1278,
+          "scale_deg": 0.0007812945954916666,
+          "orientation_deg": 269.934445,
+          "parity": -1,
+          "width": 3840,
+          "height": 2556
+        },
+        "width_px": 3840,
+        "height_px": 2556,
+        "credit": "ESO/VPHAS+ team/N.J. Wright (Keele University)",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:The_Rosy_Glow_of_a_Cosmic_Seagull.jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "Sh2-101",
+      "aliases": [
+        "Tulip Nebula"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz29wav-1j.jpg",
+        "wcs": {
+          "ra0_deg": 299.59073236,
+          "dec0_deg": 35.234081192,
+          "crpix_x": 1920,
+          "crpix_y": 1222,
+          "scale_deg": 0.0001468031355336111,
+          "orientation_deg": 359.87045,
+          "parity": -1,
+          "width": 3840,
+          "height": 2444
+        },
+        "width_px": 3840,
+        "height_px": 2444,
+        "credit": "T.A. Rector (University of Alaska Anchorage) and H. Schweiker (WIYN and NOIRLab/NSF/AURA)",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Noao-cyg_x1.jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "Sh2-276",
+      "aliases": [
+        "Barnard's Loop",
+        "Barnards Loop"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz2i0f1-1l.jpg",
+        "wcs": {
+          "ra0_deg": 87.4332530559,
+          "dec0_deg": -2.21928016024,
+          "crpix_x": 1920,
+          "crpix_y": 1226,
+          "scale_deg": 0.0024270096416305555,
+          "orientation_deg": 90.435439,
+          "parity": -1,
+          "width": 3840,
+          "height": 2452
+        },
+        "width_px": 3840,
+        "height_px": 2452,
+        "credit": "Giuseppe Donatiello",
+        "license": "CC0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Barnard_Loop_5RGB_1Ha_2002-2010_rwk_(21223105453).jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1r8smr_0",
+          "feature_type": "filament",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                86.99585376475454,
+                1.127769204265043
+              ],
+              [
+                87.92894249354714,
+                0.8106296134979617
+              ],
+              [
+                88.86536580922308,
+                0.12027297489611705
+              ],
+              [
+                89.57356845198575,
+                -1.0374503738757848
+              ],
+              [
+                89.95966373579938,
+                -2.43072076172052
+              ],
+              [
+                89.74181450647848,
+                -4.061830823829655
+              ],
+              [
+                88.91338638745628,
+                -5.464762625158954
+              ],
+              [
+                87.75264547724612,
+                -6.403302835058239
+              ]
+            ]
+          },
+          "label": {
+            "zh": "巴纳德环弧",
+            "en": "Barnard Loop arc"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "Sh2-129 + Ou4",
+      "aliases": [
+        "Sh2-129",
+        "Flying Bat Nebula",
+        "Ou4",
+        "Squid Nebula"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz2ijve-1m.jpg",
+        "wcs": {
+          "ra0_deg": 317.942445066,
+          "dec0_deg": 59.9412166061,
+          "crpix_x": 1920,
+          "crpix_y": 3723,
+          "scale_deg": 0.0001572168679838889,
+          "orientation_deg": 359.86046999999996,
+          "parity": -1,
+          "width": 3840,
+          "height": 7446
+        },
+        "width_px": 3840,
+        "height_px": 7446,
+        "credit": "T.A. Rector (University of Alaska Anchorage) and H. Schweiker (WIYN and NOIRLab/NSF/AURA)",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Bipolar_Nebula_Outters_4_(noao-ou4).jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "IC 4604 / 4603",
+      "aliases": [
+        "Rho Ophiuchi",
+        "IC 4604",
+        "IC 4603",
+        "Rho Ophiuchi Cloud Complex"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz2ufpr-1o.jpg",
+        "wcs": {
+          "ra0_deg": 247.720450732,
+          "dec0_deg": -25.2550395013,
+          "crpix_x": 1920,
+          "crpix_y": 2148,
+          "scale_deg": 0.0012836415713555556,
+          "orientation_deg": 0.839570000000009,
+          "parity": -1,
+          "width": 3840,
+          "height": 4296
+        },
+        "width_px": 3840,
+        "height_px": 4296,
+        "credit": "ESO/DSS 2",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Wide-field_view_of_the_Rho_Ophiuchi_star_forming_region_in_visible_light.jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1r507k_0",
+          "feature_type": "dust_lane",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                248.6989304296195,
+                -23.696108371837994
+              ],
+              [
+                248.22256891597817,
+                -23.980617148372918
+              ],
+              [
+                247.74439950911665,
+                -24.291973862396393
+              ],
+              [
+                247.2303942882536,
+                -24.408423188002082
+              ],
+              [
+                246.77730350803233,
+                -24.494466236015732
+              ],
+              [
+                246.53548254767998,
+                -24.606355198312787
+              ]
+            ]
+          },
+          "label": {
+            "zh": "尘埃暗带",
+            "en": "Dust lane"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        },
+        {
+          "id": "claude_ms1r507k_1",
+          "feature_type": "region",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                246.61335879159742,
+                -22.84125800299506
+              ],
+              [
+                245.86654586292968,
+                -22.92768872113842
+              ],
+              [
+                245.50652857582736,
+                -23.478865993818328
+              ],
+              [
+                245.715911037792,
+                -24.16739325584058
+              ],
+              [
+                246.47301391328006,
+                -24.30386094539844
+              ],
+              [
+                246.9210731278,
+                -23.749196007658945
+              ],
+              [
+                246.85585210346437,
+                -23.198327234221374
+              ]
+            ]
+          },
+          "label": {
+            "zh": "IC 4604 反射星云",
+            "en": "IC 4604 reflection"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "NGC 7023",
+      "aliases": [
+        "Iris Nebula",
+        "Caldwell 4"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz2v489-1p.jpg",
+        "wcs": {
+          "ra0_deg": 315.368624053,
+          "dec0_deg": 68.1207906281,
+          "crpix_x": 1920,
+          "crpix_y": 1763.5,
+          "scale_deg": 0.00010456621653583333,
+          "orientation_deg": 30.268159999999995,
+          "parity": -1,
+          "width": 3840,
+          "height": 3527
+        },
+        "width_px": 3840,
+        "height_px": 3527,
+        "credit": "T.A. Rector/University of Alaska Anchorage, H. Schweiker/WIYN and NOIRLab/NSF/AURA",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Iris_Nebula_NGC_7023_(noao-ngc7023).jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1qmmql_0",
+          "feature_type": "dust_lane",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                315.0655843414179,
+                68.15440670867419
+              ],
+              [
+                315.14486421479705,
+                68.14388055517728
+              ],
+              [
+                315.21251261247755,
+                68.1332148297392
+              ],
+              [
+                315.26595181830635,
+                68.11579831894454
+              ],
+              [
+                315.28685689984945,
+                68.09006973134935
+              ]
+            ]
+          },
+          "label": {
+            "zh": "尘埃暗带",
+            "en": "Dust lane"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        },
+        {
+          "id": "claude_ms1qmmql_1",
+          "feature_type": "region",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                315.10521668310844,
+                68.18252261976598
+              ],
+              [
+                315.0367292757003,
+                68.15778157399284
+              ],
+              [
+                315.06066591875356,
+                68.12418419387666
+              ],
+              [
+                315.1373715940665,
+                68.11069116987511
+              ],
+              [
+                315.1951439318025,
+                68.13184140195727
+              ],
+              [
+                315.1703973035851,
+                68.16402680069514
+              ]
+            ]
+          },
+          "label": {
+            "zh": "暗湾（尘埃）",
+            "en": "Dark bay"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "M 78",
+      "aliases": [
+        "M78",
+        "NGC 2068",
+        "Messier 78"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz2wa3q-1q.jpg",
+        "wcs": {
+          "ra0_deg": 86.6734555592,
+          "dec0_deg": 0.0942485887914,
+          "crpix_x": 1920,
+          "crpix_y": 1860.5,
+          "scale_deg": 0.0001494582565838889,
+          "orientation_deg": 0.009039999999998827,
+          "parity": -1,
+          "width": 3840,
+          "height": 3721
+        },
+        "width_px": 3840,
+        "height_px": 3721,
+        "credit": "ESO/Igor Chekalin",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Messier_78.jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1qvp21_0",
+          "feature_type": "dust_lane",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                86.77387601718408,
+                0.19447579421132963
+              ],
+              [
+                86.72515699381631,
+                0.16577241812569557
+              ],
+              [
+                86.67912733633602,
+                0.14274867625092455
+              ],
+              [
+                86.63040747962049,
+                0.11972439436832942
+              ],
+              [
+                86.58736988800399,
+                0.0796627365888345
+              ],
+              [
+                86.55300522132865,
+                0.013596877152643919
+              ],
+              [
+                86.5356797713194,
+                -0.05814531628131105
+              ],
+              [
+                86.54435986162076,
+                -0.1298829653634036
+              ]
+            ]
+          },
+          "label": {
+            "zh": "尘埃暗带",
+            "en": "Dust lane"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        },
+        {
+          "id": "claude_ms1qvp21_1",
+          "feature_type": "region",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                86.7997446981492,
+                0.11407145575840161
+              ],
+              [
+                86.7365247997177,
+                0.10838227917556179
+              ],
+              [
+                86.69647581185086,
+                0.07101145722753519
+              ],
+              [
+                86.70784364263238,
+                0.013621334808802999
+              ],
+              [
+                86.76523770887354,
+                -0.0007175653502239756
+              ],
+              [
+                86.8054351409994,
+                0.04233256936457115
+              ]
+            ]
+          },
+          "label": {
+            "zh": "反射星云主体",
+            "en": "Reflection patch"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "IC 4592",
+      "aliases": [
+        "Blue Horsehead Nebula"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz3420j-1s.jpg",
+        "wcs": {
+          "ra0_deg": 245.192114794,
+          "dec0_deg": -21.0422949763,
+          "crpix_x": 1788,
+          "crpix_y": 1828,
+          "scale_deg": 0.0020875339523055555,
+          "orientation_deg": 178.390773,
+          "parity": -1,
+          "width": 3576,
+          "height": 3656
+        },
+        "width_px": 3576,
+        "height_px": 3656,
+        "credit": "Giuseppe Donatiello",
+        "license": "CC0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:IC_4592_Blue_Horsehead_Nebula.jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1r70yh_0",
+          "feature_type": "region",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                243.66265754734468,
+                -20.686268021880547
+              ],
+              [
+                244.69280339592228,
+                -20.449984256736816
+              ],
+              [
+                245.00170326525847,
+                -19.69459135918215
+              ],
+              [
+                244.3398846952656,
+                -18.91151188910109
+              ],
+              [
+                243.15232573323715,
+                -18.37677342474807
+              ],
+              [
+                242.25434106632952,
+                -18.645297647807663
+              ],
+              [
+                242.4083087391498,
+                -19.604631262597923
+              ],
+              [
+                242.98705597429034,
+                -20.279152235372784
+              ]
+            ]
+          },
+          "label": {
+            "zh": "蓝马头（反射）",
+            "en": "Blue Horsehead"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "B 72",
+      "aliases": [
+        "Barnard 72",
+        "Snake Nebula"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz3aeuh-1u.jpg",
+        "wcs": {
+          "ra0_deg": 261.073180263,
+          "dec0_deg": -23.7264792701,
+          "crpix_x": 549.5,
+          "crpix_y": 817.5,
+          "scale_deg": 0.0013342128140055557,
+          "orientation_deg": 270.730102,
+          "parity": -1,
+          "width": 1099,
+          "height": 1635
+        },
+        "width_px": 1099,
+        "height_px": 1635,
+        "credit": "KPNO/NOIRLab/NSF/AURA/Tom McQuillan/Adam Block",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Snake_Nebula_(noao-snakemcquillan).jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1ple67_0",
+          "feature_type": "filament",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                261.33456451226346,
+                -23.619798741848104
+              ],
+              [
+                261.2258636808201,
+                -23.654570451395585
+              ],
+              [
+                261.11000915310296,
+                -23.70269456074067
+              ],
+              [
+                261.0062030329407,
+                -23.677209511295104
+              ],
+              [
+                260.93233859992256,
+                -23.597964389809533
+              ],
+              [
+                260.86657842437944,
+                -23.578644921006557
+              ],
+              [
+                260.8164273036216,
+                -23.645870102446366
+              ],
+              [
+                260.78831655366275,
+                -23.732877316783608
+              ],
+              [
+                260.69432328521543,
+                -23.800485979324296
+              ]
+            ]
+          },
+          "label": {
+            "zh": "蛇形暗带",
+            "en": "Snake dark lane"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "B 150",
+      "aliases": [
+        "Barnard 150",
+        "Seahorse Nebula",
+        "LDN 1082"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz3ayzx-1v.jpg",
+        "wcs": {
+          "ra0_deg": 312.630524268,
+          "dec0_deg": 60.1269328991,
+          "crpix_x": 998,
+          "crpix_y": 1500,
+          "scale_deg": 0.0005496240541388889,
+          "orientation_deg": 304.76928,
+          "parity": -1,
+          "width": 1996,
+          "height": 3000
+        },
+        "width_px": 1996,
+        "height_px": 3000,
+        "credit": "Yann SAINTY",
+        "license": "CC BY-SA 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Seahorse_nebula.png"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1qt247_0",
+          "feature_type": "filament",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                313.6197751985619,
+                60.47641154780315
+              ],
+              [
+                313.5046676705567,
+                60.3984054849624
+              ],
+              [
+                313.4176853637757,
+                60.32954167127436
+              ],
+              [
+                313.3585787968981,
+                60.26987568475707
+              ],
+              [
+                313.1000736019564,
+                60.28234452998099
+              ],
+              [
+                312.7960634504026,
+                60.26879672804308
+              ],
+              [
+                312.5030550653712,
+                60.218072973150704
+              ],
+              [
+                312.2029318307294,
+                60.14373165006427
+              ],
+              [
+                311.95024650846517,
+                60.06481879640511
+              ],
+              [
+                311.8002917322949,
+                59.97104837952639
+              ]
+            ]
+          },
+          "label": {
+            "zh": "海马暗带",
+            "en": "Seahorse dark lane"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "LDN 1235",
+      "aliases": [
+        "Dark Shark Nebula",
+        "vdB 149",
+        "vdB 150"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz3crzh-1w.jpg",
+        "wcs": {
+          "ra0_deg": 332.176564221,
+          "dec0_deg": 73.223699062,
+          "crpix_x": 1920,
+          "crpix_y": 1907,
+          "scale_deg": 0.0004114720726472222,
+          "orientation_deg": 7.480259999999987,
+          "parity": -1,
+          "width": 3840,
+          "height": 3814
+        },
+        "width_px": 3840,
+        "height_px": 3814,
+        "credit": "Chuck Ayoub",
+        "license": "CC0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Dark_Shark.png"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1qq58o_0",
+          "feature_type": "silhouette",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                334.3378084805861,
+                73.47918871160856
+              ],
+              [
+                333.8891548445265,
+                73.52204324352742
+              ],
+              [
+                333.28392941552033,
+                73.4957339078929
+              ],
+              [
+                332.5633292921832,
+                73.47931452053015
+              ],
+              [
+                331.9444535429093,
+                73.42445225218337
+              ],
+              [
+                331.1835367075465,
+                73.27385957446235
+              ],
+              [
+                330.45753399723037,
+                73.0815367758845
+              ],
+              [
+                330.0701309623689,
+                72.94290203715694
+              ],
+              [
+                330.98224208592126,
+                72.86565253937304
+              ],
+              [
+                331.9049082534125,
+                72.92088256169235
+              ],
+              [
+                332.7737541904652,
+                72.98556648756521
+              ],
+              [
+                333.45070918529086,
+                73.06388653363055
+              ],
+              [
+                333.9576450843963,
+                73.17456739364165
+              ],
+              [
+                334.26556846136975,
+                73.31851056328287
+              ]
+            ]
+          },
+          "label": {
+            "zh": "暗鲨（剪影）",
+            "en": "Dark Shark silhouette"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "NGC 7008",
+      "aliases": [
+        "Fetus Nebula"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz4tjb8-26.jpg",
+        "wcs": {
+          "ra0_deg": 315.149724594,
+          "dec0_deg": 54.5469968644,
+          "crpix_x": 928,
+          "crpix_y": 625.5,
+          "scale_deg": 0.00011132083631166666,
+          "orientation_deg": 348.17062,
+          "parity": -1,
+          "width": 1856,
+          "height": 1251
+        },
+        "width_px": 1856,
+        "height_px": 1251,
+        "credit": "KPNO/NOIRLab/NSF/AURA/Donn and Aaron Starkey/Adam Block",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:NGC_7008_(noao-n7008starkey).jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1qxugv_0",
+          "feature_type": "shell",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                315.1417893935102,
+                54.5559788195326
+              ],
+              [
+                315.12780777813236,
+                54.552557384958796
+              ],
+              [
+                315.11957645280404,
+                54.543320032832675
+              ],
+              [
+                315.12261689272873,
+                54.53271593308764
+              ],
+              [
+                315.137050360544,
+                54.529258307946876
+              ],
+              [
+                315.1512658890231,
+                54.53606147616194
+              ],
+              [
+                315.15707904286376,
+                54.546728722236736
+              ],
+              [
+                315.15153273249143,
+                54.5530895859968
+              ]
+            ]
+          },
+          "label": {
+            "zh": "胎儿壳",
+            "en": "Shell"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "Abell 21",
+      "aliases": [
+        "Medusa Nebula",
+        "Sh2-274"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz4ucpf-27.jpg",
+        "wcs": {
+          "ra0_deg": 112.264353739,
+          "dec0_deg": 13.2545941552,
+          "crpix_x": 1920,
+          "crpix_y": 1913.5,
+          "scale_deg": 0.00015661867575305556,
+          "orientation_deg": 90.072949,
+          "parity": -1,
+          "width": 3840,
+          "height": 3827
+        },
+        "width_px": 3840,
+        "height_px": 3827,
+        "credit": "Credit: T. A. Rector/University of Alaska Anchorage and H. Schweiker/NOIRLab/NSF/AURA and NOIRLab/NSF/AURA",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Abell21_-_Noaoann09008a.jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1qwmmp_0",
+          "feature_type": "shell",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                112.13243684085342,
+                13.284467537935875
+              ],
+              [
+                112.14187938457883,
+                13.224342397195162
+              ],
+              [
+                112.19133385342263,
+                13.185267826369415
+              ],
+              [
+                112.26549760227874,
+                13.179418588519246
+              ],
+              [
+                112.34268739383992,
+                13.200489259725535
+              ],
+              [
+                112.37964202241432,
+                13.254711144581044
+              ],
+              [
+                112.36736008063485,
+                13.314842624808499
+              ],
+              [
+                112.31163314211892,
+                13.350812196345162
+              ],
+              [
+                112.23435097441484,
+                13.362778687516359
+              ],
+              [
+                112.17257650180238,
+                13.33872481103557
+              ]
+            ]
+          },
+          "label": {
+            "zh": "壳",
+            "en": "Shell"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "JnEr 1",
+      "aliases": [
+        "Jones-Emberson 1",
+        "PK 164+31.1",
+        "Headphone Nebula"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz4xj80-28.jpg",
+        "wcs": {
+          "ra0_deg": 119.458154444,
+          "dec0_deg": 53.4207125728,
+          "crpix_x": 720.5,
+          "crpix_y": 486,
+          "scale_deg": 0.00014332982292833332,
+          "orientation_deg": 4.8421400000000006,
+          "parity": -1,
+          "width": 1441,
+          "height": 972
+        },
+        "width_px": 1441,
+        "height_px": 972,
+        "credit": "KPNO/NOIRLab/NSF/AURA/Adam Block",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:PK164%2B31_1-_Jones-Emberson_1_(noao-pk164block).jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1rbfzl_0",
+          "feature_type": "shell",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                119.46763143548014,
+                53.47383662463719
+              ],
+              [
+                119.41367352898686,
+                53.46247697905006
+              ],
+              [
+                119.38180903263441,
+                53.43208246379919
+              ],
+              [
+                119.38153933289664,
+                53.40042029006622
+              ],
+              [
+                119.4171725406872,
+                53.37059059507501
+              ],
+              [
+                119.4756340077551,
+                53.36635908304998
+              ],
+              [
+                119.5268917314171,
+                53.37899957669731
+              ],
+              [
+                119.54164677112385,
+                53.41137810358515
+              ],
+              [
+                119.53204250511192,
+                53.44541884021496
+              ],
+              [
+                119.50503841194995,
+                53.46564533630419
+              ]
+            ]
+          },
+          "label": {
+            "zh": "环壳",
+            "en": "Ring shell"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "M 33",
+      "aliases": [
+        "M33",
+        "NGC 598",
+        "Triangulum Galaxy",
+        "Messier 33"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz53gk7-2a.jpg",
+        "wcs": {
+          "ra0_deg": 23.4548960464,
+          "dec0_deg": 30.6694477424,
+          "crpix_x": 1920,
+          "crpix_y": 1903.5,
+          "scale_deg": 0.00015563992634916668,
+          "orientation_deg": 270.062772,
+          "parity": -1,
+          "width": 3840,
+          "height": 3807
+        },
+        "width_px": 3840,
+        "height_px": 3807,
+        "credit": "KPNO/NOIRLab/NSF/AURA Data obtained and processed by: P. Massey (Lowell Obs.), G. Jacoby, K. Olsen, &amp; C. Smith (AURA/NSF) Image processing: M. Zamani (NSF’s NOIRLab), A. Hussein (NSF’s NOIRLab) &amp; D. de Martin (NSF’s NOIRLab)",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Iotw2233a_Destined_to_Collide.jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "NGC 253",
+      "aliases": [
+        "Sculptor Galaxy",
+        "Caldwell 65",
+        "Silver Coin Galaxy"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz5b23x-2c.jpg",
+        "wcs": {
+          "ra0_deg": 11.8897119526,
+          "dec0_deg": -25.2850349843,
+          "crpix_x": 1920,
+          "crpix_y": 1740.5,
+          "scale_deg": 0.00014264335211444442,
+          "orientation_deg": 359.98775,
+          "parity": -1,
+          "width": 3840,
+          "height": 3481
+        },
+        "width_px": 3840,
+        "height_px": 3481,
+        "credit": "ESO",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:NGC_253_Galaxy.jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1ordd1_0",
+          "feature_type": "dust_lane",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                12.007662874806897,
+                -25.215044474689837
+              ],
+              [
+                11.931988022542043,
+                -25.259004729255736
+              ],
+              [
+                11.871407366852793,
+                -25.297226323106724
+              ],
+              [
+                11.825941504145476,
+                -25.33286577125542
+              ],
+              [
+                11.780448975366596,
+                -25.368491170126166
+              ],
+              [
+                11.734933269892508,
+                -25.40182014991761
+              ]
+            ]
+          },
+          "label": {
+            "zh": "尘埃带",
+            "en": "Dust lanes"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 3
+    },
+    {
+      "primary_id": "NGC 5907",
+      "aliases": [
+        "Splinter Galaxy",
+        "Knife Edge Galaxy",
+        "Caldwell 45"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz5hmk0-2e.jpg",
+        "wcs": {
+          "ra0_deg": 228.988033115,
+          "dec0_deg": 56.3260139822,
+          "crpix_x": 1920,
+          "crpix_y": 1440,
+          "scale_deg": 0.00024914390682277774,
+          "orientation_deg": 358.04283,
+          "parity": -1,
+          "width": 3840,
+          "height": 2880
+        },
+        "width_px": 3840,
+        "height_px": 2880,
+        "credit": "Carsten Frenzl from Deutschland",
+        "license": "CC BY 2.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:NGC_5907_-_Splinter_Galaxy_(52053906679).jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1oozp2_0",
+          "feature_type": "dust_lane",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                228.91000205585067,
+                56.427428977139805
+              ],
+              [
+                228.93491365108162,
+                56.392071853330975
+              ],
+              [
+                228.9596273356517,
+                56.35421966694628
+              ],
+              [
+                228.97622859792273,
+                56.331472130389585
+              ],
+              [
+                228.99683691239557,
+                56.30116710964903
+              ],
+              [
+                229.01741255104207,
+                56.27085868769622
+              ],
+              [
+                229.03602775056697,
+                56.24557016007408
+              ]
+            ]
+          },
+          "label": {
+            "zh": "尘埃带",
+            "en": "Dust lane"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 3
+    },
+    {
+      "primary_id": "M 106",
+      "aliases": [
+        "M106",
+        "NGC 4258",
+        "Messier 106"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz5hsr0-2f.jpg",
+        "wcs": {
+          "ra0_deg": 184.732864788,
+          "dec0_deg": 47.3048370877,
+          "crpix_x": 1920,
+          "crpix_y": 1842.5,
+          "scale_deg": 0.000140538090655,
+          "orientation_deg": 270.074048,
+          "parity": -1,
+          "width": 3840,
+          "height": 3685
+        },
+        "width_px": 3840,
+        "height_px": 3685,
+        "credit": "Credit: KPNO/NOIRLab/NSF/AURA Acknowledgment: PI: M.T. Patterson (New Mexico State University) Image processing: T.A. Rector (University of Alaska Anchorage), M. Zamani &amp; D. de Martin",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:M106_-_Noirlab2112b.jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "HCG 92",
+      "aliases": [
+        "Stephan's Quintet",
+        "NGC 7317",
+        "NGC 7318",
+        "NGC 7319",
+        "NGC 7320"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz601jw-2j.jpg",
+        "wcs": {
+          "ra0_deg": 339.011515852,
+          "dec0_deg": 33.9649220733,
+          "crpix_x": 800,
+          "crpix_y": 800,
+          "scale_deg": 0.00009446404184027778,
+          "orientation_deg": 1.8915499999999952,
+          "parity": -1,
+          "width": 1600,
+          "height": 1600
+        },
+        "width_px": 1600,
+        "height_px": 1600,
+        "credit": "N.A.Sharp/NOIRLab/NSF/AURA",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Stephan%27s_Quintet_(NGC_7317,_NGC_7318A,_NGC_7318B,_NGC_7319,_NGC_7320)_(noao-sq2).jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1r15vi_0",
+          "feature_type": "region",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                339.0074232755019,
+                33.98182272584161
+              ],
+              [
+                338.9826402623205,
+                33.974524571619924
+              ],
+              [
+                338.97930089023066,
+                33.95836447944662
+              ],
+              [
+                338.9897327383651,
+                33.939749279608186
+              ],
+              [
+                339.0114677692618,
+                33.9375112502108
+              ],
+              [
+                339.02444973520915,
+                33.95487899989765
+              ],
+              [
+                339.0237380930794,
+                33.97281745987007
+              ]
+            ]
+          },
+          "label": {
+            "zh": "致密群",
+            "en": "Compact group"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        },
+        {
+          "id": "claude_ms1r15vi_1",
+          "feature_type": "tidal_tail",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                339.01509990854834,
+                33.960766997259135
+              ],
+              [
+                339.0345070871433,
+                33.95987879159771
+              ],
+              [
+                339.0516261394704,
+                33.959209180341475
+              ],
+              [
+                339.06644615693654,
+                33.95904235626731
+              ]
+            ]
+          },
+          "label": {
+            "zh": "潮汐尾",
+            "en": "Tidal tail"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "NGC 55",
+      "aliases": [
+        "Caldwell 72"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz6d9l1-2m.jpg",
+        "wcs": {
+          "ra0_deg": 3.74900799889,
+          "dec0_deg": -39.2274703711,
+          "crpix_x": 1920,
+          "crpix_y": 1255.5,
+          "scale_deg": 0.0002176937372902778,
+          "orientation_deg": 181.1395541,
+          "parity": -1,
+          "width": 3840,
+          "height": 2511
+        },
+        "width_px": 3840,
+        "height_px": 2511,
+        "credit": "ESO",
+        "license": "CC BY 3.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:ESO_NGC_55_3point6-m_copy.jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1qozqm_0",
+          "feature_type": "region",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                3.657248357099604,
+                -39.222207422095266
+              ],
+              [
+                3.7219714500604937,
+                -39.2253798875782
+              ],
+              [
+                3.753637599711851,
+                -39.19985521139131
+              ],
+              [
+                3.7259304397979918,
+                -39.17088582555403
+              ],
+              [
+                3.661459263700749,
+                -39.17598647096853
+              ],
+              [
+                3.6404488162510233,
+                -39.201549685979344
+              ]
+            ]
+          },
+          "label": {
+            "zh": "恒星形成核心",
+            "en": "Star-forming core"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "M 94",
+      "aliases": [
+        "M94",
+        "NGC 4736",
+        "Croc's Eye Galaxy",
+        "Messier 94"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz6e4iw-2n.jpg",
+        "wcs": {
+          "ra0_deg": 192.718815959,
+          "dec0_deg": 41.1203091405,
+          "crpix_x": 1500,
+          "crpix_y": 1500,
+          "scale_deg": 0.0000944734653313889,
+          "orientation_deg": 1.376419999999996,
+          "parity": -1,
+          "width": 3000,
+          "height": 3000
+        },
+        "width_px": 3000,
+        "height_px": 3000,
+        "credit": "Credit:Hillary Mathis, N.A.Sharp/NOIRLab/NSF/AURA/",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:M94_-_Noao-m94.jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "M 20",
+      "aliases": [
+        "M20",
+        "NGC 6514",
+        "Trifid Nebula",
+        "Messier 20"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz9bb3w-0.jpg",
+        "wcs": {
+          "ra0_deg": 270.581750333,
+          "dec0_deg": -22.9756611621,
+          "crpix_x": 1570,
+          "crpix_y": 2023.5,
+          "scale_deg": 0.00006609370767555556,
+          "orientation_deg": 0.10015999999998826,
+          "parity": -1,
+          "width": 3140,
+          "height": 4047
+        },
+        "width_px": 3140,
+        "height_px": 4047,
+        "credit": "ESO",
+        "license": "CC BY 3.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:ESO-Trifid_Nebula.jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1quc92_0",
+          "feature_type": "dust_lane",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                270.5874440727389,
+                -23.023226860933523
+              ],
+              [
+                270.6258627620341,
+                -23.010493576306406
+              ],
+              [
+                270.6462964918569,
+                -23.00982419049457
+              ],
+              [
+                270.6715222756293,
+                -23.00981530474756
+              ]
+            ]
+          },
+          "label": {
+            "zh": "三裂尘埃带",
+            "en": "Trifid dust lane"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-27T07:14:54.266Z"
+        },
+        {
+          "id": "claude_ms1quc92_1",
+          "feature_type": "dust_lane",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                270.56321071283526,
+                -23.025367347563552
+              ],
+              [
+                270.5576876506269,
+                -23.019248750970988
+              ],
+              [
+                270.5664463726175,
+                -23.01073588294463
+              ],
+              [
+                270.56433285847424,
+                -22.978508062252097
+              ]
+            ]
+          },
+          "label": {
+            "zh": "三裂尘埃带",
+            "en": "Trifid dust lane"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-27T07:15:34.474Z"
+        },
+        {
+          "id": "claude_ms1quc92_2",
+          "feature_type": "dust_lane",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                270.5779067710871,
+                -23.04456379889466
+              ],
+              [
+                270.5848982412185,
+                -23.041489401733525
+              ],
+              [
+                270.5936762627899,
+                -23.046821005624547
+              ],
+              [
+                270.6006659668342,
+                -23.06120896289615
+              ]
+            ]
+          },
+          "label": {
+            "zh": "三裂尘埃带",
+            "en": "Trifid dust lane"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-27T07:15:56.189Z"
+        }
+      ],
+      "rev": 5
+    },
+    {
+      "primary_id": "NGC 2264",
+      "aliases": [
+        "Cone Nebula",
+        "Christmas Tree Cluster"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz9cc8c-1.jpg",
+        "wcs": {
+          "ra0_deg": 100.305995896,
+          "dec0_deg": 9.40082635566,
+          "crpix_x": 819.5,
+          "crpix_y": 841,
+          "scale_deg": 0.0000700397262175,
+          "orientation_deg": 10.269329999999997,
+          "parity": -1,
+          "width": 1639,
+          "height": 1682
+        },
+        "width_px": 1639,
+        "height_px": 1682,
+        "credit": "(Credit) ESO",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Cone_Nebula_-_ESO_VLT_-_eso2215a.jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "NGC 2070",
+      "aliases": [
+        "Tarantula Nebula",
+        "30 Doradus",
+        "Caldwell 103"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz9d42z-2.jpg",
+        "wcs": {
+          "ra0_deg": 84.5711757707,
+          "dec0_deg": -69.1259649854,
+          "crpix_x": 1920,
+          "crpix_y": 1536,
+          "scale_deg": 0.00005823196196583333,
+          "orientation_deg": 35.081349999999986,
+          "parity": -1,
+          "width": 3840,
+          "height": 3072
+        },
+        "width_px": 3840,
+        "height_px": 3072,
+        "credit": "NASA, ESA, ESO, D. Lennon and E. Sabbi (ESA/STScI), J. Anderson, S. E. de Mink, R. van der Marel, T. Sohn, and N. Walborn (STScI), N. Bastian (Excellence Cluster, Munich), L. Bedin (INAF, Padua), E. Bressert (ESO), P. Crowther (Sheffield), A. de Koter (Amsterdam), C. Evans (UKATC/STFC, Edinburgh), A. Herrero (IAC, Tenerife), N. Langer (AifA, Bonn), I. Platais (JHU) and H. Sana (Amsterdam)",
+        "license": "Public domain",
+        "source_url": "https://commons.wikimedia.org/wiki/File:30_Doradus,_Tarantula_Nebula.jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "M 83",
+      "aliases": [
+        "M83",
+        "NGC 5236",
+        "Southern Pinwheel",
+        "Messier 83"
+      ],
+      "reference": {
+        "image_ref": "upload_mrz9vr8s-6.jpg",
+        "wcs": {
+          "ra0_deg": 204.242671192,
+          "dec0_deg": -29.8839146623,
+          "crpix_x": 1538.5,
+          "crpix_y": 2002,
+          "scale_deg": 0.00006611253310555556,
+          "orientation_deg": 359.97703,
+          "parity": -1,
+          "width": 3077,
+          "height": 4004
+        },
+        "width_px": 3077,
+        "height_px": 4004,
+        "credit": "ESO",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Ground-based_image_of_M83_Taken_at_ESO_in_La_Silla,_Chile_(opo0929c).jpg"
+      },
+      "annotations": [],
+      "rev": 5
+    },
+    {
+      "primary_id": "M 1",
+      "aliases": [
+        "M1",
+        "NGC 1952",
+        "Crab Nebula",
+        "Messier 1"
+      ],
+      "reference": {
+        "image_ref": "upload_mrzapgus-c.jpg",
+        "wcs": {
+          "ra0_deg": 83.6356303784,
+          "dec0_deg": 22.0151158137,
+          "crpix_x": 1920,
+          "crpix_y": 1920,
+          "scale_deg": 0.00002791643558388889,
+          "orientation_deg": 359.82824,
+          "parity": -1,
+          "width": 3840,
+          "height": 3840
+        },
+        "width_px": 3840,
+        "height_px": 3840,
+        "credit": "NASA, ESA, STScI, William Blair (JHU); Image Processing: Joseph DePasquale (STScI)",
+        "license": "Public domain",
+        "source_url": "https://commons.wikimedia.org/wiki/File:A_Fresh_Look_at_the_Crab_Nebula.png"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1pik9w_0",
+          "feature_type": "filament",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                83.6645783039229,
+                22.026813614365356
+              ],
+              [
+                83.65642317419554,
+                22.01075756319236
+              ],
+              [
+                83.64944771308001,
+                21.9957864857616
+              ],
+              [
+                83.64593926387226,
+                21.981866130704212
+              ]
+            ]
+          },
+          "label": {
+            "zh": "丝状结构",
+            "en": "Filament"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        },
+        {
+          "id": "claude_ms1pik9w_1",
+          "feature_type": "filament",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                83.65305401635464,
+                22.03865596920616
+              ],
+              [
+                83.6386048910548,
+                22.04084658910248
+              ],
+              [
+                83.62414176316548,
+                22.03873682967727
+              ],
+              [
+                83.6125603917244,
+                22.033407820196636
+              ]
+            ]
+          },
+          "label": {
+            "zh": "丝状结构",
+            "en": "Filament"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "M 27",
+      "aliases": [
+        "M27",
+        "NGC 6853",
+        "Dumbbell Nebula",
+        "Messier 27"
+      ],
+      "reference": {
+        "image_ref": "upload_mrzatoda-d.jpg",
+        "wcs": {
+          "ra0_deg": 299.904366978,
+          "dec0_deg": 22.7213858413,
+          "crpix_x": 1920,
+          "crpix_y": 2289.5,
+          "scale_deg": 0.00007502892289888889,
+          "orientation_deg": 0.02103999999999928,
+          "parity": -1,
+          "width": 3840,
+          "height": 4579
+        },
+        "width_px": 3840,
+        "height_px": 4579,
+        "credit": "Credit: T.A. Rector (University of Alaska Anchorage) and H. Schweiker (WIYN and NOIRLab/NSF/AURA)",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:M27_-_Noao-m27-kpno-mayall-4-m_(north_up).jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1pgqt8_0",
+          "feature_type": "shell",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                299.9021494167464,
+                22.772892420304643
+              ],
+              [
+                299.8648880473186,
+                22.762596009227778
+              ],
+              [
+                299.8444882150609,
+                22.73504718757615
+              ],
+              [
+                299.84077281300006,
+                22.704132593210446
+              ],
+              [
+                299.8556797203739,
+                22.67323094051823
+              ],
+              [
+                299.89292762554976,
+                22.659520231777666
+              ],
+              [
+                299.93390428878934,
+                22.66463377762254
+              ],
+              [
+                299.9543928926371,
+                22.693896916026297
+              ],
+              [
+                299.9562627234162,
+                22.728260190099125
+              ],
+              [
+                299.9394198050469,
+                22.759170945734482
+              ]
+            ]
+          },
+          "label": {
+            "zh": "主体双叶壳",
+            "en": "Inner dumbbell shell"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        },
+        {
+          "id": "claude_ms1pgqt8_1",
+          "feature_type": "shell",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                299.9021294760987,
+                22.820985869886666
+              ],
+              [
+                299.8369397488607,
+                22.807219383648995
+              ],
+              [
+                299.79036119167404,
+                22.75908383357837
+              ],
+              [
+                299.78114607479233,
+                22.712631067868937
+              ],
+              [
+                299.79610203292486,
+                22.65254881577604
+              ],
+              [
+                299.846373935468,
+                22.618228613773432
+              ],
+              [
+                299.9078249883522,
+                22.609631530041266
+              ],
+              [
+                299.9674006104933,
+                22.625170385087735
+              ],
+              [
+                300.0083840015743,
+                22.669805133864177
+              ],
+              [
+                300.0214172622045,
+                22.72134537717825
+              ],
+              [
+                300.00467939244936,
+                22.776347133739883
+              ],
+              [
+                299.9562612346707,
+                22.807265554066472
+              ]
+            ]
+          },
+          "label": {
+            "zh": "外晕壳",
+            "en": "Outer halo shell"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "NGC 891",
+      "aliases": [
+        "Caldwell 23"
+      ],
+      "reference": {
+        "image_ref": "upload_mrzbo43s-j.jpg",
+        "wcs": {
+          "ra0_deg": 35.6446195357,
+          "dec0_deg": 42.3443940455,
+          "crpix_x": 900,
+          "crpix_y": 604.5,
+          "scale_deg": 0.00010115531138694444,
+          "orientation_deg": 215.751382,
+          "parity": -1,
+          "width": 1800,
+          "height": 1209
+        },
+        "width_px": 1800,
+        "height_px": 1209,
+        "credit": "KPNO/NOIRLab/NSF/AURA/Dale Cupp/Flynn Haase",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:NGC_891_(noao-n891cuppw).jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1omka6_0",
+          "feature_type": "dust_lane",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                35.590926686335365,
+                42.26972153023291
+              ],
+              [
+                35.6054655003752,
+                42.29804828785337
+              ],
+              [
+                35.62081713305423,
+                42.325552467762655
+              ],
+              [
+                35.63818177964009,
+                42.35100239966869
+              ],
+              [
+                35.654760579371384,
+                42.37727071662158
+              ],
+              [
+                35.672553281979674,
+                42.40230494008261
+              ],
+              [
+                35.69084773539947,
+                42.42510330228734
+              ]
+            ]
+          },
+          "label": {
+            "zh": "尘埃带",
+            "en": "Dust lane"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "vdB 141",
+      "aliases": [
+        "Ghost Nebula",
+        "Sh2-136"
+      ],
+      "reference": {
+        "image_ref": "upload_mrzct17d-s.jpg",
+        "wcs": {
+          "ra0_deg": 318.897662788,
+          "dec0_deg": 68.0674563669,
+          "crpix_x": 1024,
+          "crpix_y": 1024,
+          "scale_deg": 0.00007217754193833333,
+          "orientation_deg": 180.36914593,
+          "parity": -1,
+          "width": 2048,
+          "height": 2048
+        },
+        "width_px": 2048,
+        "height_px": 2048,
+        "credit": "T.A. Rector/University of Alaska Anchorage, H. Schweiker/WIYN and NOIRLab/NSF/AURA",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:VdB_141_South_(noao-vdb141se).jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1r3riq_0",
+          "feature_type": "silhouette",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                318.8545534234795,
+                68.01775978264615
+              ],
+              [
+                318.8817761251794,
+                68.02663615276244
+              ],
+              [
+                318.91342264751074,
+                68.02599066857991
+              ],
+              [
+                318.94683710887693,
+                68.02310533028367
+              ],
+              [
+                318.9802225364218,
+                68.02172893893886
+              ],
+              [
+                319.0037394829044,
+                68.03794014802956
+              ],
+              [
+                318.99162804365665,
+                68.06368598510798
+              ],
+              [
+                318.94583448036565,
+                68.08936324112933
+              ],
+              [
+                318.88638707065957,
+                68.10395147999053
+              ],
+              [
+                318.8273884811505,
+                68.09275171705254
+              ],
+              [
+                318.7944828977131,
+                68.06688714999136
+              ],
+              [
+                318.8027624496726,
+                68.04114383852375
+              ],
+              [
+                318.8287454047577,
+                68.02577289293158
+              ]
+            ]
+          },
+          "label": {
+            "zh": "幽灵（形状）",
+            "en": "Ghost shape"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "Puppis A",
+      "aliases": [
+        "SNR G260.4-03.4"
+      ],
+      "reference": {
+        "image_ref": "upload_mrzcu5f2-t.jpg",
+        "wcs": {
+          "ra0_deg": 126.099740162,
+          "dec0_deg": -42.9873306145,
+          "crpix_x": 1039.5,
+          "crpix_y": 1039.5,
+          "scale_deg": 0.00007495986925805555,
+          "orientation_deg": 358.88382,
+          "parity": -1,
+          "width": 2079,
+          "height": 2079
+        },
+        "width_px": 2079,
+        "height_px": 2079,
+        "credit": "CTIO/NOIRLab/DOE/NSF/AURA Image Processing: T.A. Rector (University of Alaska Anchorage/NSF’s NOIRLab), M. Zamani &amp; D. de Martin (NSF’s NOIRLab)",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Supernova_Remnant_Puppis_A_(noirlab2406f).jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1r60g2_0",
+          "feature_type": "filament",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                126.0353259746297,
+                -43.0020268248851
+              ],
+              [
+                126.0242339442197,
+                -43.01745689936249
+              ],
+              [
+                126.01528943056877,
+                -43.03291816105432
+              ],
+              [
+                126.0095195774955,
+                -43.04842652286215
+              ],
+              [
+                126.00488255645655,
+                -43.06005296213369
+              ]
+            ]
+          },
+          "label": {
+            "zh": "丝状结构",
+            "en": "Filament"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        },
+        {
+          "id": "claude_ms1r60g2_1",
+          "feature_type": "filament",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                126.07378813407524,
+                -42.959704560512186
+              ],
+              [
+                126.08934610673748,
+                -42.97552350542554
+              ],
+              [
+                126.1048086019137,
+                -42.99523752301552
+              ],
+              [
+                126.1202810186586,
+                -43.01494945555797
+              ],
+              [
+                126.13053353492887,
+                -43.0306877136529
+              ]
+            ]
+          },
+          "label": {
+            "zh": "丝状结构",
+            "en": "Filament"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "NGC 4565",
+      "aliases": [
+        "Needle Galaxy",
+        "Caldwell 38"
+      ],
+      "reference": {
+        "image_ref": "upload_mrzeh1t1-14.jpg",
+        "wcs": {
+          "ra0_deg": 189.08680088,
+          "dec0_deg": 25.9880667761,
+          "crpix_x": 1023.5,
+          "crpix_y": 1021,
+          "scale_deg": 0.000055617592480555556,
+          "orientation_deg": 179.85349267,
+          "parity": -1,
+          "width": 2047,
+          "height": 2042
+        },
+        "width_px": 2047,
+        "height_px": 2042,
+        "credit": "ESO",
+        "license": "CC BY 3.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:NGC_4565.jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1on9g3_0",
+          "feature_type": "dust_lane",
+          "geometry": {
+            "type": "polyline",
+            "vertices": [
+              [
+                189.02866393441684,
+                26.038077843762537
+              ],
+              [
+                189.04441459783857,
+                26.024420772810146
+              ],
+              [
+                189.06139931967982,
+                26.0107593637236
+              ],
+              [
+                189.07714575261798,
+                25.998266698432214
+              ],
+              [
+                189.0897413196417,
+                25.988560547816988
+              ],
+              [
+                189.10424941230963,
+                25.977736333050327
+              ],
+              [
+                189.1193098587005,
+                25.96635309725183
+              ],
+              [
+                189.13442743415044,
+                25.954411972249993
+              ],
+              [
+                189.1470137508727,
+                25.94475649474358
+              ]
+            ]
+          },
+          "label": {
+            "zh": "尘埃带",
+            "en": "Dust lane"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "NGC 300",
+      "aliases": [
+        "Caldwell 70"
+      ],
+      "reference": {
+        "image_ref": "upload_mrzf5kbh-19.jpg",
+        "wcs": {
+          "ra0_deg": 13.6951123307,
+          "dec0_deg": -37.6793565454,
+          "crpix_x": 1920,
+          "crpix_y": 1558,
+          "scale_deg": 0.00009492641412555555,
+          "orientation_deg": 359.9327,
+          "parity": -1,
+          "width": 3840,
+          "height": 3116
+        },
+        "width_px": 3840,
+        "height_px": 3116,
+        "credit": "ESO",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Phot-18c-02.jpg"
+      },
+      "annotations": [],
+      "rev": 1
+    },
+    {
+      "primary_id": "NGC 3324",
+      "aliases": [
+        "Gabriela Mistral Nebula",
+        "Cosmic Cliffs"
+      ],
+      "reference": {
+        "image_ref": "upload_ms1nk9ek-2c.jpg",
+        "wcs": {
+          "ra0_deg": 159.490978872,
+          "dec0_deg": -58.663659482,
+          "crpix_x": 1920,
+          "crpix_y": 1920,
+          "scale_deg": 0.00011472023433749999,
+          "orientation_deg": 0.08261999999999148,
+          "parity": -1,
+          "width": 3840,
+          "height": 3840
+        },
+        "width_px": 3840,
+        "height_px": 3840,
+        "credit": "ESO",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:The_star_formation_region_NGC_3324.jpg"
+      },
+      "annotations": [],
+      "rev": 3
+    },
+    {
+      "primary_id": "NGC 3132",
+      "aliases": [
+        "Southern Ring Nebula",
+        "Eight-Burst Nebula",
+        "Caldwell 74"
+      ],
+      "reference": {
+        "image_ref": "upload_mrzr0c0a-1z.jpg",
+        "wcs": {
+          "ra0_deg": 151.755136644,
+          "dec0_deg": -40.4400501425,
+          "crpix_x": 1920,
+          "crpix_y": 1452,
+          "scale_deg": 0.000027554262483749997,
+          "orientation_deg": 359.94276,
+          "parity": -1,
+          "width": 3840,
+          "height": 2904
+        },
+        "width_px": 3840,
+        "height_px": 2904,
+        "credit": "ESO",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:A_cosmic_bubble-_NGC_3132_(ngc3132-cc).jpg"
+      },
+      "annotations": [
+        {
+          "id": "claude_ms1qj5co_0",
+          "feature_type": "shell",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                151.75620002840662,
+                -40.42966298426552
+              ],
+              [
+                151.7509845567613,
+                -40.43178062801402
+              ],
+              [
+                151.74887902472733,
+                -40.436022291251206
+              ],
+              [
+                151.75028505447904,
+                -40.440239232159755
+              ],
+              [
+                151.75618355500967,
+                -40.442365492966
+              ],
+              [
+                151.7620875602156,
+                -40.440248099357966
+              ],
+              [
+                151.76346832394597,
+                -40.436033254448326
+              ],
+              [
+                151.7614099984715,
+                -40.431788460643205
+              ]
+            ]
+          },
+          "label": {
+            "zh": "环壳",
+            "en": "Ring shell"
+          },
+          "status": "draft",
+          "author": "claude",
+          "created_at": "2026-07-26T00:00:00.000Z",
+          "updated_at": "2026-07-26T00:00:00.000Z"
+        }
+      ],
+      "rev": 2
+    },
+    {
+      "primary_id": "Sh 2-308",
+      "aliases": [
+        "RCW 11"
+      ],
+      "reference": {
+        "image_ref": "upload_msag59j2-0.jpg",
+        "wcs": {
+          "ra0_deg": 103.542043197,
+          "dec0_deg": -23.9453123952,
+          "crpix_x": 2048,
+          "crpix_y": 1394.5,
+          "scale_deg": 0.0006558500962361111,
+          "orientation_deg": 183.5322393,
+          "parity": -1,
+          "width": 4096,
+          "height": 2789
+        },
+        "width_px": 4096,
+        "height_px": 2789
+      },
+      "annotations": [
+        {
+          "id": "anno_msag80hg",
+          "feature_type": "shell",
+          "geometry": {
+            "type": "polygon",
+            "vertices": [
+              [
+                103.36122245134084,
+                -24.17967650633824
+              ],
+              [
+                103.23192010761647,
+                -23.9840893251413
+              ],
+              [
+                103.24350977503991,
+                -23.82730860177589
+              ],
+              [
+                103.29974715273102,
+                -23.688013120248854
+              ],
+              [
+                103.3027803614126,
+                -23.568242186571776
+              ],
+              [
+                103.46890750158002,
+                -23.559009415850166
+              ],
+              [
+                103.56503033278403,
+                -23.586813034346296
+              ],
+              [
+                103.79806009195886,
+                -23.6531742897899
+              ],
+              [
+                103.94609007497286,
+                -23.79736078038446
+              ],
+              [
+                103.99644831716813,
+                -23.943929256207998
+              ],
+              [
+                103.96612459926831,
+                -24.131834311333225
+              ],
+              [
+                103.76132922110065,
+                -24.276722883440076
+              ],
+              [
+                103.54641387086531,
+                -24.279004897741416
+              ],
+              [
+                103.41874407200339,
+                -24.223010411012574
+              ],
+              [
+                103.36397361589786,
+                -24.16623486813507
+              ]
+            ]
+          },
+          "label": {
+            "zh": "",
+            "en": ""
+          },
+          "status": "approved",
+          "author": "amy",
+          "reviewed_by": "amy",
+          "created_at": "2026-08-01T14:10:25.011Z",
+          "updated_at": "2026-08-01T14:11:02.959Z"
+        }
+      ],
+      "rev": 2
+    }
+  ]
 }

@@ -95,6 +95,8 @@ export interface ConfigResponse {
   profiles: string[];
   profile: Profile;
   offlineCatalog: boolean;
+  /** Present when the hub launched this studio. */
+  hubUrl?: string;
   readiness?: {
     catalogsReady: boolean;
     missingCatalogs: string[];

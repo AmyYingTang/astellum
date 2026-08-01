@@ -52,6 +52,10 @@ export {
   offlineCatalogStatus,
   isOfflineReady,
   defaultOfflineDir,
+  INDEX_BANDS,
+  bandsForField,
+  indexUrls,
+  type IndexBand,
   type CatalogStatus,
   type PrefetchResult,
 } from './offlineCatalog.js';

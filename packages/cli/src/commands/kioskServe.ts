@@ -35,6 +35,7 @@ function page(opts: {
   styles: string[];
   ready: boolean;
   missing: string[];
+  hubUrl?: string;
 }): string {
   return `<!doctype html>
 <html lang="zh">
@@ -65,11 +66,14 @@ button.go:disabled{background:#243447;color:#6b768f;cursor:default;}
 .status{margin-top:16px;font-size:13px;line-height:1.6;color:#8a93a8;min-height:20px;}
 .warn{color:#e0af68;}
 .err{color:#f7768e;}
+.back{display:inline-block;margin-bottom:14px;color:#8a93a8;text-decoration:none;font-size:13px;}
+.back:hover{color:#cfd6e4;}
 .foot{margin-top:22px;padding-top:16px;border-top:1px solid #1b2231;color:#5d6780;font-size:12px;line-height:1.6;}
 </style>
 </head>
 <body>
 <form class="card" id="f">
+  ${opts.hubUrl ? `<a class="back" href="${opts.hubUrl}">← astrolens</a>` : ''}
   <h1>现场识别</h1>
   <p class="sub">选一张图,几秒后出一张可点的全屏页。支持 FITS(自动拉伸)、JPG、PNG、TIFF。</p>
 
@@ -169,6 +173,7 @@ export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
         styles: [cfg.profile.reading.style],
         ready: status.length ? isOfflineReady(status) : true,
         missing: status.filter((s) => !s.present).map((s) => s.key),
+        hubUrl: process.env.ASTROLENS_HUB_URL || undefined,
       }),
     );
   });

@@ -4,13 +4,14 @@ import { z } from 'zod';
  * The single control file — one place that says *how this machine runs the
  * pipeline*, instead of the switches being scattered across environment
  * variables (ASTROLENS_SOLVER, ASTROMETRY_*, ATLAS_*) with no way at all to
- * express "this box is in onsite mode".
+ * express which way this machine is set up.
  *
- * Two shipped profiles mirror the two use cases:
- *  - **offsite** — the poster workflow. Online solve, full catalogs, AI reading
- *    with a free-text prompt, the studio UI.
- *  - **onsite** — the kiosk. Local solve, offline catalogs, *predefined*
- *    readings (no LLM), tighter selection ("宁缺毋滥"), the fullscreen UI.
+ * Two shipped profiles, named for the room rather than the network:
+ *  - **studio** — where a frame is made. Every stage adjustable, AI reading with
+ *    a free-text prompt, posters out the end. It is not "online mode": plate
+ *    solving here is just as happily local.
+ *  - **kiosk** — where a frame is shown. Local solve, offline catalogs,
+ *    *predefined* readings (no LLM), tighter selection, the fullscreen UI.
  *
  * This module is PURE (zod + merge helpers only) because @astrolens/schema is
  * bundled into the browser clients. Disk loading + env overlay live in
@@ -51,7 +52,7 @@ export const SolveConfig = z.object({
   /** Content-addressed on-disk solve cache (createCachedSolveClient). */
   cache: z.boolean().default(true),
   /** Feed the chosen target's known RA/Dec to solve-field as a position hint —
-   *  onsite the target is picked up front, and the hint cuts the solve from
+   *  at a kiosk the target is picked up front, and the hint cuts the solve from
    *  tens of seconds to a few. Ignored by nova. */
   hintFromTarget: z.boolean().default(false),
   /** Give up rather than leave an audience staring at a spinner. */
@@ -61,11 +62,11 @@ export type SolveConfig = z.infer<typeof SolveConfig>;
 
 export const CatalogConfig = z.object({
   sources: z.array(CatalogSource).default(['simbad', 'vizier', 'openngc']),
-  /** Keep an on-disk snapshot of online catalogue answers. Warmed offsite, it
-   *  lets a field machine serve the exact results SIMBAD/VizieR gave — the
+  /** Keep an on-disk snapshot of online catalogue answers. Warmed in the studio,
+   *  it lets a field machine serve the exact results SIMBAD/VizieR gave — the
    *  faint companions and Chinese names the static offline pack doesn't carry. */
   snapshot: z.boolean().default(true),
-  /** Answer only from the snapshot; never reach the network. Set on the onsite
+  /** Answer only from the snapshot; never reach the network. Set on the kiosk
    *  profile so a stale-looking field fails visibly instead of hanging. */
   snapshotOnly: z.boolean().default(false),
 });
@@ -84,7 +85,7 @@ export const ReadingConfig = z.object({
   /** Which predefined style to render. The data model holds many; the first
    *  release only ships `general` (school year 8–12 reading level). */
   style: z.string().default('general'),
-  /** Keep the studio's free-text style box (offsite's whole point is control). */
+  /** Keep the studio's free-text style box — control is the studio's whole point. */
   customPrompt: z.boolean().default(true),
   /** Let the kiosk switch style live — a schools session vs a public session. */
   switchableInKiosk: z.boolean().default(false),
@@ -95,7 +96,7 @@ export const ReadingConfig = z.object({
 export type ReadingConfig = z.infer<typeof ReadingConfig>;
 
 export const SelectConfig = z.object({
-  /** Drop `role: 'context'` objects — onsite precision beats recall. */
+  /** Drop `role: 'context'` objects — at a kiosk precision beats recall. */
   dropContext: z.boolean().default(false),
   /** Only draw B-class features backed by an approved atlas annotation. */
   requireAtlasForB: z.boolean().default(false),
@@ -139,16 +140,21 @@ export type PartialProfile = z.infer<typeof PartialProfile>;
 
 export const AstrolensConfig = z.object({
   version: z.literal(1).default(1),
-  activeProfile: z.string().default('offsite'),
+  activeProfile: z.string().default('studio'),
   profiles: z.record(z.string(), PartialProfile).default({}),
 });
 export type AstrolensConfig = z.infer<typeof AstrolensConfig>;
 
 export const CONFIG_VERSION = 1 as const;
 
+/** Earlier names, kept working. A config file written when these were called
+ *  `offsite`/`onsite` still resolves. */
+const PROFILE_ALIASES: Record<string, string> = { offsite: 'studio', onsite: 'kiosk' };
+const PROFILE_ALIASES_BACK: Record<string, string> = { studio: 'offsite', kiosk: 'onsite' };
+
 /** The two shipped profiles. A config file only records deltas from these. */
 export const BUILTIN_PROFILES: Record<string, Profile> = {
-  offsite: Profile.parse({
+  studio: Profile.parse({
     solve: { mode: 'nova', cache: true },
     catalog: { sources: ['simbad', 'vizier', 'openngc'] },
     atlas: { registries: ['baseline', 'user'] },
@@ -156,7 +162,7 @@ export const BUILTIN_PROFILES: Record<string, Profile> = {
     select: { dropContext: false },
     flow: { ui: 'studio', outputs: ['annotated', 'embed', 'poster'] },
   }),
-  onsite: Profile.parse({
+  kiosk: Profile.parse({
     solve: { mode: 'local', cache: true, hintFromTarget: true, timeoutMs: 60_000 },
     catalog: { sources: ['offline', 'snapshot'], snapshot: true, snapshotOnly: true },
     atlas: { registries: ['baseline', 'user'] },
@@ -173,7 +179,7 @@ export const BUILTIN_PROFILES: Record<string, Profile> = {
 
 export const DEFAULT_CONFIG: AstrolensConfig = {
   version: CONFIG_VERSION,
-  activeProfile: 'offsite',
+  activeProfile: 'studio',
   profiles: {},
 };
 
@@ -197,12 +203,20 @@ export function mergeProfile(base: Profile, over: PartialProfile | undefined): P
  * top. Unknown profile names are usable — they just start from the offsite base.
  */
 export function resolveProfile(config: AstrolensConfig, name?: string): Profile {
-  const key = name ?? config.activeProfile;
-  const base = BUILTIN_PROFILES[key] ?? BUILTIN_PROFILES.offsite!;
-  return mergeProfile(base, config.profiles[key]);
+  const raw = name ?? config.activeProfile;
+  const key = BUILTIN_PROFILES[raw] ? raw : (PROFILE_ALIASES[raw] ?? raw);
+  const base = BUILTIN_PROFILES[key] ?? BUILTIN_PROFILES.studio!;
+  // Deltas may be filed under either spelling: a half-migrated file can name the
+  // profile the new way while its overrides still sit under the old key.
+  const patch =
+    config.profiles[key] ??
+    config.profiles[raw] ??
+    config.profiles[PROFILE_ALIASES_BACK[key] ?? ''];
+  return mergeProfile(base, patch);
 }
 
 /** Every profile name the UI should offer: built-ins plus any user-defined. */
 export function profileNames(config: AstrolensConfig): string[] {
-  return [...new Set([...Object.keys(BUILTIN_PROFILES), ...Object.keys(config.profiles)])];
+  const custom = Object.keys(config.profiles).filter((p) => !PROFILE_ALIASES[p]);
+  return [...new Set([...Object.keys(BUILTIN_PROFILES), ...custom])];
 }

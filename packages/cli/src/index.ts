@@ -12,9 +12,33 @@ import { atlas } from './commands/atlas.js';
 import { prefetchCatalogs } from './commands/prefetch.js';
 import { runKiosk, watchKiosk } from './commands/kiosk.js';
 import { serveKiosk } from './commands/kioskServe.js';
+import { runHub } from './commands/hub.js';
 import { readingsStatus, readingsDraft } from './commands/readings.js';
 
 const cli = cac('astrolens');
+
+cli
+  .command('hub', 'Navigation page for all three surfaces, plus settings')
+  .option('--port <port>', 'Port to serve on', { default: 3000 })
+  .option('--studio-port <port>', 'Studio port', { default: 3010 })
+  .option('--atlas-port <port>', 'Atlas port', { default: 3100 })
+  .option('--kiosk-port <port>', 'Kiosk port', { default: 3200 })
+  .option('--workspace <dir>', 'Studio projects directory')
+  .option('--atlas-data-dir <dir>', 'Atlas data dir')
+  .option('--settings', 'Open the settings page instead of the nav page')
+  .option('--no-open', 'Do not open the browser automatically')
+  .action(async (options) => {
+    await runHub({
+      port: Number(options.port),
+      studioPort: Number(options.studioPort),
+      atlasPort: Number(options.atlasPort),
+      kioskPort: Number(options.kioskPort),
+      workspace: options.workspace,
+      atlasDataDir: options.atlasDataDir,
+      settings: options.settings,
+      open: options.open,
+    });
+  });
 
 cli
   .command('readings', 'Predefined reading library: coverage report')
@@ -99,8 +123,16 @@ cli
   .option('--dir <dir>', 'Pack directory (default: ~/.cache/astrolens/catalogs)')
   .option('--check', 'Report what is on disk instead of downloading')
   .option('--targets', 'Warm the online-answer snapshot for every annotated target')
+  .option('--indexes <arcmin>', 'Download plate-solve indexes down to this field width (e.g. 60)')
+  .option('--index-dir <dir>', 'Where index files go (default ~/astrometry-indexes)')
   .action(async (options) => {
-    await prefetchCatalogs({ dir: options.dir, check: options.check, targets: options.targets });
+    await prefetchCatalogs({
+      dir: options.dir,
+      check: options.check,
+      targets: options.targets,
+      indexes: options.indexes != null ? Number(options.indexes) : undefined,
+      indexDir: options.indexDir,
+    });
   });
 
 cli
