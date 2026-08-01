@@ -1,4 +1,4 @@
-import type { Reading, FactSheet } from '@astrolens/schema';
+import type { Reading, FactSheet, Profile } from '@astrolens/schema';
 
 export interface ProjectSummary {
   slug: string;
@@ -84,5 +84,31 @@ export interface ExportFile {
 export interface ExportResponse {
   ok: boolean;
   files?: ExportFile[];
+  error?: string;
+}
+
+/** GET /api/config — the active control-file profile and a readiness self-check. */
+export interface ConfigResponse {
+  solver: string;
+  localSolver: boolean;
+  profileName: string;
+  profiles: string[];
+  profile: Profile;
+  offlineCatalog: boolean;
+  readiness?: {
+    catalogsReady: boolean;
+    missingCatalogs: string[];
+    readingTargets: number;
+    readingsCovered: number;
+  };
+}
+
+/** POST /api/projects/:slug/save-predefined — promote an AI reading into the library. */
+export interface SavePredefinedResponse {
+  ok: boolean;
+  path?: string;
+  target?: string;
+  style?: string;
+  features?: number;
   error?: string;
 }

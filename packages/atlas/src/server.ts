@@ -375,6 +375,9 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
           annotations: o.annotations
             .filter((a) => a.status === 'approved')
             .map((a) => ({
+              // Carried so predefined readings can attach text to this exact
+              // annotation (stable across re-exports).
+              id: a.id,
               feature_type: a.feature_type,
               geometry: a.geometry,
               label: a.label,

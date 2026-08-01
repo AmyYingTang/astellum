@@ -3,19 +3,44 @@ import { readFile, writeFile, mkdir, readdir, access } from 'node:fs/promises';
 import { resolve, dirname, join, basename, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { Reading, FactSheet } from '@astrolens/schema';
+import {
+  Reading,
+  FactSheet,
+  PredefinedLibrary,
+  profileNames,
+  findPredefined,
+  pickStyle,
+  mergeLibraries,
+  Registry,
+  pixelToWorld,
+} from '@astrolens/schema';
+import { loadConfig } from '@astrolens/schema/node';
 import {
   identify,
   createConfiguredSolveClient,
   isLocalSolver,
-  solverName,
-  createSimbadCatalogClient,
-  createVizierCatalogClient,
-  createOpenNgcCatalogClient,
-  createCompositeCatalogClient,
+  createCatalogFromSources,
+  isOfflineCatalog,
+  offlineCatalogStatus,
+  isOfflineReady,
+  loadRegistries,
+  loadRegistry,
+  atlasTypeFor,
+  mergeRegistries,
+  userRegistryPath,
   defaultRegistryPaths,
 } from '@astrolens/identify';
-import { readingFromFactsheet, tailorReading, ReaderError } from '@astrolens/reader';
+import {
+  readingFromFactsheet,
+  readingFromPredefined,
+  loadReadingLibraries,
+  defaultReadingsPaths,
+  coverageSummary,
+  loadReadingLibrary,
+  userReadingsPath,
+  tailorReading,
+  ReaderError,
+} from '@astrolens/reader';
 import { renderAnnotatedBuffer, generateEmbedHtml, renderPosterBuffers } from '@astrolens/renderer';
 import type {
   CreateProjectRequest,
@@ -113,10 +138,60 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
   const app = express();
   app.use(express.json({ limit: '48mb' }));
 
-  // Which plate-solver is configured — shown in the studio UI.
-  app.get('/api/config', (_req, res) =>
-    res.json({ solver: solverName(), localSolver: isLocalSolver() }),
-  );
+  // The control file: which profile is in force and every knob it resolves to.
+  // The settings UI reads this; the kiosk reads only `profile.reading` from it.
+  let config = loadConfig();
+
+  /** Can this machine actually do what the active profile promises? */
+  const readiness = async (): Promise<{
+    catalogsReady: boolean;
+    missingCatalogs: string[];
+    readingTargets: number;
+    readingsCovered: number;
+  }> => {
+    const status = await offlineCatalogStatus();
+    const library = await loadReadingLibraries(defaultReadingsPaths()).catch(() => null);
+    const registry = await loadRegistries(defaultRegistryPaths()).catch(() => null);
+    const targets = registry?.objects ?? [];
+    const covered = library
+      ? targets.filter((o) => {
+          const found = findPredefined(library, [o.primary_id, ...o.aliases]);
+          return !!(found && pickStyle(found, config.profile.reading.style));
+        }).length
+      : 0;
+    return {
+      catalogsReady: isOfflineReady(status),
+      missingCatalogs: status.filter((s) => !s.present).map((s) => s.key),
+      readingTargets: targets.length,
+      readingsCovered: covered,
+    };
+  };
+
+  app.get('/api/config', async (_req, res) => {
+    res.json({
+      solver: config.profile.solve.mode === 'local' ? 'local astrometry.net' : 'nova',
+      localSolver: config.profile.solve.mode === 'local',
+      profileName: config.profileName,
+      profiles: profileNames(config.file),
+      profile: config.profile,
+      offlineCatalog: isOfflineCatalog(config.profile.catalog.sources),
+      readiness: await readiness().catch(() => undefined),
+    });
+  });
+
+  // Switch the active profile without restarting — this is what lets the kiosk
+  // change audience mid-session (a schools group, then the public).
+  app.post('/api/config/profile', (req, res) => {
+    try {
+      const name = ((req.body ?? {}) as { profile?: string }).profile;
+      if (!name) throw new Error('profile is required');
+      if (!profileNames(config.file).includes(name)) throw new Error(`Unknown profile: ${name}`);
+      config = loadConfig({ profile: name });
+      res.json({ ok: true, profileName: config.profileName, profile: config.profile });
+    } catch (e) {
+      res.status(400).json({ ok: false, error: (e as Error).message });
+    }
+  });
 
   app.get('/api/projects', async (_req, res) => {
     const entries = await readdir(workspace, { withFileTypes: true });
@@ -152,7 +227,9 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
   // solver (ASTROLENS_SOLVER=local) needs no key.
   const requireApiKey = (): string | undefined => {
     const apiKey = process.env.ASTROMETRY_API_KEY;
-    if (!apiKey && !isLocalSolver()) {
+    // The local solver needs no key — and the active profile, not just the env
+    // var, is what decides which solver runs.
+    if (!apiKey && config.profile.solve.mode !== 'local' && !isLocalSolver()) {
       throw new Error(
         'Plate-solving needs a nova API key. Put ASTROMETRY_API_KEY in a .env file (where you run the studio) or export it, then restart — or set ASTROLENS_SOLVER=local for offline solving. Free key from nova.astrometry.net.',
       );
@@ -182,12 +259,14 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
           registryPaths: defaultRegistryPaths(),
         },
         {
-          solve: createConfiguredSolveClient({ apiKey: opts.apiKey }),
-          catalog: createCompositeCatalogClient([
-            createSimbadCatalogClient(),
-            createVizierCatalogClient(),
-            createOpenNgcCatalogClient(),
-          ]),
+          solve: createConfiguredSolveClient({
+            apiKey: opts.apiKey,
+            mode: config.profile.solve.mode,
+            cache: config.profile.solve.cache,
+          }),
+          catalog: createCatalogFromSources(config.profile.catalog.sources, {
+            snapshot: config.profile.catalog.snapshot,
+          }),
         },
       );
       await writeFile(join(dir, 'factsheet.json'), JSON.stringify(factsheet, null, 2) + '\n', 'utf8');
@@ -201,14 +280,37 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
         return;
       }
 
-      // Stub reading: grounded annotations, no explanations. AI text is generated
-      // later from the editor (after the user reviews the annotations).
-      const reading = readingFromFactsheet(factsheet, {
-        toolVersion,
-        displayLanguage: opts.lang,
-        imageSrc: imageName,
-      });
+      // How the text gets written depends on the profile:
+      //  - `ai` (offsite): a stub with grounded annotations and no explanations;
+      //    the user reviews the placement, then asks for the LLM pass.
+      //  - `predefined` (onsite): the curated library fills it in right here, so
+      //    the frame is complete and showable with no network and no LLM.
+      const { reading, coverage } =
+        config.profile.reading.mode === 'predefined'
+          ? readingFromPredefined(factsheet, await loadReadingLibraries(defaultReadingsPaths()), {
+              toolVersion,
+              displayLanguage: opts.lang,
+              imageSrc: imageName,
+              style: config.profile.reading.style,
+              fallback: config.profile.reading.fallback,
+            })
+          : {
+              reading: readingFromFactsheet(factsheet, {
+                toolVersion,
+                displayLanguage: opts.lang,
+                imageSrc: imageName,
+              }),
+              coverage: null,
+            };
       await writeFile(join(dir, 'reading.json'), JSON.stringify(reading, null, 2) + '\n', 'utf8');
+      if (coverage) {
+        const c = coverageSummary(coverage);
+        console.error(
+          `[studio] predefined text: target=${c.target} note=${c.annotation_note} ` +
+            `generic=${c.feature_generic} facts=${c.facts}` +
+            `${coverage.matchedTarget ? ` (matched ${coverage.matchedTarget})` : ' (no target entry)'}`,
+        );
+      }
       await setJob(slug, { state: 'done', stage: 'done', warnings: factsheet.warnings });
     } catch (e) {
       await setJob(slug, { state: 'failed', error: (e as Error).message });
@@ -263,7 +365,10 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
       res.json({ ok: true, slug });
       void (async () => {
         try {
-          const tailored = await tailorReading(reading, { imagePath, tone });
+          // Hand the fact sheet along so the prompt can carry each feature's
+          // precise taxonomy type — offsite is where precision is wanted.
+          const factsheet = await loadFactsheet(slug).catch(() => undefined);
+          const tailored = await tailorReading(reading, { imagePath, tone, factsheet });
           await writeFile(join(dir, 'reading.json'), JSON.stringify(tailored, null, 2) + '\n', 'utf8');
           await setJob(slug, { state: 'done', stage: 'done' });
         } catch (e) {
@@ -376,6 +481,149 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
         'utf8',
       );
       res.json({ ok: true });
+    } catch (e) {
+      res.status(400).json({ ok: false, error: (e as Error).message });
+    }
+  });
+
+  // The other direction: an AI reading the curator is happy with becomes this
+  // target's predefined entry, so the kiosk can show it offline later. Without
+  // this the predefined library only ever grows by hand; with it, ordinary
+  // offsite work fills it as a side effect.
+  app.post('/api/projects/:slug/save-predefined', async (req, res) => {
+    try {
+      const style = ((req.body ?? {}) as { style?: string }).style || config.profile.reading.style;
+      const reading = await loadReport(req.params.slug);
+      const factsheet = await loadFactsheet(req.params.slug).catch(() => null);
+      if (!factsheet) throw new Error('No factsheet for this project — re-identify it first.');
+
+      // Text attaches to atlas annotation ids, which is what the kiosk matches
+      // on. A feature drawn from a catalogue object has no annotation to hang
+      // on, so it is skipped rather than saved under an id that means nothing.
+      const byObj = new Map(factsheet.objects.map((o) => [o.id, o]));
+      const features = reading.features
+        .map((f) => {
+          const obj = f.fact_ref ? byObj.get(f.fact_ref.object_id) : undefined;
+          const id = obj?.atlas_annotation_id;
+          return id && (f.explanation.zh.trim() || f.explanation.en.trim())
+            ? { annotation_id: id, explanation: f.explanation, physics: f.physics, interesting: f.interesting }
+            : null;
+        })
+        .filter((x): x is NonNullable<typeof x> => !!x);
+
+      const primary = factsheet.objects.find((o) => o.tier !== 'B');
+      const entry = {
+        schema_version: 1 as const,
+        primary_id: primary?.names[0] ?? reading.object.name.en,
+        aliases: [...new Set([...(primary?.designations ?? []), ...reading.object.aliases])],
+        styles: {
+          [style]: {
+            narrative: reading.narrative,
+            fun_facts: reading.extra_facts,
+            features,
+          },
+        },
+        source: 'ai_approved' as const,
+        updated_at: new Date().toISOString(),
+      };
+
+      const path = userReadingsPath();
+      const existing =
+        (await loadReadingLibrary(path)) ?? { schema_version: 1 as const, entries: [] };
+      const merged = mergeLibraries([
+        existing,
+        PredefinedLibrary.parse({ schema_version: 1, entries: [entry] }),
+      ]);
+      await mkdir(dirname(path), { recursive: true });
+      await writeFile(path, JSON.stringify(merged, null, 2) + '\n', 'utf8');
+      res.json({ ok: true, path, target: entry.primary_id, style, features: features.length });
+    } catch (e) {
+      res.status(400).json({ ok: false, error: (e as Error).message });
+    }
+  });
+
+  // Hand-drawn features → the user's own atlas overlay, projected back to sky
+  // coordinates. Without this a curator's tweak dies with the project; with it,
+  // the next image of the same target inherits the work.
+  app.post('/api/projects/:slug/save-annotations', async (req, res) => {
+    try {
+      const reading = await loadReport(req.params.slug);
+      const factsheet = await loadFactsheet(req.params.slug);
+      const wcs = factsheet.solve.wcs;
+      if (!wcs) throw new Error('This project has no WCS — annotations can only be stored by sky position.');
+
+      const primary = factsheet.objects.find((o) => o.tier !== 'B');
+      if (!primary) throw new Error('No identified object to attach annotations to.');
+
+      const byObj = new Map(factsheet.objects.map((o) => [o.id, o]));
+      // Only what a person actually drew here. Two things are deliberately
+      // excluded: atlas-sourced features (re-saving them duplicates the
+      // baseline) and catalogued A-class objects — those come back from a
+      // catalogue query on any future image, so storing them as hand
+      // annotations would just pollute the overlay with things it doesn't own.
+      const fresh = reading.features.filter((f) => {
+        if (!f.fact_ref) return true; // added by hand in the editor
+        const obj = byObj.get(f.fact_ref.object_id);
+        return !!obj && obj.tier === 'B' && obj.detection_source !== 'atlas';
+      });
+
+      const toWorld = (p: [number, number]): [number, number] => {
+        const [ra, dec] = pixelToWorld(wcs, p[0], p[1]);
+        return [ra, dec];
+      };
+      const annotations = fresh
+        .map((f, i) => {
+          const kind = f.shape === 'polyline' ? 'polyline' : f.polygon?.length ? 'polygon' : 'point';
+          const verts =
+            kind === 'point'
+              ? [toWorld([f.circle.cx, f.circle.cy])]
+              : (f.polygon ?? []).map(toWorld);
+          if (!verts.length) return null;
+          const radiusArcmin =
+            kind === 'point' && factsheet.solve.pixscale_arcsec
+              ? (f.circle.r * factsheet.solve.pixscale_arcsec) / 60
+              : undefined;
+          return {
+            id: `anno_user_${Date.now().toString(36)}_${i}`,
+            // The atlas drawing vocabulary, not the palette key — recovered from
+            // the fact object when there is one, else a neutral region callout.
+            feature_type: atlasTypeFor(
+              (f.fact_ref ? byObj.get(f.fact_ref.object_id) : undefined)?.feature_type,
+            ),
+            geometry: {
+              type: kind,
+              vertices: verts,
+              ...(radiusArcmin ? { radius_arcmin: radiusArcmin } : {}),
+            },
+            label: f.label,
+            ...(f.explanation.zh || f.explanation.en ? { note: f.explanation } : {}),
+          };
+        })
+        .filter((a): a is NonNullable<typeof a> => !!a);
+
+      if (!annotations.length) {
+        res.json({ ok: true, saved: 0, note: 'Nothing new to save — every feature already comes from the atlas.' });
+        return;
+      }
+
+      const path = userRegistryPath();
+      const existing = (await loadRegistry(path)) ?? { schema_version: 1 as const, objects: [] };
+      const merged = mergeRegistries([
+        existing,
+        Registry.parse({
+          schema_version: 1,
+          objects: [
+            {
+              primary_id: primary.names[0] ?? reading.object.name.en,
+              aliases: [...new Set([...primary.designations, ...reading.object.aliases])],
+              annotations,
+            },
+          ],
+        }),
+      ]);
+      await mkdir(dirname(path), { recursive: true });
+      await writeFile(path, JSON.stringify(merged, null, 2) + '\n', 'utf8');
+      res.json({ ok: true, saved: annotations.length, path, target: primary.names[0] });
     } catch (e) {
       res.status(400).json({ ok: false, error: (e as Error).message });
     }

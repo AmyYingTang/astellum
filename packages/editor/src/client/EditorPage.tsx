@@ -8,6 +8,8 @@ import {
   fetchJob,
   fetchReport,
   generateReading,
+  savePredefined,
+  saveAnnotations,
   imageUrl,
   reidentify,
   saveReport,
@@ -116,6 +118,8 @@ function Editor({
   const [genMenuOpen, setGenMenuOpen] = useState(false);
   const [presetIds, setPresetIds] = useState<Set<string>>(new Set());
   const [styleFree, setStyleFree] = useState('');
+  const [savingPredef, setSavingPredef] = useState<'idle' | 'saving' | 'done'>('idle');
+  const [savingAnns, setSavingAnns] = useState<'idle' | 'saving' | 'done'>('idle');
 
   const togglePreset = (id: string): void =>
     setPresetIds((prev) => {
@@ -190,6 +194,32 @@ function Editor({
       setSaveError((e as Error).message);
     }
   }, [slug]);
+
+  const doSavePredefined = async (): Promise<void> => {
+    setSavingPredef('saving');
+    setSaveError(null);
+    try {
+      if (stateRef.current.dirty) await doSave(); // save edits before promoting them
+      await savePredefined(slug);
+      setSavingPredef('done');
+    } catch (e) {
+      setSaveError((e as Error).message);
+      setSavingPredef('idle');
+    }
+  };
+
+  const doSaveAnnotations = async (): Promise<void> => {
+    setSavingAnns('saving');
+    setSaveError(null);
+    try {
+      if (stateRef.current.dirty) await doSave();
+      await saveAnnotations(slug);
+      setSavingAnns('done');
+    } catch (e) {
+      setSaveError((e as Error).message);
+      setSavingAnns('idle');
+    }
+  };
 
   const doGenerate = async (tone?: string): Promise<void> => {
     setGenMenuOpen(false);
@@ -428,6 +458,34 @@ function Editor({
                   </button>
                 </div>
               )}
+              {/* The other half of the loop: a reading you're happy with becomes
+                  this target's offline text, so onsite gets it for free. */}
+              {state.report.features.some((f) => f.explanation.zh || f.explanation.en) && (
+                <button
+                  className="save-predefined"
+                  disabled={savingPredef === 'saving'}
+                  onClick={() => void doSavePredefined()}
+                >
+                  {savingPredef === 'saving'
+                    ? t.savingPredefined
+                    : savingPredef === 'done'
+                      ? `✓ ${t.savedPredefined}`
+                      : t.savePredefined}
+                </button>
+              )}
+              {/* And the annotations themselves, so the next image of this
+                  target starts from this work instead of a blank frame. */}
+              <button
+                className="save-predefined"
+                disabled={savingAnns === 'saving'}
+                onClick={() => void doSaveAnnotations()}
+              >
+                {savingAnns === 'saving'
+                  ? t.savingPredefined
+                  : savingAnns === 'done'
+                    ? `✓ ${t.savedAnnotations}`
+                    : t.saveAnnotations}
+              </button>
             </div>
             <div className="export">
               <button onClick={() => setMenuOpen((v) => !v)} disabled={exporting !== null}>

@@ -1,7 +1,7 @@
 import type * as React from 'react';
 import { useEffect, useState } from 'react';
-import type { ProjectSummary } from '../shared.js';
-import { createProject, fetchJob, imageUrl, listProjects } from './api.js';
+import type { ConfigResponse, ProjectSummary } from '../shared.js';
+import { createProject, fetchJob, getConfig, imageUrl, listProjects, setProfile } from './api.js';
 import { LangToggle, useUi } from './i18n.js';
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
@@ -22,17 +22,28 @@ export function Home(): React.JSX.Element {
   const [hint, setHint] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [solver, setSolver] = useState<{ solver: string; localSolver: boolean } | null>(null);
+  const [config, setConfig] = useState<ConfigResponse | null>(null);
 
   useEffect(() => {
     listProjects()
       .then(setProjects)
       .catch(() => setProjects([]));
-    fetch('/api/config')
-      .then((r) => r.json())
-      .then(setSolver)
-      .catch(() => setSolver(null));
+    getConfig()
+      .then(setConfig)
+      .catch(() => setConfig(null));
   }, []);
+
+  // Switching profile is the whole point of the control file: one field decides
+  // solver, catalogs, whether the text is written by the LLM or read from the
+  // curated library, and how tightly candidates are filtered.
+  const switchProfile = async (name: string): Promise<void> => {
+    try {
+      await setProfile(name);
+      setConfig(await getConfig());
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
 
   // Home only runs Stage 1 (identify). The AI reading is generated later from the
   // editor, after the user has reviewed the annotations.
@@ -67,17 +78,50 @@ export function Home(): React.JSX.Element {
       <div className="home-header">
         <h1 className="home-title">astrolens</h1>
         <div className="home-header-actions">
-          {solver && (
-            <span
-              className={`solver-badge${solver.localSolver ? ' local' : ''}`}
-              title={
-                solver.localSolver
-                  ? 'Offline local astrometry.net (ASTROLENS_SOLVER=local)'
-                  : 'Remote nova.astrometry.net — needs network'
-              }
-            >
-              {t.solverLabel}: {solver.solver}
-            </span>
+          {config && (
+            <div className="profile-box">
+              <label className="profile-pick">
+                <span>{t.profileLabel}</span>
+                <select
+                  value={config.profileName}
+                  onChange={(e) => void switchProfile(e.target.value)}
+                >
+                  {config.profiles.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <span
+                className={`solver-badge${config.localSolver ? ' local' : ''}`}
+                title={
+                  config.localSolver
+                    ? 'Offline local astrometry.net'
+                    : 'Remote nova.astrometry.net — needs network'
+                }
+              >
+                {t.solverLabel}: {config.solver} · {config.profile.reading.mode}
+              </span>
+              {config.offlineCatalog && config.readiness && (
+                <span
+                  className={`ready-badge${config.readiness.catalogsReady ? ' ok' : ' warn'}`}
+                  title={
+                    config.readiness.catalogsReady
+                      ? ''
+                      : `missing: ${config.readiness.missingCatalogs.join(', ')}`
+                  }
+                >
+                  {config.readiness.catalogsReady ? t.readyOffline : t.notReadyOffline}
+                </span>
+              )}
+              {config.profile.reading.mode === 'predefined' && config.readiness && (
+                <span className="ready-badge">
+                  {t.readingsCovered} {config.readiness.readingsCovered}/
+                  {config.readiness.readingTargets}
+                </span>
+              )}
+            </div>
           )}
           <a
             className="atlas-link"

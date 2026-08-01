@@ -11,6 +11,8 @@ import type {
   ProjectSummary,
   ReportResponse,
   SaveResponse,
+  ConfigResponse,
+  SavePredefinedResponse,
 } from '../shared.js';
 
 // GETs that read regeneratable files (report/factsheet/job/list) must never be
@@ -98,3 +100,45 @@ export async function exportProject(slug: string, format: ExportFormat): Promise
 export const imageUrl = (slug: string): string => `/api/projects/${encodeURIComponent(slug)}/image`;
 export const fileUrl = (slug: string, name: string): string =>
   `/api/projects/${encodeURIComponent(slug)}/files/${encodeURIComponent(name)}`;
+
+export async function getConfig(): Promise<ConfigResponse> {
+  const res = await fetch('/api/config', NO_STORE);
+  if (!res.ok) throw new Error(`Failed to read config (${res.status})`);
+  return (await res.json()) as ConfigResponse;
+}
+
+export async function setProfile(profile: string): Promise<void> {
+  const res = await fetch('/api/config/profile', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ profile }),
+  });
+  const body = (await res.json()) as { ok: boolean; error?: string };
+  if (!body.ok) throw new Error(body.error ?? `Failed to switch profile (${res.status})`);
+}
+
+/** Promote this project's reading into the predefined library (the F3 loop). */
+export async function savePredefined(slug: string, style?: string): Promise<SavePredefinedResponse> {
+  const res = await fetch(`/api/projects/${encodeURIComponent(slug)}/save-predefined`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ style }),
+  });
+  const body = (await res.json()) as SavePredefinedResponse;
+  if (!body.ok) throw new Error(body.error ?? `Failed to save (${res.status})`);
+  return body;
+}
+
+/** Save the human-drawn features into the user's atlas overlay (the F2 loop). */
+export async function saveAnnotations(
+  slug: string,
+): Promise<{ ok: boolean; saved: number; target?: string; note?: string }> {
+  const res = await fetch(`/api/projects/${encodeURIComponent(slug)}/save-annotations`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({}),
+  });
+  const body = (await res.json()) as { ok: boolean; saved?: number; target?: string; note?: string; error?: string };
+  if (!body.ok) throw new Error(body.error ?? `Failed to save (${res.status})`);
+  return { ok: true, saved: body.saved ?? 0, target: body.target, note: body.note };
+}

@@ -7,6 +7,15 @@ export interface Strings {
   newReading: string;
   atlasLink: string;
   solverLabel: string;
+  profileLabel: string;
+  readyOffline: string;
+  notReadyOffline: string;
+  readingsCovered: string;
+  savePredefined: string;
+  saveAnnotations: string;
+  savedAnnotations: string;
+  savingPredefined: string;
+  savedPredefined: string;
   newReadingDesc: string;
   pickImage: string;
   hintPlaceholder: string;
@@ -88,6 +97,15 @@ const STRINGS: Record<UiLang, Strings> = {
     newReading: '新读图',
     atlasLink: '基准标注库',
     solverLabel: '解算器',
+    profileLabel: '配置档',
+    readyOffline: '可离线运行',
+    notReadyOffline: '离线星表不全,先跑 astrolens prefetch',
+    readingsCovered: '已录解读',
+    savePredefined: '存为预定义解读',
+    saveAnnotations: '存入我的标注库',
+    savedAnnotations: '已存入标注库',
+    savingPredefined: '保存中…',
+    savedPredefined: '已存入预定义库',
     newReadingDesc: '选一张深空摄影图,astrolens 会识别天体并自动标注,然后进入微调页面。',
     pickImage: '选择图片…',
     hintPlaceholder: '对象名提示(可选),如 "Sh2-308"',
@@ -167,6 +185,15 @@ const STRINGS: Record<UiLang, Strings> = {
     newReading: 'New reading',
     atlasLink: 'Feature Atlas',
     solverLabel: 'Solver',
+    profileLabel: 'Profile',
+    readyOffline: 'Ready offline',
+    notReadyOffline: 'Catalog pack incomplete — run astrolens prefetch',
+    readingsCovered: 'Readings',
+    savePredefined: 'Save as predefined reading',
+    saveAnnotations: 'Save to my atlas overlay',
+    savedAnnotations: 'Saved to your atlas overlay',
+    savingPredefined: 'Saving…',
+    savedPredefined: 'Saved to the predefined library',
     newReadingDesc:
       'Pick a deep-sky photo — astrolens identifies the object, annotates it, then opens the editor.',
     pickImage: 'Choose image…',
