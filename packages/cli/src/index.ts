@@ -9,8 +9,81 @@ import { renderReport } from './commands/render.js';
 import { editReport } from './commands/edit.js';
 import { studio } from './commands/studio.js';
 import { atlas } from './commands/atlas.js';
+import { prefetchCatalogs } from './commands/prefetch.js';
+import { runKiosk, watchKiosk } from './commands/kiosk.js';
+import { readingsStatus, readingsDraft } from './commands/readings.js';
 
 const cli = cac('astrolens');
+
+cli
+  .command('readings', 'Predefined reading library: coverage report')
+  .option('--style <name>', 'Style to report on', { default: 'general' })
+  .action(async (options) => {
+    await readingsStatus({ style: options.style });
+  });
+
+cli
+  .command('readings-draft [target]', 'Draft predefined readings with the LLM (offsite; needs claude)')
+  .option('--all', 'Draft every annotated target that has no reading yet')
+  .option('--style <name>', 'Style to write into', { default: 'general' })
+  .option('--model <model>', 'Model passed to the claude CLI')
+  .option('--out <file>', 'Library file to write (default: ~/.astrolens/readings.json)')
+  .option('--force', 'Redraft targets that already have a reading')
+  .action(async (target: string | undefined, options) => {
+    await readingsDraft({
+      target,
+      all: options.all,
+      style: options.style,
+      model: options.model,
+      out: options.out,
+      force: options.force,
+    });
+  });
+
+cli
+  .command('kiosk <image>', 'Onsite: one-shot identify → predefined reading → fullscreen page')
+  .option('--target <name>', 'The target you shot, e.g. "M42" (recommended — it is the identity)')
+  .option('--lang <lang>', 'Display language: zh or en', { default: 'zh' })
+  .option('--style <name>', 'Predefined reading style (default: the profile\'s)')
+  .option('--profile <name>', 'Config profile to run under (default: the active one)')
+  .option('--out <dir>', 'Output directory')
+  .action(async (image: string, options) => {
+    await runKiosk({
+      image,
+      target: options.target,
+      lang: options.lang,
+      style: options.style,
+      profile: options.profile,
+      out: options.out,
+    });
+  });
+
+cli
+  .command('kiosk-watch <dir>', 'Onsite: watch a folder and build a frame for each new image')
+  .option('--target <name>', 'Fixed target for every image (default: guessed from the filename)')
+  .option('--lang <lang>', 'Display language: zh or en', { default: 'zh' })
+  .option('--style <name>', 'Predefined reading style')
+  .option('--profile <name>', 'Config profile to run under')
+  .option('--out <dir>', 'Output directory')
+  .action(async (dir: string, options) => {
+    await watchKiosk({
+      dir,
+      target: options.target,
+      lang: options.lang,
+      style: options.style,
+      profile: options.profile,
+      out: options.out,
+    });
+  });
+
+cli
+  .command('prefetch', 'Download the offline catalog pack (run once, with a network)')
+  .option('--dir <dir>', 'Pack directory (default: ~/.cache/astrolens/catalogs)')
+  .option('--check', 'Report what is on disk instead of downloading')
+  .option('--targets', 'Warm the online-answer snapshot for every annotated target')
+  .action(async (options) => {
+    await prefetchCatalogs({ dir: options.dir, check: options.check, targets: options.targets });
+  });
 
 cli
   .command('identify <image>', 'Stage 1: plate-solve + catalog → factsheet.json (no LLM)')
