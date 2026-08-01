@@ -14,3 +14,4 @@ export {
   type RenderPosterOptions,
 } from './poster.js';
 export { generateEmbedHtml, type EmbedOptions } from './embed.js';
+export { generateKioskHtml, type KioskOptions, type KioskState } from './kiosk.js';
