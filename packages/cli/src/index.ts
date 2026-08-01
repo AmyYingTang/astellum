@@ -11,6 +11,7 @@ import { studio } from './commands/studio.js';
 import { atlas } from './commands/atlas.js';
 import { prefetchCatalogs } from './commands/prefetch.js';
 import { runKiosk, watchKiosk } from './commands/kiosk.js';
+import { serveKiosk } from './commands/kioskServe.js';
 import { readingsStatus, readingsDraft } from './commands/readings.js';
 
 const cli = cac('astrolens');
@@ -47,6 +48,7 @@ cli
   .option('--style <name>', 'Predefined reading style (default: the profile\'s)')
   .option('--profile <name>', 'Config profile to run under (default: the active one)')
   .option('--out <dir>', 'Output directory')
+  .option('--no-open', 'Do not open the finished page in a browser')
   .action(async (image: string, options) => {
     await runKiosk({
       image,
@@ -55,6 +57,22 @@ cli
       style: options.style,
       profile: options.profile,
       out: options.out,
+      open: options.open,
+    });
+  });
+
+cli
+  .command('kiosk-serve', 'Onsite: a browser page to pick a file from (FITS / JPG / PNG)')
+  .option('--port <port>', 'Port to serve on', { default: 3200 })
+  .option('--profile <name>', 'Config profile to run under')
+  .option('--workdir <dir>', 'Where generated frames are written')
+  .option('--no-open', 'Do not open the browser automatically')
+  .action(async (options) => {
+    await serveKiosk({
+      port: Number(options.port),
+      profile: options.profile,
+      workdir: options.workdir,
+      open: options.open,
     });
   });
 

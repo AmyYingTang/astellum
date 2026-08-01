@@ -28,7 +28,8 @@ astrolens 便捷运行脚本
   ./quickastrolens prefetch [check|targets]     下载离线星表包(出发前联网跑一次)
                                                   check   = 只报告磁盘上有什么,不下载
                                                   targets = 预热在线答案快照(按标注库目标)
-  ./quickastrolens kiosk <图片> [对象名]          一键:识别 → 预定义解读 → 全屏可点页面
+  ./quickastrolens kiosk                        打开现场入口页(选文件:FITS/JPG/PNG,自动出图)
+  ./quickastrolens kiosk <图片> [对象名]          一键:识别 → 预定义解读 → 全屏可点页面(自动开浏览器)
   ./quickastrolens watch <目录> [对象名]          监听目录,每来一张新图自动出一张全屏页
   ./quickastrolens readings                     预定义解读覆盖率:哪些目标还没录、缺哪几项
   ./quickastrolens draft [目标|all]              用 AI 起草预定义解读(联网;写入随包解读库)
@@ -186,12 +187,12 @@ case "$cmd" in
 
   kiosk)
     shift
-    if [ $# -lt 1 ]; then
-      echo "用法: ./quickastrolens kiosk <图片> [对象名]" >&2
-      echo "提示:带上对象名,现场识别会稳很多(它就是身份依据)。" >&2
-      exit 1
-    fi
     ensure_built
+    # No file named → the operator wants the front door, not a one-shot run.
+    if [ $# -lt 1 ]; then
+      node "$CLI" kiosk-serve --profile onsite
+      exit 0
+    fi
     image="$1"
     target="${2:-}"
     base="$(basename "$image")"

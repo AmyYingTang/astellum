@@ -96,9 +96,16 @@ importers:
       cac:
         specifier: ^6.7.14
         version: 6.7.14
+      express:
+        specifier: ^4.21.2
+        version: 4.22.2
       sharp:
         specifier: ^0.33.5
         version: 0.33.5
+    devDependencies:
+      '@types/express':
+        specifier: ^4.17.21
+        version: 4.17.25
 
   packages/editor:
     dependencies:

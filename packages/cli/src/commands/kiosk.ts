@@ -9,6 +9,8 @@ import {
   defaultRegistryPaths,
   offlineCatalogStatus,
   isOfflineReady,
+  isFitsPath,
+  fitsToPng,
 } from '@astrolens/identify';
 import {
   readingFromPredefined,
@@ -41,7 +43,23 @@ export interface KioskArgs {
   lang?: string;
   style?: string;
   profile?: string;
+  /** Open the finished page in a browser. Default true — the command exists to
+   *  put something on a screen, and another tool invoking it shouldn't have to
+   *  know how. */
   open?: boolean;
+}
+
+/** Open a file in the platform browser, best-effort. */
+async function openInBrowser(target: string): Promise<void> {
+  const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
+  try {
+    const { execFile } = await import('node:child_process');
+    execFile(cmd, [target], () => {
+      /* a headless box has no browser; the path is printed either way */
+    });
+  } catch {
+    // non-fatal
+  }
 }
 
 /** What we could not show, and why — the operator's side of the screen. */
@@ -62,7 +80,18 @@ function reportDropped(sheet: FactSheet, reading: Reading): void {
   for (const w of sheet.warnings) console.log(`  ⚠ ${w}`);
 }
 
-export async function runKiosk(args: KioskArgs): Promise<void> {
+export interface KioskResult {
+  htmlPath: string;
+  state: KioskState;
+  objectName: string;
+  /** Per-layer counts, so a caller can report coverage without re-deriving it. */
+  coverage: ReturnType<typeof coverageSummary>;
+  matchedTarget: string | null;
+}
+
+/** Build one frame. Returns null when nothing could be identified — the one
+ *  case where no page is produced, because identity is never fabricated. */
+export async function runKiosk(args: KioskArgs): Promise<KioskResult | null> {
   const cfg = loadConfig({ profile: args.profile });
   const p = cfg.profile;
   const lang = args.lang === 'en' ? 'en' : 'zh';
@@ -83,11 +112,28 @@ export async function runKiosk(args: KioskArgs): Promise<void> {
     }
   }
 
-  const imagePath = resolve(args.image);
+  const source = resolve(args.image);
+  const outDir = resolve(args.out ?? join('out', basename(source, extname(source)) + '-kiosk'));
+  await mkdir(outDir, { recursive: true });
+
+  // A stacker writes FITS, and nothing downstream can open one. Convert at the
+  // door, with a display stretch — a linear master is nearly black otherwise,
+  // and the solver needs to see stars as much as the audience does.
+  let imagePath = source;
+  let hintFromFile: string | undefined;
+  if (isFitsPath(source)) {
+    imagePath = join(outDir, 'image.png');
+    const f = await fitsToPng(source, imagePath);
+    hintFromFile = f.objectName;
+    console.log(
+      `  FITS ${f.width}×${f.height} → stretched PNG` +
+        `${f.objectName ? `, OBJECT="${f.objectName}"` : ''}` +
+        `${f.bayerPattern ? ` (Bayer ${f.bayerPattern}: shown as mono, not demosaiced)` : ''}`,
+    );
+  }
+
   const meta = await sharp(imagePath).metadata();
   if (!meta.width || !meta.height) throw new Error(`Could not read image: ${imagePath}`);
-  const outDir = resolve(args.out ?? join('out', basename(imagePath, extname(imagePath)) + '-kiosk'));
-  await mkdir(outDir, { recursive: true });
 
   const t0 = Date.now();
   const sheet = await identify(
@@ -96,7 +142,9 @@ export async function runKiosk(args: KioskArgs): Promise<void> {
       width: meta.width,
       height: meta.height,
       imageSrc: basename(imagePath),
-      targetName: args.target,
+      // A FITS header's OBJECT is what the capture program was pointed at —
+      // as good a target name as the operator would have typed.
+      targetName: args.target ?? hintFromFile,
       registryPaths: defaultRegistryPaths(),
       ...(p.select.nebulaMinArcmin ? { nebulaMinArcmin: p.select.nebulaMinArcmin } : {}),
       ...(p.select.galaxyMinArcmin ? { galaxyMinArcmin: p.select.galaxyMinArcmin } : {}),
@@ -132,7 +180,7 @@ export async function runKiosk(args: KioskArgs): Promise<void> {
     console.log(`\n  Nothing identified (solve=${sheet.solve.status}).`);
     for (const w of sheet.warnings) console.log(`  ⚠ ${w}`);
     console.log('  No frame produced — identity is never fabricated.');
-    return;
+    return null;
   }
 
   const library = await loadReadingLibraries(defaultReadingsPaths());
@@ -175,6 +223,14 @@ export async function runKiosk(args: KioskArgs): Promise<void> {
   );
   reportDropped(trimmed, reading);
   console.log(`\n  ${((Date.now() - t0) / 1000).toFixed(1)}s → ${htmlPath}`);
+  if (args.open !== false) await openInBrowser(htmlPath);
+  return {
+    htmlPath,
+    state,
+    objectName: reading.object.name[lang],
+    coverage: c,
+    matchedTarget: coverage.matchedTarget,
+  };
 }
 
 function styleNames(library: { entries: { styles: Record<string, unknown> }[] }): string[] {
@@ -183,7 +239,7 @@ function styleNames(library: { entries: { styles: Record<string, unknown> }[] })
   return [...out];
 }
 
-const IMAGE_RE = /\.(jpe?g|png|tiff?|fits?)$/i;
+const IMAGE_RE = /\.(jpe?g|png|tiff?|fits?|fts)$/i;
 
 /**
  * Guess the target from a filename, which is how stacking software names its
