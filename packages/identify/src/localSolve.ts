@@ -139,9 +139,20 @@ export function createLocalSolveClient(opts: LocalSolveOptions = {}): SolveClien
       if (opts.scaleLowDeg != null && opts.scaleHighDeg != null) {
         args.push('--scale-units', 'degwidth', '--scale-low', String(opts.scaleLowDeg), '--scale-high', String(opts.scaleHighDeg));
       }
+      // A known target position turns the all-sky search into a local one.
+      if (input.hint) {
+        args.push(
+          '--ra', String(input.hint.ra_deg),
+          '--dec', String(input.hint.dec_deg),
+          '--radius', String(input.hint.radius_deg),
+        );
+      }
       args.push(input.imagePath);
 
-      log(`solve-field ${input.width}×${input.height} (downsample ${downsample}, cpulimit ${cpuLimit}s)…`);
+      log(
+        `solve-field ${input.width}×${input.height} (downsample ${downsample}, cpulimit ${cpuLimit}s` +
+          `${input.hint ? `, near ${input.hint.ra_deg.toFixed(2)},${input.hint.dec_deg.toFixed(2)} r=${input.hint.radius_deg}°` : ''})…`,
+      );
       await exec(solveField, args, { timeout: (cpuLimit + 30) * 1000, maxBuffer: 16 * 1024 * 1024 }).catch((e) => {
         // solve-field exits non-zero when it can't solve; treat as no-solution below.
         log(`solve-field: ${(e as Error).message.split('\n')[0]}`);

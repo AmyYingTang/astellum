@@ -6,6 +6,14 @@ export interface SolveInput {
   imagePath: string;
   width: number;
   height: number;
+  /**
+   * Optional sky position to search near (ICRS degrees, radius in degrees).
+   * Onsite the target is chosen before the shutter opens, so its catalogue
+   * position is already known — handing it to solve-field turns a blind
+   * all-sky search into a local one and cuts the solve from tens of seconds to
+   * a few. Ignored by solvers that don't accept a hint (nova).
+   */
+  hint?: { ra_deg: number; dec_deg: number; radius_deg: number };
 }
 
 export interface SolveResult {
@@ -71,6 +79,10 @@ export interface IdentifyInput {
    * from the result. Absent/all-missing → no B-class. */
   registryPaths?: string[];
   targetName?: string;
+  /** Known sky position of the chosen target, passed to the solver as a search
+   * hint. Onsite the target is picked up front, so this is available and turns
+   * a blind all-sky solve into a local one. */
+  solveHint?: { ra_deg: number; dec_deg: number; radius_deg: number };
   band?: 'broadband' | 'narrowband' | 'unknown';
   starless?: boolean;
   /** Max annotated objects to keep (others dropped). Default 8. */

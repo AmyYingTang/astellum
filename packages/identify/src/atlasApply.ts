@@ -43,6 +43,20 @@ function pipelineType(atlasType: string): FeatureTypeKey {
   return ATLAS_TO_PIPELINE[atlasType] ?? 'emission_color_region';
 }
 
+const PIPELINE_TO_ATLAS = Object.fromEntries(
+  Object.entries(ATLAS_TO_PIPELINE).map(([a, p]) => [p, a]),
+) as Record<string, string>;
+
+/**
+ * The inverse map, for writing annotations *back* into the atlas vocabulary
+ * (a curator's hand-drawn feature saved to their overlay). Anything without a
+ * counterpart becomes a plain region callout rather than a guessed type —
+ * mislabelling a structure is worse than calling it "a region worth noting".
+ */
+export function atlasTypeFor(pipeline: FeatureTypeKey | undefined): string {
+  return (pipeline && PIPELINE_TO_ATLAS[pipeline]) ?? 'region';
+}
+
 /** The shipped, curated baseline registry: `$ATLAS_REGISTRY`, else the atlas
  *  package's committed `packages/atlas/data/registry.json` (relative to cwd —
  *  callers run from the repo root). Read-only from a user's perspective. */
@@ -201,6 +215,10 @@ function entryToFeatures(entry: RegistryEntry, host: AtlasHost, wcs: Wcs): Array
       geometry_kind: anno.geometry.type,
       ...(anno.geometry.type === 'point' ? {} : { polygon: px }),
       ...(labelPixel ? { label_pixel: labelPixel } : {}),
+      // Carried for the predefined-reading lookup (target text → this note →
+      // the type-level generic note → a facts template).
+      ...(anno.id ? { atlas_annotation_id: anno.id } : {}),
+      ...(anno.note ? { atlas_note: anno.note } : {}),
       catalog_ids: {},
       confidence: 1,
       type_confidence: 1,

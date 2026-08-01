@@ -30,9 +30,14 @@ export function solverName(): string {
  * (binary paths), ASTROLENS_FOV_LOW / ASTROLENS_FOV_HIGH (field-width degree
  * bounds — a hint that greatly speeds the solve).
  */
-export function createConfiguredSolveClient(o: { apiKey?: string; cache?: boolean } = {}): SolveClient {
+export function createConfiguredSolveClient(
+  o: { apiKey?: string; cache?: boolean; mode?: 'nova' | 'local' } = {},
+): SolveClient {
   let inner: SolveClient;
-  if (isLocalSolver()) {
+  // The control file's profile already has the env overrides applied, so an
+  // explicit mode is authoritative; without one, fall back to reading env here
+  // (the pre-config behaviour, still used by callers that don't load a profile).
+  if (o.mode ? o.mode === 'local' : isLocalSolver()) {
     inner = createLocalSolveClient({
       configPath: process.env.ASTROMETRY_CFG,
       solveField: process.env.SOLVE_FIELD,

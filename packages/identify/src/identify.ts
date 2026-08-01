@@ -1,8 +1,11 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { basename } from 'node:path';
-import { FactSheet } from '@astrolens/schema';
-import type { IdentifyInput, IdentifyDeps } from './types.js';
+import { FactSheet, normalizeId, findRegistryEntry, type Registry } from '@astrolens/schema';
+import type { IdentifyInput, IdentifyDeps, CatalogCandidate } from './types.js';
+import { worldToPixel } from './wcs.js';
+import { objectCategory, isOptical } from './otype.js';
+import type { GatedCandidate } from './select.js';
 import { fieldRadiusDeg } from './wcs.js';
 import { gateCandidates, selectObjects, hasRecognizableName } from './select.js';
 import { assembleFactSheet } from './assemble.js';
@@ -69,6 +72,87 @@ function brightCentroid(
  * Solver and catalog are injected (nova / SIMBAD in production; mocks in tests).
  * Never fabricates identity: on solve failure it returns an honest empty sheet.
  */
+/**
+ * Find the operator-named target among the raw candidates and hand it back as a
+ * gated candidate, when the normal gate has already dropped it.
+ *
+ * Returns undefined when there's no name, when the gate already kept it (the
+ * common case — nothing to do), or when no candidate carries that name. It
+ * never invents an identity: the object has to be in the catalogue results, at
+ * a position that at least reaches the frame.
+ */
+/**
+ * Every name the operator's chosen target is known by: what they typed, plus
+ * the atlas registry's primary id and aliases for it. Curators name things the
+ * way their audience does, which is often not what a catalogue calls them.
+ */
+function targetAliases(targetName: string | undefined, registry: Registry | null): string[] {
+  const name = targetName?.trim();
+  if (!name) return [];
+  const entry = registry ? findRegistryEntry(registry, [name]) : undefined;
+  return entry ? [...new Set([name, entry.primary_id, ...entry.aliases])] : [name];
+}
+
+function nameMatcher(names: readonly string[]): (c: CatalogCandidate) => boolean {
+  const keys = new Set(names.map(normalizeId));
+  return (c) =>
+    keys.has(normalizeId(c.main_id)) ||
+    c.names.some((n) => keys.has(normalizeId(n))) ||
+    Object.values(c.catalog_ids).some((n) => keys.has(normalizeId(n)));
+}
+
+/** Promote a raw candidate to a gated one, skipping the centre-in-frame rule. */
+function toGated(
+  hit: CatalogCandidate,
+  wcs: Parameters<typeof worldToPixel>[0],
+): GatedCandidate | undefined {
+  if (!isOptical(hit.otype)) return undefined;
+  const category = objectCategory(hit.otype);
+  if (!category) return undefined;
+  // The centre may project outside the frame; that's the whole point. Downstream
+  // only needs a pixel for placement, and atlas features carry their own sky
+  // coordinates, so an off-frame host still projects its annotations correctly.
+  const p = worldToPixel(wcs, hit.ra_deg, hit.dec_deg);
+  if (!p) return undefined;
+  return { candidate: hit, pixel: p, category };
+}
+
+function forceNamedTarget(
+  targetNames: readonly string[],
+  candidates: CatalogCandidate[],
+  gated: GatedCandidate[],
+  wcs: Parameters<typeof worldToPixel>[0],
+): { gated: GatedCandidate; wasGated: boolean } | undefined {
+  if (!targetNames.length) return undefined;
+  const matches = nameMatcher(targetNames);
+
+  // Already through the gate: nothing to rescue, but still worth pinning so the
+  // prominence filter can't drop it later.
+  const kept = gated.find((g) => matches(g.candidate));
+  if (kept) return { gated: kept, wasGated: true };
+
+  const radius = fieldRadiusDeg(wcs);
+  const hit = candidates
+    .filter(matches)
+    // Its extent has to actually reach the frame — a same-named object on the
+    // other side of the sky is a mismatch, not a target.
+    .filter((c) => {
+      const sep = angularSepDeg(wcs.ra0_deg, wcs.dec0_deg, c.ra_deg, c.dec_deg);
+      return sep <= radius + (c.size_arcmin ? c.size_arcmin[0] / 2 / 60 : 0);
+    })
+    .sort((a, b) => (b.size_arcmin?.[0] ?? 0) - (a.size_arcmin?.[0] ?? 0))[0];
+  const g = hit ? toGated(hit, wcs) : undefined;
+  return g ? { gated: g, wasGated: false } : undefined;
+}
+
+const D2R = Math.PI / 180;
+function angularSepDeg(ra1: number, dec1: number, ra2: number, dec2: number): number {
+  const c =
+    Math.sin(dec1 * D2R) * Math.sin(dec2 * D2R) +
+    Math.cos(dec1 * D2R) * Math.cos(dec2 * D2R) * Math.cos((ra1 - ra2) * D2R);
+  return Math.acos(Math.min(1, Math.max(-1, c))) / D2R;
+}
+
 export async function identify(input: IdentifyInput, deps: IdentifyDeps): Promise<FactSheet> {
   const hash = input.hash ?? (await fileHash(input.imagePath));
   const timestamp = new Date().toISOString();
@@ -100,6 +184,7 @@ export async function identify(input: IdentifyInput, deps: IdentifyDeps): Promis
     imagePath: input.imagePath,
     width: input.width,
     height: input.height,
+    ...(input.solveHint ? { hint: input.solveHint } : {}),
   });
 
   if (solveRes.status !== 'solved' || !solveRes.wcs) {
@@ -131,6 +216,57 @@ export async function identify(input: IdentifyInput, deps: IdentifyDeps): Promis
     radius_deg: radius,
   });
   const gated = gateCandidates(candidates, wcs);
+
+  // "Verify", not "discover". When the operator has named the target up front —
+  // which is the whole onsite flow — that name is better evidence of identity
+  // than a cone search, so the gate must not be allowed to throw it away.
+  //
+  // The gate requires an object's *centre* to sit inside the frame. That is the
+  // right default for discovery, but it drops exactly the cases a curator
+  // actually shoots: a tight crop of a sub-structure (the Cone inside NGC 2264),
+  // or a frame inside something enormous (Barnard's Loop, the Vela SNR). Those
+  // fail against SIMBAD online for the same reason — it is not an offline
+  // problem, and no extra catalogue fixes it.
+  // Atlas Apply: B-class features are projected from the approved registry
+  // (baseline + any user overlay, merged). Loaded here rather than at the end
+  // because the registry also knows the target's aliases, and the operator may
+  // well have picked a name no catalogue carries (the atlas calls the Vela SNR
+  // "Gum 16"; the offline pack only knows it as "Vela SNR" / "SNR G263.9-03.3").
+  const registry = input.registryPaths?.length ? await loadRegistries(input.registryPaths) : null;
+  const targetNames = targetAliases(input.targetName, registry);
+
+  let forced = forceNamedTarget(targetNames, candidates, gated, wcs);
+
+  // Still nothing? The target may simply lie outside the cone we queried — a
+  // tight crop of a sub-structure sits well off its catalogue centre. Widen the
+  // search once, by name only. Offline this is a free in-memory filter; online
+  // it costs one extra query, and only on the path that already failed.
+  if (targetNames.length && !forced) {
+    const wide = await deps.catalog.region({
+      ra_deg: wcs.ra0_deg,
+      dec_deg: wcs.dec0_deg,
+      // At least a degree: a very tight crop can sit further from its own
+      // catalogue centre than several of its own field widths.
+      radius_deg: Math.min(Math.max(radius * 6, 1), 15),
+    });
+    const hit = wide.filter(nameMatcher(targetNames))[0];
+    const g = hit ? toGated(hit, wcs) : undefined;
+    if (g) {
+      forced = { gated: g, wasGated: false };
+      console.error(
+        `[identify] target "${input.targetName}" found only by widening the search — ` +
+          `this frame is a crop well off the object's catalogue centre.`,
+      );
+    }
+  }
+
+  if (forced && !forced.wasGated) {
+    gated.unshift(forced.gated);
+    console.error(
+      `[identify] target "${input.targetName}" kept by name (${forced.gated.candidate.main_id}) — ` +
+        `its catalogue centre lies outside the frame, so the cone gate would have dropped it.`,
+    );
+  }
 
   // Curated nickname overlay (amateur names absent from SIMBAD/Wikidata/OpenNGC,
   // e.g. Dark Doodad / Statue of Liberty), applied BEFORE selection so a famous
@@ -190,6 +326,13 @@ export async function identify(input: IdentifyInput, deps: IdentifyDeps): Promis
     imageW: wcs.width,
     imageH: wcs.height,
   });
+  // The prominence filter ranks by apparent size, so an operator-named target
+  // with no catalogued extent (B 72, JnEr 1 …) can still be dropped here. If the
+  // person running the kiosk said what this is, it leads the sheet.
+  if (forced && !selected.includes(forced.gated)) {
+    selected.unshift(forced.gated);
+    console.error(`[identify] pinned named target "${input.targetName}" as primary.`);
+  }
   console.error(
     `[identify] candidates=${candidates.length} → in-frame/known=${gated.length} → selected=${selected.length} (prominence filter, cap ${selectOpts.topN}): ${selected.map((g) => g.candidate.names[0] ?? g.candidate.main_id).join(', ')}`,
   );
@@ -273,10 +416,6 @@ export async function identify(input: IdentifyInput, deps: IdentifyDeps): Promis
       if (info.category) g.candidate.wiki_type = { category: info.category };
     }),
   );
-
-  // Atlas Apply: B-class features are projected from the approved registry
-  // (baseline + any user overlay, merged).
-  const registry = input.registryPaths?.length ? await loadRegistries(input.registryPaths) : null;
 
   return assembleFactSheet({
     image,
