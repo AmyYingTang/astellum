@@ -17,6 +17,10 @@ export const RegistryGeometry = z.object({
 export type RegistryGeometry = z.infer<typeof RegistryGeometry>;
 
 export const RegistryAnnotation = z.object({
+  /** The atlas's stable `anno_…` id, carried through the export so predefined
+   *  readings can attach text to a specific annotation. Optional so registries
+   *  exported before this field stay loadable. */
+  id: z.string().optional(),
   feature_type: z.string(),
   geometry: RegistryGeometry,
   label: z.object({ zh: z.string(), en: z.string() }),

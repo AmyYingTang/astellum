@@ -90,6 +90,12 @@ export const FactObject = z.object({
    * curator-placed sky anchor (atlas features only). When set, the reader
    * anchors the badge here instead of auto-placing it at the shape's top edge. */
   label_pixel: z.tuple([z.number(), z.number()]).optional(),
+  /** Atlas-sourced features: the curator's stable `anno_…` id, so a predefined
+   * reading can attach text to this exact annotation. */
+  atlas_annotation_id: z.string().optional(),
+  /** Atlas-sourced features: the curator's own note on this annotation — the
+   * second fallback layer when there's no target-level predefined text. */
+  atlas_note: LocalizedString.optional(),
   /** Where this entry came from: a catalog match (A-class), a geometric prior
    * anchored on an A object, an image CV detector, an AI/VLM pass, or the human
    * feature atlas (approved baseline annotations). Drives provenance grouping. */

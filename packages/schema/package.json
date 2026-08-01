@@ -8,6 +8,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/configLoad.d.ts",
+      "default": "./dist/configLoad.js"
     }
   },
   "scripts": {
