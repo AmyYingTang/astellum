@@ -1,0 +1,209 @@
+import { ofetch } from 'ofetch';
+import { mkdir, readFile, writeFile, stat } from 'node:fs/promises';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+import type { CatalogClient, CatalogCandidate, RegionQuery } from './types.js';
+import { VIZIER_CATALOGS, parseAsuTsv, rowsToCandidates, type CatalogSpec } from './vizier.js';
+import { createOpenNgcCatalogClient, OPENNGC_CSV_URL } from './openngc.js';
+
+/**
+ * The offline star-table pack — catalogs on disk, cone-searched in process, so
+ * a kiosk works with the network unplugged.
+ *
+ * Unlike plate solving, catalog lookup needs no clever index: every table here
+ * is a small static file, and the whole pack is ~4 MB. VizieR's ASU service
+ * will hand over a complete table (`-out.max=unlimited`), and the same TSV
+ * parser the online cone client uses reads it back, so a prefetched table and a
+ * live query yield identical candidates.
+ *
+ * Measured against the 64 annotated atlas targets (2026-08-01): 60 resolve with
+ * an angular size, 2 resolve without one, and 2 fail — and those 2 fail online
+ * against SIMBAD too, because they are tight crops of a sub-structure whose
+ * catalogue position sits outside the frame. Onsite that case is covered by
+ * picking the target up front rather than discovering it.
+ */
+
+const log = (m: string): void => console.error(`[offline] ${m}`);
+
+export function defaultOfflineDir(): string {
+  return process.env.ASTROLENS_CATALOG_DIR ?? join(homedir(), '.cache', 'astrolens', 'catalogs');
+}
+
+const ASU_URL = 'https://vizier.cds.unistra.fr/viz-bin/asu-tsv';
+
+const fileFor = (spec: CatalogSpec): string => `${spec.key}.tsv`;
+
+/** Fetch one complete table and write it to the pack directory. */
+async function fetchTable(spec: CatalogSpec, dir: string): Promise<number> {
+  const text = await ofetch<string, 'text'>(ASU_URL, {
+    method: 'GET',
+    responseType: 'text',
+    query: {
+      '-source': spec.source,
+      '-out': [spec.idCol, ...spec.out].join(','),
+      '-out.add': '_RAJ2000,_DEJ2000',
+      '-out.max': 'unlimited',
+    },
+    timeout: 120_000,
+  });
+  const rows = parseAsuTsv(text);
+  if (!rows.length) throw new Error(`${spec.key}: table came back empty`);
+  await mkdir(dir, { recursive: true });
+  await writeFile(join(dir, fileFor(spec)), text, 'utf8');
+  return rows.length;
+}
+
+export interface PrefetchResult {
+  key: string;
+  rows?: number;
+  bytes?: number;
+  error?: string;
+}
+
+/**
+ * Download the whole pack. Run this once with a network, offsite; afterwards the
+ * kiosk needs nothing. OpenNGC is warmed too (it has its own cache), so one
+ * command leaves the machine genuinely field-ready.
+ */
+export async function prefetchOfflineCatalogs(
+  dir = defaultOfflineDir(),
+): Promise<PrefetchResult[]> {
+  const out: PrefetchResult[] = [];
+  for (const spec of VIZIER_CATALOGS) {
+    try {
+      const rows = await fetchTable(spec, dir);
+      const { size } = await stat(join(dir, fileFor(spec)));
+      log(`${spec.key}: ${rows} rows, ${(size / 1024).toFixed(1)} KB`);
+      out.push({ key: spec.key, rows, bytes: size });
+    } catch (e) {
+      log(`${spec.key}: FAILED — ${(e as Error).message}`);
+      out.push({ key: spec.key, error: (e as Error).message });
+    }
+  }
+  // Warm OpenNGC through its own client so the two caches stay in one place.
+  try {
+    const ngc = createOpenNgcCatalogClient();
+    const probe = await ngc.region({ ra_deg: 83.8, dec_deg: -5.4, radius_deg: 0.5 });
+    log(`openngc: warm (${probe.length} objects near the Orion Nebula)`);
+    out.push({ key: 'openngc', rows: probe.length });
+  } catch (e) {
+    log(`openngc: FAILED — ${(e as Error).message}`);
+    out.push({ key: 'openngc', error: (e as Error).message });
+  }
+  return out;
+}
+
+export interface CatalogStatus {
+  key: string;
+  present: boolean;
+  rows?: number;
+  bytes?: number;
+}
+
+/** What's on disk — the "am I ready to go offline?" self-check. */
+export async function offlineCatalogStatus(dir = defaultOfflineDir()): Promise<CatalogStatus[]> {
+  const out: CatalogStatus[] = [];
+  for (const spec of VIZIER_CATALOGS) {
+    try {
+      const path = join(dir, fileFor(spec));
+      const { size } = await stat(path);
+      const rows = parseAsuTsv(await readFile(path, 'utf8')).length;
+      out.push({ key: spec.key, present: rows > 0, rows, bytes: size });
+    } catch {
+      out.push({ key: spec.key, present: false });
+    }
+  }
+  try {
+    const path = join(homedir(), '.cache', 'astrolens', 'openngc', 'NGC.csv');
+    const { size } = await stat(path);
+    out.push({ key: 'openngc', present: true, bytes: size });
+  } catch {
+    out.push({ key: 'openngc', present: false });
+  }
+  return out;
+}
+
+/** True when every table is on disk — safe to unplug. */
+export function isOfflineReady(status: CatalogStatus[]): boolean {
+  return status.every((s) => s.present);
+}
+
+export interface OfflineCatalogOptions {
+  /** Pack directory. Default `~/.cache/astrolens/catalogs`. */
+  dir?: string;
+  /** Include OpenNGC (NGC/IC/M). Default true — it carries most targets. */
+  openngc?: boolean;
+}
+
+const DEG = Math.PI / 180;
+function angSepDeg(ra1: number, dec1: number, ra2: number, dec2: number): number {
+  const c =
+    Math.sin(dec1 * DEG) * Math.sin(dec2 * DEG) +
+    Math.cos(dec1 * DEG) * Math.cos(dec2 * DEG) * Math.cos((ra1 - ra2) * DEG);
+  return Math.acos(Math.min(1, Math.max(-1, c))) / DEG;
+}
+
+/**
+ * A CatalogClient backed entirely by the on-disk pack. Tables are parsed once,
+ * lazily, then every region query is an in-memory filter — no network, and fast
+ * enough that it never shows up next to the plate solve.
+ *
+ * A missing table is skipped with a log line rather than failing the query: a
+ * partial pack still identifies most targets, and staying silent about it would
+ * make an under-covered kiosk look like a working one.
+ */
+export function createOfflineCatalogClient(opts: OfflineCatalogOptions = {}): CatalogClient {
+  const dir = opts.dir ?? defaultOfflineDir();
+  const ngc = opts.openngc === false ? null : createOpenNgcCatalogClient();
+  let cache: Promise<{ loaded: string[]; missing: string[]; all: CatalogCandidate[] }> | undefined;
+
+  function load(): Promise<{ loaded: string[]; missing: string[]; all: CatalogCandidate[] }> {
+    if (!cache) {
+      cache = (async () => {
+        const all: CatalogCandidate[] = [];
+        const loaded: string[] = [];
+        const missing: string[] = [];
+        for (const spec of VIZIER_CATALOGS) {
+          try {
+            const rows = parseAsuTsv(await readFile(join(dir, fileFor(spec)), 'utf8'));
+            const cands = rowsToCandidates(spec, rows);
+            all.push(...cands);
+            loaded.push(`${spec.key}:${cands.length}`);
+          } catch {
+            missing.push(spec.key);
+          }
+        }
+        if (missing.length) {
+          log(
+            `missing tables: ${missing.join(', ')} — coverage is reduced. ` +
+              `Run \`astrolens prefetch\` while you still have a network.`,
+          );
+        }
+        log(`loaded ${all.length} objects from ${loaded.length} tables (${loaded.join(' ')})`);
+        return { loaded, missing, all };
+      })().catch((e: unknown) => {
+        log(`load failed: ${(e as Error)?.message ?? e}`);
+        cache = undefined; // allow a retry
+        return { loaded: [], missing: [], all: [] as CatalogCandidate[] };
+      });
+    }
+    return cache;
+  }
+
+  async function region(q: RegionQuery): Promise<CatalogCandidate[]> {
+    const { all } = await load();
+    const near = all.filter((c) => {
+      // Match the online gate's spirit: a big object whose centre is outside the
+      // frame still counts when its extent reaches in.
+      const reach = q.radius_deg + (c.size_arcmin ? c.size_arcmin[0] / 2 / 60 : 0);
+      return angSepDeg(q.ra_deg, q.dec_deg, c.ra_deg, c.dec_deg) <= reach;
+    });
+    const fromNgc = ngc ? await ngc.region(q) : [];
+    log(`region r=${q.radius_deg.toFixed(3)}° → ${near.length} tabled + ${fromNgc.length} NGC/IC`);
+    return [...fromNgc, ...near];
+  }
+
+  return { region };
+}
+
+export { OPENNGC_CSV_URL };

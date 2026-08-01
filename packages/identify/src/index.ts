@@ -25,6 +25,26 @@ export {
 } from './openngc.js';
 export { NICKNAMES, lookupNickname, type Nickname } from './nicknames.js';
 export { createCompositeCatalogClient, mergeCandidates } from './composite.js';
+export { createCatalogFromSources, isOfflineCatalog } from './catalogSources.js';
+export {
+  createCachedCatalogClient,
+  catalogCacheStatus,
+  defaultCatalogCacheDir,
+  prewarmTargets,
+  targetFootprint,
+  type CatalogCacheOptions,
+  type SnapshotStatus,
+  type PrewarmEntry,
+} from './catalogCache.js';
+export {
+  createOfflineCatalogClient,
+  prefetchOfflineCatalogs,
+  offlineCatalogStatus,
+  isOfflineReady,
+  defaultOfflineDir,
+  type CatalogStatus,
+  type PrefetchResult,
+} from './offlineCatalog.js';
 export { deriveBClassFeatures, visibleRadiusPx, type DerivableObject, type DerivedFeature } from './features.js';
 export { detectCvFeatures, type CvOpts } from './cv.js';
 export {
@@ -50,6 +70,7 @@ export { createWikidataClient, type WikiInfo, type WikidataOptions } from './wik
 export { runAiFeaturePass, type RunClaudeFn } from './aiFeatures.js';
 export {
   applyAtlas,
+  atlasTypeFor,
   loadRegistry,
   loadRegistries,
   mergeRegistries,

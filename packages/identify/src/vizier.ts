@@ -26,7 +26,7 @@ export interface VizierOptions {
 
 type Row = Record<string, string>;
 
-interface CatalogSpec {
+export interface CatalogSpec {
   /** catalog_ids key + log label. */
   key: string;
   /** VizieR table, e.g. "VII/20/catalog". */
@@ -41,6 +41,10 @@ interface CatalogSpec {
   name: (id: string) => string;
   /** Angular size [major, minor] in arcmin, if derivable. */
   size: (r: Row) => [number, number] | undefined;
+  /** Further names the row carries (proper names, alternative designations) —
+   *  Green's SNR table lists "Puppis A" / "Vela (XYZ)" in a `Names` column, and
+   *  the ESO PN table carries both a name and a PK designation. */
+  extraNames?: (r: Row) => string[];
 }
 
 const num = (r: Row, k: string): number => {
@@ -130,6 +134,53 @@ export const VIZIER_CATALOGS: CatalogSpec[] = [
       return [d, d];
     },
   },
+  // Supernova remnants. The optically famous ones with NGC numbers (the Veil,
+  // the Crab, the Pencil) come from OpenNGC — this table is here for the ones
+  // that have no NGC designation at all, which is exactly where the coverage
+  // check found holes: Vela SNR (Gum 16) and Puppis A.
+  {
+    key: 'snr',
+    source: 'VII/278/snrs',
+    idCol: 'SNR',
+    out: ['MajDiam', 'MinAxis', 'Names'],
+    otype: 'SNR',
+    name: (id) => `SNR G${id.replace(/^G/, '')}`,
+    size: (r) => {
+      const a = num(r, 'MajDiam');
+      if (!(a > 0)) return undefined;
+      const b = num(r, 'MinDiam');
+      return [a, b > 0 ? b : a];
+    },
+    // Green lists bare proper names ("Puppis A", "Vela (XYZ)"). Emit the plain
+    // form *and* a "… SNR" variant, because that's how these are commonly
+    // written elsewhere ("Vela SNR") and identity matching is exact-by-name.
+    extraNames: (r) => {
+      const out: string[] = [];
+      for (const raw of (r['Names'] ?? '').split(',')) {
+        const n = raw.replace(/\(.*?\)/g, '').trim();
+        if (!n) continue;
+        out.push(n);
+        if (!/\bSNR\b/i.test(n)) out.push(`${n} SNR`);
+      }
+      return out;
+    },
+  },
+  // Planetary nebulae without an NGC/IC number — the Abell PNe, Jones–Emberson 1
+  // and friends, which narrowband imagers do shoot. No size column in this
+  // table, so these arrive unsized and rely on the target being known.
+  {
+    key: 'pn',
+    source: 'V/84/main',
+    idCol: 'Name',
+    out: ['PK'],
+    otype: 'PN',
+    name: (id) => id.trim(),
+    size: () => undefined,
+    extraNames: (r) => {
+      const pk = (r['PK'] ?? '').trim();
+      return pk ? [`PK ${pk.replace(/\s+/g, '.')}`] : [];
+    },
+  },
 ];
 
 /**
@@ -158,6 +209,36 @@ export function parseAsuTsv(text: string): Row[] {
   return out;
 }
 
+/**
+ * Turn parsed ASU-TSV rows into catalog candidates. Shared by the online cone
+ * client and the offline pack, so a prefetched full table and a live cone query
+ * produce byte-identical candidates.
+ */
+export function rowsToCandidates(spec: CatalogSpec, rows: Row[]): CatalogCandidate[] {
+  const out: CatalogCandidate[] = [];
+  for (const r of rows) {
+    const id = r[spec.idCol];
+    if (!id) continue;
+    const ra = num(r, '_RAJ2000');
+    const dec = num(r, '_DEJ2000');
+    if (!Number.isFinite(ra) || !Number.isFinite(dec)) continue;
+    const name = spec.name(id);
+    if (!name) continue;
+    const extra = spec.extraNames?.(r) ?? [];
+    out.push({
+      main_id: name,
+      names: [name, ...extra.filter((n) => n !== name)],
+      otype: spec.otype,
+      ra_deg: ra,
+      dec_deg: dec,
+      size_arcmin: spec.size(r),
+      catalog_ids: { [spec.key]: name },
+      source: `VizieR:${spec.source}`,
+    });
+  }
+  return out;
+}
+
 export function createVizierCatalogClient(opts: VizierOptions = {}): CatalogClient {
   const base = opts.baseUrl ?? 'https://vizier.cds.unistra.fr/viz-bin/asu-tsv';
   const maxPerCatalog = opts.maxPerCatalog ?? 60;
@@ -176,26 +257,7 @@ export function createVizierCatalogClient(opts: VizierOptions = {}): CatalogClie
       },
       timeout: 30_000,
     });
-    const out: CatalogCandidate[] = [];
-    for (const r of parseAsuTsv(text)) {
-      const id = r[spec.idCol];
-      if (!id) continue;
-      const ra = num(r, '_RAJ2000');
-      const dec = num(r, '_DEJ2000');
-      if (!Number.isFinite(ra) || !Number.isFinite(dec)) continue;
-      const name = spec.name(id);
-      out.push({
-        main_id: name,
-        names: [name],
-        otype: spec.otype,
-        ra_deg: ra,
-        dec_deg: dec,
-        size_arcmin: spec.size(r),
-        catalog_ids: { [spec.key]: name },
-        source: `VizieR:${spec.source}`,
-      });
-    }
-    return out;
+    return rowsToCandidates(spec, parseAsuTsv(text));
   }
 
   async function region(q: RegionQuery): Promise<CatalogCandidate[]> {
