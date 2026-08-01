@@ -42,12 +42,30 @@ function fame(c: CatalogCandidate): number {
   return lookupNickname([...Object.values(c.catalog_ids), ...c.names]) ? 1 : 0;
 }
 
-/** Two same-kind candidates are the same object if their centres are close
- * relative to their size (generous for extended nebulae, tight for stars). */
+/**
+ * Two same-kind candidates are the same object if their centres are close
+ * relative to their size (generous for extended nebulae, tight for stars).
+ *
+ * The scale that matters is the SMALLER of the two, and the pair also has to be
+ * comparable in size — the same guard `isSameComplex` already applies across
+ * categories, and its absence here was a real bug. Sizing the threshold off the
+ * larger one meant a giant HII complex swallowed any small nebula inside it:
+ * Sh 2-310 is 480′, so 0.6 × 480 = 288′ of reach, and Sh 2-308 (35′) —
+ * a distinct, separately catalogued Wolf–Rayet bubble sitting inside that
+ * reach — vanished into it, taking the whole reading with it.
+ *
+ * A small nebula inside a big complex is a sub-object, not a duplicate. When it
+ * really is one object listed twice, the two entries agree to within the
+ * smaller one's own scale anyway.
+ */
 function isDuplicate(a: CatalogCandidate, b: CatalogCandidate): boolean {
   if (kindOf(a) !== kindOf(b) || kindOf(a) === 'other') return false;
   const big = Math.max(major(a), major(b));
-  const threshold = Math.max(big > 0 ? 5 : 2, 0.6 * big);
+  const small = Math.min(major(a), major(b));
+  // Both sized but wildly different ⇒ one contains the other; keep them apart.
+  if (small > 0 && small < 0.4 * big) return false;
+  const scale = small > 0 ? small : big;
+  const threshold = Math.max(scale > 0 ? 5 : 2, 0.6 * scale);
   return sepArcmin(a, b) <= threshold;
 }
 

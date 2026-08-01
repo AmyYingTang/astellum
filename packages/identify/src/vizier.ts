@@ -37,10 +37,17 @@ export interface CatalogSpec {
   out: string[];
   /** Synthetic otype → objectCategory (HII→emission, RNe→reflection, DNe→dark). */
   otype: string;
-  /** Build the display id, e.g. 308 → "Sh 2-308". */
-  name: (id: string) => string;
+  /** Build the display id, e.g. 308 → "Sh 2-308". Gets the row too, so a
+   *  catalogue with several designations can lead with the best-known one. */
+  name: (id: string, r: Row) => string;
   /** Angular size [major, minor] in arcmin, if derivable. */
   size: (r: Row) => [number, number] | undefined;
+  /** Per-row object type, when one static otype won't do (the Bright Star
+   *  Catalogue holds ordinary stars and Wolf–Rayet stars side by side, and the
+   *  difference decides whether a nebula's exciting star gets drawn). */
+  otypeFor?: (r: Row) => string;
+  /** Apparent magnitude, for ranking and the naked-eye-star gate. */
+  mag?: (r: Row) => number | undefined;
   /** Further names the row carries (proper names, alternative designations) —
    *  Green's SNR table lists "Puppis A" / "Vela (XYZ)" in a `Names` column, and
    *  the ESO PN table carries both a name and a PK designation. */
@@ -165,6 +172,36 @@ export const VIZIER_CATALOGS: CatalogSpec[] = [
       return out;
     },
   },
+  // Bright stars. The offline pack was all nebulae, which quietly lost every
+  // A-class *star* the moment you went offline — including the Wolf–Rayet star
+  // that blew the bubble you're looking at (HD 50896 inside Sh 2-308). The
+  // selection stage already knows to add a WR star back when it sits inside a
+  // selected WR bubble; it just needs a catalogue that supplies one.
+  {
+    key: 'bsc',
+    source: 'V/50/catalog',
+    idCol: 'HR',
+    out: ['HD', 'Name', 'Vmag', 'SpType'],
+    otype: '*',
+    // Lead with the HD number when there is one — that is how these are
+    // referred to in practice, and how SIMBAD returned them online.
+    name: (id, r) => (r['HD']?.trim() ? `HD ${r['HD'].trim()}` : `HR ${id}`),
+    size: () => undefined,
+    // WN/WC/WO spectra are Wolf–Rayet stars; everything else is an ordinary star.
+    otypeFor: (r) => (/^W[NCO]/i.test((r['SpType'] ?? '').trim()) ? 'WR*' : '*'),
+    mag: (r) => {
+      const v = num(r, 'Vmag');
+      return Number.isFinite(v) ? v : undefined;
+    },
+    extraNames: (r) => {
+      const out: string[] = [];
+      const hr = r['HR']?.trim();
+      const name = r['Name']?.trim();
+      if (hr) out.push(`HR ${hr}`);
+      if (name) out.push(`* ${name}`, name);
+      return out;
+    },
+  },
   // Planetary nebulae without an NGC/IC number — the Abell PNe, Jones–Emberson 1
   // and friends, which narrowband imagers do shoot. No size column in this
   // table, so these arrive unsized and rely on the target being known.
@@ -222,16 +259,18 @@ export function rowsToCandidates(spec: CatalogSpec, rows: Row[]): CatalogCandida
     const ra = num(r, '_RAJ2000');
     const dec = num(r, '_DEJ2000');
     if (!Number.isFinite(ra) || !Number.isFinite(dec)) continue;
-    const name = spec.name(id);
+    const name = spec.name(id, r);
     if (!name) continue;
     const extra = spec.extraNames?.(r) ?? [];
+    const mag = spec.mag?.(r);
     out.push({
       main_id: name,
       names: [name, ...extra.filter((n) => n !== name)],
-      otype: spec.otype,
+      otype: spec.otypeFor?.(r) ?? spec.otype,
       ra_deg: ra,
       dec_deg: dec,
       size_arcmin: spec.size(r),
+      ...(mag != null && Number.isFinite(mag) ? { mag } : {}),
       catalog_ids: { [spec.key]: name },
       source: `VizieR:${spec.source}`,
     });

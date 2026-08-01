@@ -65,3 +65,55 @@ describe('mergeCandidates — same-complex cross-category merge', () => {
     expect(mergeCandidates([[a], [b]])).toHaveLength(2);
   });
 });
+
+describe('mergeCandidates — same-category dedup', () => {
+  it('does NOT let a giant complex swallow a distinct nebula inside it', () => {
+    // The real case: Sh 2-310 is 480′ across and Sh 2-308 (35′, the Dolphin
+    // Head — a Wolf–Rayet bubble) sits inside it. Sizing the duplicate test off
+    // the larger object gave 288′ of reach and lost Sh 2-308 entirely.
+    const giant = cand({
+      main_id: 'Sh 2-310',
+      names: ['Sh 2-310'],
+      size_arcmin: [480, 480],
+      catalog_ids: { sharpless: 'Sh 2-310' },
+      source: 'VizieR:VII/20/catalog',
+    });
+    const inner = cand({
+      main_id: 'Sh 2-308',
+      names: ['Sh 2-308'],
+      ra_deg: 161.27 + 0.8,
+      size_arcmin: [35, 35],
+      catalog_ids: { sharpless: 'Sh 2-308' },
+      source: 'VizieR:VII/20/catalog',
+    });
+    const merged = mergeCandidates([[giant], [inner]]);
+    expect(merged.map((c) => c.main_id).sort()).toEqual(['Sh 2-308', 'Sh 2-310']);
+  });
+
+  it('still folds two catalogues listing the same nebula', () => {
+    // Sh 2-308 ≡ RCW 11: comparable sizes, essentially the same centre.
+    const sh = cand({
+      main_id: 'Sh 2-308',
+      names: ['Sh 2-308'],
+      size_arcmin: [35, 35],
+      catalog_ids: { sharpless: 'Sh 2-308' },
+    });
+    const rcw = cand({
+      main_id: 'RCW 11',
+      names: ['RCW 11'],
+      ra_deg: 161.27 + 0.05,
+      size_arcmin: [60, 20],
+      catalog_ids: { rcw: 'RCW 11' },
+    });
+    const merged = mergeCandidates([[sh], [rcw]]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0]!.catalog_ids.sharpless).toBe('Sh 2-308');
+    expect(merged[0]!.cross_match?.some((x) => x.id === 'RCW 11')).toBe(true);
+  });
+
+  it('keeps two unsized same-kind entries apart unless they are nearly on top of each other', () => {
+    const a = cand({ main_id: 'A', otype: 'WR*', names: ['A'] });
+    const b = cand({ main_id: 'B', otype: 'WR*', names: ['B'], ra_deg: 161.27 + 0.2 });
+    expect(mergeCandidates([[a], [b]])).toHaveLength(2);
+  });
+});
