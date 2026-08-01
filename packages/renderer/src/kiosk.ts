@@ -426,10 +426,16 @@ ${cards}
     TEXT.forEach(function(t){
       var card=document.querySelector('.k-card[data-f="'+t.id+'"]');
       if(!card) return;
-      card.querySelector('h2').textContent=t[LANG].label;
-      card.querySelectorAll('p').forEach(function(p){ p.remove(); });
+      // Target the accordion's own nodes. These paragraphs can't carry
+      // data-zh/data-en like the rest of the page does, because a body may
+      // split into a different number of paragraphs per language.
+      var title=card.querySelector('.k-card-title');
+      if(title) title.textContent=t[LANG].label;
+      var bodyEl=card.querySelector('.k-card-body');
+      if(!bodyEl) return;
+      bodyEl.textContent='';
       t[LANG].body.forEach(function(s){
-        var p=document.createElement('p'); p.textContent=s; card.appendChild(p);
+        var p=document.createElement('p'); p.textContent=s; bodyEl.appendChild(p);
       });
     });
     idleReset();

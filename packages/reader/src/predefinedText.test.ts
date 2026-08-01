@@ -189,3 +189,22 @@ describe('predefined text resolution', () => {
     expect(coverage.sources.get('f_target')).toBe('target');
   });
 });
+
+describe('facts template wording', () => {
+  const withType = (zh: string, en: string, names = ['X']) =>
+    FactSheet.parse({
+      ...factsheet,
+      objects: [{ ...factsheet.objects[0]!, names, common_name: undefined, type: { zh, en, otype: '', source: 'catalog' } }],
+    });
+
+  it('picks the right article and keeps proper names capitalised', () => {
+    const emission = resolvePredefinedText(withType('发射星云', 'Emission nebula', ['Sh 2-308']), null);
+    expect(emission.byId.get('o1')!.explanation.en).toContain('is an emission nebula');
+
+    const wr = resolvePredefinedText(withType('沃尔夫–拉叶星', 'Wolf–Rayet star', ['HD 50896']), null);
+    expect(wr.byId.get('o1')!.explanation.en).toContain('is a Wolf–Rayet star');
+
+    const dark = resolvePredefinedText(withType('暗星云', 'Dark nebula', ['B 33']), null);
+    expect(dark.byId.get('o1')!.explanation.en).toContain('is a dark nebula');
+  });
+});

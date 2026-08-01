@@ -95,6 +95,18 @@ function distanceLy(obj: FactObject): number | undefined {
 
 const fmt = (n: number): string => n.toLocaleString('en-US');
 
+/** "Emission nebula" → "emission nebula", but "Wolf–Rayet star" is left alone.
+ *  A type label is sentence-cased, so its first word carries no other capital
+ *  unless it is a proper name — which must not be flattened. */
+function lowerFirst(s: string): string {
+  const first = s.split(/\s+/)[0] ?? '';
+  if (/[A-Z]/.test(first.slice(1))) return s;
+  return s.charAt(0).toLowerCase() + s.slice(1);
+}
+
+/** "a" or "an", by sound-as-spelled — enough for the type labels we emit. */
+const article = (s: string): string => (/^[aeiou]/i.test(s) ? 'an' : 'a');
+
 /**
  * Last-resort text, built only from things the fact sheet actually knows. It
  * states less rather than guessing — an honest "we know its type and how far
@@ -112,8 +124,9 @@ function factsTemplate(obj: FactObject): LocalizedString {
   ]
     .filter(Boolean)
     .join('');
+  const typeEn = lowerFirst(obj.type.en);
   const en = [
-    `${obj.common_name?.en || obj.names[0] || obj.id} is a ${obj.type.en.toLowerCase()}.`,
+    `${obj.common_name?.en || obj.names[0] || obj.id} is ${article(typeEn)} ${typeEn}.`,
     ly ? ` It lies about ${fmt(ly)} light-years away.` : '',
     size ? ` It spans roughly ${size.toFixed(0)} arcminutes on the sky.` : '',
   ]
