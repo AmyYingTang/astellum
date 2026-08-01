@@ -27,6 +27,16 @@ export { NICKNAMES, lookupNickname, type Nickname } from './nicknames.js';
 export { createCompositeCatalogClient, mergeCandidates } from './composite.js';
 export { createCatalogFromSources, isOfflineCatalog } from './catalogSources.js';
 export {
+  isFitsPath,
+  decodeFits,
+  autoStretch,
+  readFitsForDisplay,
+  fitsToPng,
+  type FitsImage,
+  type FitsReadResult,
+  type StretchOptions,
+} from './fits.js';
+export {
   createCachedCatalogClient,
   catalogCacheStatus,
   defaultCatalogCacheDir,
