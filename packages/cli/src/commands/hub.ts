@@ -154,6 +154,18 @@ select,input[type=text]{width:100%;margin-top:7px;background:#141925;border:1px 
 fieldset{margin-top:26px;border:1px solid #1e2637;border-radius:12px;padding:18px 20px 22px;}
 legend{padding:0 8px;color:#cfd6e4;font-size:14px;font-weight:600;}
 .hint{margin-top:6px;color:#5d6780;font-size:12.5px;line-height:1.6;}
+/* A reference someone needs once, not every time: folded away until asked for. */
+.info-dot{margin-left:7px;width:18px;height:18px;padding:0;border-radius:50%;
+  border:1px solid #39415a;background:transparent;color:#8a93a8;font-size:11px;
+  font-style:italic;font-weight:700;line-height:16px;cursor:pointer;vertical-align:middle;}
+.info-dot:hover{color:#cfd6e4;border-color:#4a5878;}
+.info-panel{display:none;margin-top:10px;padding:12px 14px;border-radius:10px;
+  background:#0e131e;border:1px solid #232c3d;color:#9aa4bb;font-size:12.5px;line-height:1.7;}
+.info-panel.show{display:block;}
+.info-panel p+p{margin-top:8px;}
+.info-panel .formula{color:#cfd6e4;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;}
+.info-panel table{margin:8px 0 0;}
+.info-panel td{padding:4px 0;border-bottom:1px solid #161d2b;}
 .check{display:flex;align-items:center;gap:9px;margin-top:14px;color:#cfd6e4;font-size:14px;}
 button{margin-top:26px;background:#2b6cb0;border:0;color:#fff;border-radius:11px;
   padding:13px 26px;font-size:16px;font-weight:600;cursor:pointer;}
@@ -298,8 +310,30 @@ function settingsPage(o: {
     )}</p>
     <div id="idx-state" class="hint">${t('读取中…', 'Reading…')}</div>
     <label>${t('最小视场(角分)', 'Narrowest field (arcmin)')}
+      <button type="button" class="info-dot" data-info="fov-help" aria-label="?">i</button>
       <select id="idx-arcmin"></select>
     </label>
+    <div class="info-panel" id="fov-help">
+      <p>${t(
+        '这个数字是<b>你的器材拍出来的画面有多宽</b>,不是天体多大。换算:',
+        'This is <b>how wide a frame your rig produces</b>, not how big the target is:',
+      )}</p>
+      <p class="formula">${t('视场宽度(角分)', 'field width (arcmin)')} = 3438 × ${t(
+        '传感器宽度(mm)',
+        'sensor width (mm)',
+      )} ÷ ${t('焦距(mm)', 'focal length (mm)')}</p>
+      <table>
+        <tr><td>${t('全画幅 36mm + 400mm', 'Full frame 36mm + 400mm')}</td><td>310′</td></tr>
+        <tr><td>${t('APS-C 23.5mm + 400mm', 'APS-C 23.5mm + 400mm')}</td><td>202′</td></tr>
+        <tr><td>${t('APS-C + 800mm', 'APS-C + 800mm')}</td><td>101′</td></tr>
+        <tr><td>${t('4/3 17.3mm + 800mm', 'Micro 4/3 17.3mm + 800mm')}</td><td>74′</td></tr>
+        <tr><td>${t('APS-C + 1600mm', 'APS-C + 1600mm')}</td><td>50′</td></tr>
+      </table>
+      <p>${t(
+        '选<b>比你实际视场略小</b>的一档 —— 档位是按尺度分段的,不留余量的话边界上的图会解不出来。有多套器材就按<b>最窄</b>的那套选。',
+        'Pick the option <b>just below</b> your actual field: the bands are ranges, and with no margin a frame at the edge will not solve. Several rigs — go by the narrowest.',
+      )}</p>
+    </div>
     <label>${t('存放目录', 'Directory')}
       <input type="text" id="idx-dir" placeholder="~/astrometry-indexes">
     </label>
@@ -345,6 +379,13 @@ var IDX_T = ${JSON.stringify({
     saved: t('已保存。重启相关页面后生效。', 'Saved. Restart the affected page to pick it up.'),
     failedSave: t('保存失败', 'Save failed'),
   })};
+
+// Fold-away reference panels.
+document.querySelectorAll('.info-dot').forEach(function(b){
+  b.addEventListener('click', function(){
+    document.getElementById(b.getAttribute('data-info')).classList.toggle('show');
+  });
+});
 
 // --- plate-solve indexes ---------------------------------------------------
 var idxSel=document.getElementById('idx-arcmin'), idxDir=document.getElementById('idx-dir'),
