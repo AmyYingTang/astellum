@@ -183,13 +183,14 @@ See [ONSITE.md](ONSITE.md) for the full before-you-leave checklist.
 |---|---|---|
 | Kiosk (`kiosk`, `kiosk-serve`, `kiosk-watch`) | yes | **yes** — decoded and auto-stretched |
 | Studio upload | yes | **yes** — same conversion |
-| Atlas upload | yes | not yet |
+| Atlas upload | yes | **yes** — converted server-side |
 
 FITS is decoded in-process (no astropy, no external tool) and given a display
 stretch, because a linear master is nearly black and both the solver and the
-audience need to see something. The original file is kept beside the converted
-PNG in the project folder. A Bayer-matrix frame from a one-shot-colour camera is
-shown as mono and labelled as such rather than guessed at.
+audience need to see something. In the studio the original file is kept beside
+the converted PNG in the project folder. A Bayer-matrix frame from a
+one-shot-colour camera is shown as mono and labelled as such rather than guessed
+at — feed a stacked master rather than a raw OSC light frame.
 
 ## 9. Troubleshooting
 

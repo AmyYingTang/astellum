@@ -68,7 +68,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((res, rej) => {
     const im = new window.Image();
     im.onload = () => res(im);
-    im.onerror = () => rej(new Error('无法解码图像 · Could not decode image (JPG/PNG here; FITS works in the kiosk)'));
+    im.onerror = () => rej(new Error('无法解码图像 · Could not decode image'));
     im.src = src;
   });
 }
@@ -77,8 +77,13 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 // astrophotos in the browser before upload: keeps the payload well under the
 // body limit, speeds up the solve, and the WCS we get back matches the pixels
 // we send. Longest edge capped; JPEG re-encode. Small JPEGs pass through as-is.
+const isFits = (name: string): boolean => /\.(fits?|fts)$/i.test(name);
+
 async function prepareUpload(file: File, maxEdge = 4096): Promise<{ dataUrl: string; filename: string }> {
   const original = await readFileAsDataUrl(file);
+  // A browser has no FITS decoder, so it cannot be measured or downscaled here.
+  // Send it whole; the server decodes, stretches and applies the same size cap.
+  if (isFits(file.name)) return { dataUrl: original, filename: file.name };
   const img = await loadImage(original);
   const longest = Math.max(img.naturalWidth, img.naturalHeight);
   const scale = Math.min(1, maxEdge / longest);
@@ -832,7 +837,7 @@ export function App(): JSX.Element {
           <input
             ref={fileRef}
             type="file"
-            accept="image/*"
+            accept=".fits,.fit,.fts,image/*"
             hidden
             onChange={(e) => {
               const f = e.target.files?.[0];
@@ -843,7 +848,7 @@ export function App(): JSX.Element {
           <input
             ref={previewFileRef}
             type="file"
-            accept="image/*"
+            accept=".fits,.fit,.fts,image/*"
             hidden
             onChange={(e) => {
               const f = e.target.files?.[0];

@@ -52,8 +52,8 @@ A plate-solver is required here too: uploading a reference image solves and
 identifies it, so the target's identity is filled in for you.
 
 1. **Upload a reference image** — big images are downscaled in the browser
-   first. JPG/PNG only here; the studio and kiosk take FITS, the atlas does not
-   yet.
+   first. JPG, PNG and FITS all work; a FITS is sent whole (a browser cannot
+   decode one to shrink it) and converted, stretched and capped server-side.
 2. **Draw** — pick a feature type, optionally give the feature a proper name
    ("Mystic Mountain"), **Start drawing**, click the outline point by point,
    **Finish & save this shape**. When not drawing, drag to pan and scroll to

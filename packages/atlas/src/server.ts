@@ -9,6 +9,8 @@ import sharp from 'sharp';
 import {
   identify,
   createConfiguredSolveClient,
+  isFitsPath,
+  fitsBufferToImage,
   isLocalSolver,
   solverName,
   createSimbadCatalogClient,
@@ -151,7 +153,9 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
 
   // Client downscales reference images before upload, so payloads are small;
   // this is a generous backstop for the rare large one that slips through.
-  app.use(express.json({ limit: '96mb' }));
+  // A FITS reference image arrives undownscaled — the browser cannot decode one
+  // to shrink it first — so the limit has to clear a full-size master.
+  app.use(express.json({ limit: '256mb' }));
 
   // Which plate-solver is configured — shown in the tool's UI.
   app.get('/api/config', (_req, res) =>
@@ -173,10 +177,22 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
       const apiKey = requireApiKey();
       const ext = (extname(body.filename ?? '') || '.jpg').toLowerCase();
       const jobId = `${Date.now().toString(36)}-${(jobSeq++).toString(36)}`;
-      const imageRef = `upload_${jobId}${ext === '.png' ? '.png' : '.jpg'}`;
 
       const b64 = body.imageBase64.replace(/^data:[^;]+;base64,/, '');
-      const buf = Buffer.from(b64, 'base64');
+      let buf: Buffer = Buffer.from(b64, 'base64');
+      let imageRef = `upload_${jobId}${ext === '.png' ? '.png' : '.jpg'}`;
+      let fitsObject: string | undefined;
+
+      // The browser downscales a reference image before uploading, but it has no
+      // FITS decoder, so a FITS arrives whole and undecoded. Convert and apply
+      // the same size cap here — what gets stored is then what the solve sees,
+      // which is the property the WCS depends on.
+      if (isFitsPath(body.filename ?? '')) {
+        const converted = await fitsBufferToImage(buf, { maxEdge: 4096 });
+        buf = Buffer.from(converted.buffer);
+        imageRef = `upload_${jobId}.png`;
+        fitsObject = converted.objectName;
+      }
       await store.putRefImage(imageRef, buf);
 
       jobs.set(jobId, { state: 'running', stage: 'storing' });
@@ -221,7 +237,10 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
             imageRef,
             width: meta.width,
             height: meta.height,
-            suggested: suggestIdentity(factsheet) ?? undefined,
+            // A FITS header's OBJECT is what the capture program was pointed
+            // at — a reasonable identity when the catalogue cross-match is
+            // undecided, but never a reason to override one that isn't.
+            suggested: suggestIdentity(factsheet) ?? (fitsObject ? { primary_id: fitsObject, aliases: [] } : undefined),
           });
         } catch (e) {
           jobs.set(jobId, { state: 'failed', error: (e as Error).message });

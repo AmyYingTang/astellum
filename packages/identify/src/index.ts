@@ -32,6 +32,7 @@ export {
   autoStretch,
   readFitsForDisplay,
   fitsToPng,
+  fitsBufferToImage,
   type FitsImage,
   type FitsReadResult,
   type StretchOptions,

@@ -310,3 +310,40 @@ export async function fitsToPng(
     ...(r.bayerPattern ? { bayerPattern: r.bayerPattern } : {}),
   };
 }
+
+/**
+ * Decode a FITS buffer straight to a display-ready image buffer.
+ *
+ * The path-based `fitsToPng` suits a CLI, where the file is already on disk.
+ * An upload arrives in memory and its only destination is a storage adapter, so
+ * round-tripping it through a temp file just to convert would be ceremony.
+ *
+ * `maxEdge` exists because the browser normally downscales a reference image
+ * before upload — it cannot for FITS, having no decoder for it, so the same cap
+ * is applied here instead. The WCS a solve returns then matches the pixels that
+ * were stored, which is the property that actually matters.
+ */
+export async function fitsBufferToImage(
+  buf: Buffer,
+  opts: StretchOptions & { maxEdge?: number } = {},
+): Promise<{ buffer: Buffer; width: number; height: number; objectName?: string; bayerPattern?: string }> {
+  const { default: sharp } = await import('sharp');
+  const img = decodeFits(buf);
+  const pixels = autoStretch(img, opts);
+  let pipeline = sharp(Buffer.from(pixels), {
+    raw: { width: img.width, height: img.height, channels: img.channels as 1 | 3 },
+  });
+  const maxEdge = opts.maxEdge;
+  if (maxEdge && Math.max(img.width, img.height) > maxEdge) {
+    pipeline = pipeline.resize({ width: maxEdge, height: maxEdge, fit: 'inside' });
+  }
+  const out = await pipeline.png().toBuffer({ resolveWithObject: true });
+  const objectName = typeof img.header['OBJECT'] === 'string' ? img.header['OBJECT'].trim() : '';
+  return {
+    buffer: out.data,
+    width: out.info.width,
+    height: out.info.height,
+    ...(objectName ? { objectName } : {}),
+    ...(img.bayerPattern ? { bayerPattern: img.bayerPattern } : {}),
+  };
+}
