@@ -31,7 +31,14 @@ export function solverName(): string {
  * bounds — a hint that greatly speeds the solve).
  */
 export function createConfiguredSolveClient(
-  o: { apiKey?: string; cache?: boolean; mode?: 'nova' | 'local' } = {},
+  o: {
+    apiKey?: string;
+    cache?: boolean;
+    mode?: 'nova' | 'local';
+    /** Field-width bounds in degrees; falls back to the env vars when unset. */
+    fovLowDeg?: number;
+    fovHighDeg?: number;
+  } = {},
 ): SolveClient {
   let inner: SolveClient;
   // The control file's profile already has the env overrides applied, so an
@@ -42,8 +49,9 @@ export function createConfiguredSolveClient(
       configPath: process.env.ASTROMETRY_CFG,
       solveField: process.env.SOLVE_FIELD,
       wcsinfo: process.env.WCSINFO,
-      scaleLowDeg: numEnv('ASTROLENS_FOV_LOW'),
-      scaleHighDeg: numEnv('ASTROLENS_FOV_HIGH'),
+      // Settings first; the env vars remain the override, as everywhere else.
+      scaleLowDeg: o.fovLowDeg ?? numEnv('ASTROLENS_FOV_LOW'),
+      scaleHighDeg: o.fovHighDeg ?? numEnv('ASTROLENS_FOV_HIGH'),
     });
   } else {
     if (!o.apiKey) {

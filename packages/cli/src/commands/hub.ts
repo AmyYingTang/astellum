@@ -238,6 +238,16 @@ function settingsPage(o: {
     </label>
     ${check('solve.cache', p.solve.cache, t('缓存解析结果(同一张图只解一次)', 'Cache solves (each image is solved once)'))}
     ${check('solve.hintFromTarget', p.solve.hintFromTarget, t('已知目标时给解析器位置提示(现场提速明显)', 'Hint the solver with a known target position (much faster in the field)'))}
+    <label>${t('视场宽度范围(度) —— 本地解析的提示', 'Field width, degrees — a hint for local solving')}
+      <div class="row">
+        <input type="text" name="solve.fovLowDeg" value="${p.solve.fovLowDeg ?? ''}" placeholder="${t('最小,如 2', 'min, e.g. 2')}">
+        <input type="text" name="solve.fovHighDeg" value="${p.solve.fovHighDeg ?? ''}" placeholder="${t('最大,如 3.5', 'max, e.g. 3.5')}">
+      </div>
+    </label>
+    <p class="hint">${t(
+      '由你的焦距和相机决定,填了能大幅加快盲解。两个都留空 = 搜索所有尺度;范围填太窄,超出范围的图会解不出来。',
+      'Set by your focal length and sensor. Filling both speeds a blind solve up a lot; leave both empty to search every scale. Too narrow a range and a frame outside it will not solve at all.',
+    )}</p>
   </fieldset>
 
   <fieldset><legend>${t('目录 Catalogs', 'Catalogues')}</legend>
@@ -389,6 +399,13 @@ function applySettings(current: AstrolensConfig, body: Record<string, unknown>):
     if (k === 'catalog.preset') continue;
     const [section, key] = k.split('.');
     if (!section || !key) continue;
+    // Numeric text fields: an empty box means "unset", not zero, and a typo
+    // should be rejected by the schema rather than stored as NaN.
+    if (key.endsWith('Deg')) {
+      const trimmed = String(v ?? '').trim();
+      set(section, key, trimmed === '' ? undefined : Number(trimmed));
+      continue;
+    }
     set(section, key, v);
   }
   // The catalogue choice is a preset, not a raw list — a settings page is the

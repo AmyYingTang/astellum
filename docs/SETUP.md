@@ -88,11 +88,14 @@ The download resumes: re-running checks each file's size against the server and
 re-fetches only what is missing or truncated. That second line is what tells the
 solver where they are — without it the files sit unused.
 
-Turn the solver on, optionally hinting the field width in degrees (the hint
-speeds solving a lot):
+Then turn the solver on, from the settings page or `.env`. Both places also
+take a **field-width hint** in degrees — set by your focal length and sensor,
+and worth filling in: it speeds a blind solve up a lot. Leave both empty to
+search every scale; too narrow a range and a frame outside it will not solve at
+all.
 
 ```bash
-# .env
+# .env — equivalent to the Plate solving section of the settings page
 ASTROLENS_SOLVER=local
 ASTROLENS_FOV_LOW=2
 ASTROLENS_FOV_HIGH=3.5
@@ -100,7 +103,7 @@ ASTROLENS_FOV_HIGH=3.5
 
 **Env reference:** `ASTROLENS_SOLVER` (`local`|`nova`), `ASTROMETRY_CFG`,
 `SOLVE_FIELD`, `WCSINFO` (binary/config paths), `ASTROLENS_FOV_LOW` /
-`ASTROLENS_FOV_HIGH`.
+`ASTROLENS_FOV_HIGH`. Anything set here overrides the settings page.
 
 ### Which solver is active?
 

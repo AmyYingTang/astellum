@@ -53,6 +53,17 @@ export const SolveConfig = z.object({
   /** Feed a known target's RA/Dec to solve-field as a search hint — it cuts a
    *  solve from tens of seconds to a few. Ignored by nova. */
   hintFromTarget: z.boolean().default(true),
+  /**
+   * Field-width bounds in degrees, passed to the local solver as a scale hint.
+   *
+   * Set by the rig — focal length and sensor — so it is a machine-level
+   * preference like the rest of this, and it speeds a blind solve up a lot.
+   * Leave both unset to search every scale; set them too tightly and a frame
+   * outside the range will not solve at all, which is why they are a pair and
+   * only take effect together.
+   */
+  fovLowDeg: z.number().positive().optional(),
+  fovHighDeg: z.number().positive().optional(),
   /** Give up rather than leave an audience staring at a spinner. */
   timeoutMs: z.number().int().positive().optional(),
 });

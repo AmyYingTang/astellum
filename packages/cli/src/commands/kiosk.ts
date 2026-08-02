@@ -149,6 +149,8 @@ export async function runKiosk(args: KioskArgs): Promise<KioskResult | null> {
         apiKey: process.env.ASTROMETRY_API_KEY,
         mode: p.solve.mode,
         cache: p.solve.cache,
+        fovLowDeg: p.solve.fovLowDeg,
+        fovHighDeg: p.solve.fovHighDeg,
       }),
       catalog: createCatalogFromSources(p.catalog.sources, { snapshot: p.catalog.snapshot }),
     },

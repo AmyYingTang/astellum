@@ -254,6 +254,8 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
             apiKey: opts.apiKey,
             mode: config.solve.mode,
             cache: config.solve.cache,
+            fovLowDeg: config.solve.fovLowDeg,
+            fovHighDeg: config.solve.fovHighDeg,
           }),
           catalog: createCatalogFromSources(config.catalog.sources, {
             snapshot: config.catalog.snapshot,

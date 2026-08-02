@@ -72,6 +72,10 @@ export function applyEnvOverrides(config: AstrolensConfig): AstrolensConfig {
   const mode = (process.env.ASTROLENS_READING_MODE ?? '').toLowerCase();
   if (mode === 'ai' || mode === 'predefined') out.reading.mode = mode;
   if (process.env.ASTROLENS_READING_STYLE) out.reading.style = process.env.ASTROLENS_READING_STYLE;
+  const lo = Number(process.env.ASTROLENS_FOV_LOW);
+  const hi = Number(process.env.ASTROLENS_FOV_HIGH);
+  if (Number.isFinite(lo) && lo > 0) out.solve.fovLowDeg = lo;
+  if (Number.isFinite(hi) && hi > 0) out.solve.fovHighDeg = hi;
   return out;
 }
 
