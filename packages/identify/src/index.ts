@@ -56,6 +56,7 @@ export {
   INDEX_BANDS,
   bandsForField,
   indexUrls,
+  isComplete,
   indexChoices,
   type IndexBand,
   type CatalogStatus,

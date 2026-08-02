@@ -10,6 +10,7 @@ import {
   defaultRegistryPaths,
   bandsForField,
   indexUrls,
+  isComplete,
 } from '@astrolens/identify';
 import { loadConfig } from '@astrolens/schema/node';
 import { mkdir, writeFile, stat } from 'node:fs/promises';
@@ -92,16 +93,12 @@ export async function prefetchCatalogs(args: PrefetchArgs = {}): Promise<void> {
     const failed: string[] = [];
     for (const [i, f] of files.entries()) {
       const dest = join(dir, f.file);
-      // Resume-friendly: an interrupted run picks up where it stopped, which
-      // matters when the total is measured in gigabytes.
-      try {
-        const st = await stat(dest);
-        if (st.size > 0) {
-          skipped += 1;
-          continue;
-        }
-      } catch {
-        // not there yet
+      // Resume-friendly, and it checks the size against the server rather than
+      // trusting that any non-empty file is finished — a truncated index is
+      // indistinguishable from a complete one by existence alone.
+      if (await isComplete(dest, f.url)) {
+        skipped += 1;
+        continue;
       }
       process.stdout.write(`  [${i + 1}/${files.length}] ${f.file} … `);
       try {

@@ -84,8 +84,9 @@ the download for fields you may never shoot.
 echo "add_path $HOME/astrometry-indexes" >> "$(brew --prefix)/etc/astrometry.cfg"
 ```
 
-The download resumes: re-running skips files already present. That second line
-is what tells the solver where they are — without it the files sit unused.
+The download resumes: re-running checks each file's size against the server and
+re-fetches only what is missing or truncated. That second line is what tells the
+solver where they are — without it the files sit unused.
 
 Turn the solver on, optionally hinting the field width in degrees (the hint
 speeds solving a lot):
@@ -204,7 +205,7 @@ at — feed a stacked master rather than a raw OSC light frame.
 |---|---|
 | `Plate-solving needs a nova API key` | no `ASTROMETRY_API_KEY` and not using the local solver — §3 |
 | Local solver installed but nothing solves | index files missing, or `add_path` never added to `astrometry.cfg` — §3B |
-| `Couldn't find table "kdtree_data_codes"` | that index file downloaded truncated; delete it and re-run `prefetch indexes` |
+| `Couldn't find table "kdtree_data_codes"` | that index file downloaded truncated — re-run `prefetch indexes <arcmin>`; it now detects short files and re-fetches them |
 | Solve hangs for minutes | nova's shared queue is busy; retry or switch to local (§3B) |
 | A setting saved in the UI has no effect | `.env` overrides it — §5 |
 | `claude` errors when generating a reading | CLI not installed/authenticated; everything else still works |

@@ -10,6 +10,7 @@ import {
   catalogCacheStatus,
   bandsForField,
   indexUrls,
+  isComplete,
   indexChoices,
 } from '@astrolens/identify';
 import { homedir } from 'node:os';
@@ -515,14 +516,9 @@ export async function runHub(args: HubArgs = {}): Promise<void> {
       for (const f of files) {
         job.current = f.file;
         const dest = join(dir, f.file);
-        try {
-          const st = await stat(dest);
-          if (st.size > 0) {
-            job.skipped += 1;
-            continue;
-          }
-        } catch {
-          // not downloaded yet
+        if (await isComplete(dest, f.url)) {
+          job.skipped += 1;
+          continue;
         }
         try {
           const r = await fetch(f.url);

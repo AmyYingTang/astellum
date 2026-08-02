@@ -282,6 +282,36 @@ export function indexChoices(): { minFieldArcmin: number; mb: number; bands: num
   return out.filter((o) => o.minFieldArcmin <= 2000 && o.minFieldArcmin >= 20);
 }
 
+/**
+ * Is this file already fully downloaded?
+ *
+ * "It exists and is non-empty" is not the same question. A download killed
+ * halfway leaves a file that passes that test forever, so a resume skips it and
+ * the solver fails on it every run — which is how `index-4204-23.fits` sat at
+ * 12 MB against its siblings' 26 MB without anything noticing. Ask the server
+ * how big it should be and compare.
+ *
+ * A server that won't say (no content-length) leaves us no better test than
+ * before, so a non-empty file is accepted rather than re-fetched every time.
+ */
+export async function isComplete(path: string, url: string): Promise<boolean> {
+  let size: number;
+  try {
+    size = (await stat(path)).size;
+  } catch {
+    return false;
+  }
+  if (size === 0) return false;
+  try {
+    const head = await fetch(url, { method: 'HEAD' });
+    const expected = Number(head.headers.get('content-length'));
+    if (!Number.isFinite(expected) || expected <= 0) return true;
+    return size === expected;
+  } catch {
+    return true; // offline mid-check: don't discard what is already here
+  }
+}
+
 export function indexUrls(bands: IndexBand[]): { url: string; file: string; mb: number }[] {
   const out: { url: string; file: string; mb: number }[] = [];
   for (const b of bands) {
