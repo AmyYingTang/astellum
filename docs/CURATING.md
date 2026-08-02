@@ -9,31 +9,28 @@ Install first: [SETUP.md](SETUP.md).
 
 ---
 
-## The order matters
-
-Do it in this order. Drafting readings before the annotations are approved
-wastes a whole pass:
+## The order of work
 
 ```
 1. annotate          draw features on a reference image
-2. review + approve  draft → in review → approved
-3. export registry   approved-only; this is what everything downstream reads
-4. draft readings    AI writes a first pass, per target
-5. review the text   ai_draft → human
+2. draft the text    in the atlas, per target — shapes may still be drafts
+3. review both       the shape and its words, in one pass → approved / 已审核
+4. export registry   approved-only; this is what everything downstream reads
 ```
 
-**Why 4 must come after 3.** The drafter reads the *exported registry*, and the
-registry contains only objects with at least one approved annotation. Two
-consequences:
+Text is keyed by an annotation id that is stable from the moment a shape is
+drawn, so writing before approval is safe and lets one review pass cover the
+shape and its words together. A shape dropped later leaves an entry keyed to an
+id nothing looks up — harmless.
 
-- A target with nothing approved does not appear at all — `readings` will not
-  list it and `draft` cannot write for it.
-- The prompt feeds the model each annotation's id, type, label and your note,
-  and asks for a line per annotation. With no annotations it can only produce
-  the narrative, scale, culture and fun-facts — and the per-feature lines are
-  exactly what a visitor sees when they tap a label.
+**Export is last** because it is what the kiosk and studio read at runtime, not
+something drafting needs.
 
-Drafting early means re-running later with `--force`.
+One asymmetry worth knowing: the **atlas** drafts from the annotations
+themselves, so drafts count. The **command line** (`readings-draft`) reads the
+*exported registry*, which contains only approved annotations — so a target with
+nothing approved will not appear there. Use the atlas while the work is in
+progress; the CLI for a batch afterwards.
 
 ---
 

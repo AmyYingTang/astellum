@@ -408,16 +408,17 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
       res.json({
         ok: true,
         reading: found ?? null,
-        // The annotations that need a line each, so the editor can show a slot
-        // per approved shape rather than a free-text blob.
-        annotations: (entry?.annotations ?? [])
-          .filter((a) => a.status === 'approved')
-          .map((a) => ({
-            id: a.id,
-            feature_type: a.feature_type,
-            label: a.label,
-            note: a.note ?? null,
-          })),
+        // Every annotation gets a slot, not just the approved ones. Text is
+        // keyed by an id that is stable from the moment a shape is drawn, so
+        // writing before approval is safe — and it lets one review pass cover
+        // the shape and its words together instead of forcing two.
+        annotations: (entry?.annotations ?? []).map((a) => ({
+          id: a.id,
+          feature_type: a.feature_type,
+          label: a.label,
+          note: a.note ?? null,
+          status: a.status,
+        })),
       });
     } catch (e) {
       res.status(500).json({ ok: false, error: (e as Error).message });
@@ -440,14 +441,17 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
       const atlas = await store.loadAtlas();
       const entry = findEntry(atlas, req.params.id);
       if (!entry) throw new Error(`Not in the atlas: ${req.params.id}`);
-      const approved = entry.annotations.filter((a) => a.status === 'approved');
+      // Drafts included: an annotator writes text while the shapes are still
+      // being worked on, and reviews both in one pass. A shape that is later
+      // dropped leaves an entry keyed to an id nothing looks up — harmless.
+      const drawn = entry.annotations.filter((a) => a.id);
       const style = String((req.body as { style?: string } | undefined)?.style ?? cfg.reading.style);
 
       const drafted = await draftPredefinedStyle(
         {
           primary_id: entry.primary_id,
           aliases: entry.aliases,
-          annotations: approved.map((a) => ({
+          annotations: drawn.map((a) => ({
             id: a.id,
             feature_type: a.feature_type,
             geometry: a.geometry,
@@ -457,7 +461,7 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
         },
         { style, model: cfg.reading.model ?? undefined },
       );
-      res.json({ ok: true, style: drafted, styleName: style, annotations: approved.length });
+      res.json({ ok: true, style: drafted, styleName: style, annotations: drawn.length });
     } catch (e) {
       // The CLI's failures quote the whole prompt back, which is useful in a
       // terminal and a wall of text in a status line. Keep the first line.

@@ -21,6 +21,7 @@ interface AnnotationSlot {
   feature_type: string;
   label: LocalizedString;
   note: LocalizedString | null;
+  status?: string;
 }
 
 interface Loaded {
@@ -223,12 +224,14 @@ export function ReadingEditor({
           <div className="rd-features">
             <h4>逐条特征</h4>
             {(data?.annotations ?? []).length === 0 && (
-              <p className="hint">这个目标还没有已批准的标注 —— 先审核标注,这里才会出现槽位。</p>
+              <p className="hint">这个目标还没有标注 —— 先画几条,这里就会出现对应的槽位。</p>
             )}
             {(data?.annotations ?? []).map((a) => (
               <Pair
                 key={a.id}
-                label={a.label.zh || a.label.en || a.feature_type}
+                label={`${a.label.zh || a.label.en || a.feature_type}${
+                  a.status && a.status !== 'approved' ? '（未批准）' : ''
+                }`}
                 hint={a.note?.zh || a.note?.en || undefined}
                 value={features[a.id] ?? EMPTY}
                 rows={2}
@@ -243,7 +246,8 @@ export function ReadingEditor({
                 {drafting ? 'AI 起草中…' : 'AI 起草一份'}
               </button>
               <p className="hint">
-                会用已批准的标注(含你写的备注)当素材。生成的内容<b>不会自动保存</b> —— 先读一遍再存。
+                会用这个目标现有的标注(含你写的备注)当素材,草稿标注也算。
+                生成的内容<b>不会自动保存</b> —— 先读一遍再存。
               </p>
             </div>
           )}

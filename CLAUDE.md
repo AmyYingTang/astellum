@@ -76,10 +76,15 @@ mappings — data-ifying them trades a compile error for a runtime one.
 
 ## Order of work that matters
 
-Annotate → approve → **export registry** → draft readings → review text.
-The drafter reads the *exported* registry, which contains only objects with an
-approved annotation, and asks for a line per annotation. Drafting first produces
-readings with no per-feature text and wastes the pass.
+Annotate → draft the text → review shape and words **together** → export.
+
+Text is keyed by an annotation id that is stable from the moment a shape is
+drawn, so writing before approval is safe and keeps review to one pass. Export
+is last because it is what the runtime reads, not what drafting needs.
+
+The two drafting paths differ on purpose: the **atlas** drafts from the
+annotations themselves (drafts included), the **CLI** from the exported registry
+(approved only). In-progress work uses the former.
 
 ## Commands
 
