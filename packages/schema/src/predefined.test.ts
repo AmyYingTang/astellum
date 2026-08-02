@@ -110,3 +110,101 @@ describe('generic feature notes', () => {
     expect(featureNote('stellar_population')).toBeUndefined(); // A-class, not drawn onsite
   });
 });
+
+describe('overlaying a shipped reading', () => {
+  const shipped = PredefinedLibrary.parse({
+    schema_version: 1,
+    entries: [
+      {
+        schema_version: 1,
+        primary_id: 'M 42',
+        styles: {
+          general: {
+            narrative: { zh: '原始导读。', en: 'Shipped narrative.' },
+            scale: { zh: '原始尺度。', en: 'Shipped scale.' },
+            culture: { zh: '原始文化。', en: 'Shipped culture.' },
+            fun_facts: [{ zh: '原始冷知识。', en: 'Shipped fact.' }],
+            features: [
+              { annotation_id: 'anno_a', explanation: { zh: '原始 A。', en: 'Shipped A.' } },
+              { annotation_id: 'anno_b', explanation: { zh: '原始 B。', en: 'Shipped B.' } },
+            ],
+          },
+        },
+      },
+    ],
+  });
+
+  it('keeps everything the deployment did not rewrite', () => {
+    // The realistic edit: fix one sentence, leave the rest alone.
+    const mine = PredefinedLibrary.parse({
+      schema_version: 1,
+      entries: [
+        {
+          schema_version: 1,
+          primary_id: 'M 42',
+          styles: { general: { narrative: { zh: '我改过的导读。', en: 'My narrative.' } } },
+        },
+      ],
+    });
+    const s = mergeLibraries([shipped, mine]).entries[0]!.styles.general!;
+    expect(s.narrative!.zh).toBe('我改过的导读。');
+    expect(s.scale!.zh).toBe('原始尺度。'); // not restated, not lost
+    expect(s.culture!.zh).toBe('原始文化。');
+    expect(s.fun_facts).toHaveLength(1);
+    expect(s.features).toHaveLength(2);
+  });
+
+  it('replaces one annotation’s text and leaves its siblings', () => {
+    const mine = PredefinedLibrary.parse({
+      schema_version: 1,
+      entries: [
+        {
+          schema_version: 1,
+          primary_id: 'M 42',
+          styles: {
+            general: {
+              features: [{ annotation_id: 'anno_b', explanation: { zh: '我改过的 B。', en: 'My B.' } }],
+            },
+          },
+        },
+      ],
+    });
+    const s = mergeLibraries([shipped, mine]).entries[0]!.styles.general!;
+    expect(s.features.find((f) => f.annotation_id === 'anno_a')!.explanation.zh).toBe('原始 A。');
+    expect(s.features.find((f) => f.annotation_id === 'anno_b')!.explanation.zh).toBe('我改过的 B。');
+  });
+
+  it('lets a deployment add text for an annotation the baseline never covered', () => {
+    const mine = PredefinedLibrary.parse({
+      schema_version: 1,
+      entries: [
+        {
+          schema_version: 1,
+          primary_id: 'M 42',
+          styles: {
+            general: {
+              features: [{ annotation_id: 'anno_new', explanation: { zh: '新的。', en: 'New.' } }],
+            },
+          },
+        },
+      ],
+    });
+    const s = mergeLibraries([shipped, mine]).entries[0]!.styles.general!;
+    expect(s.features).toHaveLength(3);
+  });
+
+  it('adds a whole target the baseline does not have', () => {
+    const mine = PredefinedLibrary.parse({
+      schema_version: 1,
+      entries: [
+        {
+          schema_version: 1,
+          primary_id: 'My Target',
+          styles: { general: { narrative: { zh: '自己加的。', en: 'Mine.' } } },
+        },
+      ],
+    });
+    const merged = mergeLibraries([shipped, mine]);
+    expect(merged.entries.map((e) => e.primary_id)).toEqual(['M 42', 'My Target']);
+  });
+});

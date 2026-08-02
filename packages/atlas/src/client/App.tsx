@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { worldToPixel, pixelToWorld, type Wcs } from '@astrolens/schema';
 import { Canvas, type Shape } from './Canvas.js';
+import { ReadingEditor } from './Readings.js';
 import { useLang } from './i18n.js';
 import {
   fetchFeatureTypes,
@@ -1006,6 +1007,13 @@ export function App(): JSX.Element {
                   </section>
 
                   {saveBlock(3)}
+
+                  {/* Text review belongs in the same pass as shape review —
+                      same target, same sitting. */}
+                  <ReadingEditor
+                    primaryId={primaryId}
+                    aliases={aliasesText.split(',').map((a) => a.trim()).filter(Boolean)}
+                  />
                 </>
               )}
             </>

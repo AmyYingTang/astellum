@@ -230,9 +230,11 @@ export function resolvePredefinedText(
     }
   }
 
+  // narrative is optional on a style, so an overlay can correct one part of a
+  // shipped reading; a target with none anywhere still gets the facts template.
   const narrative =
     picked && has(picked.style.narrative)
-      ? picked.style.narrative
+      ? picked.style.narrative!
       : primary
         ? factsTemplate(primary)
         : { zh: '', en: '' };

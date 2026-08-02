@@ -727,3 +727,26 @@ button.link {
   border-radius: 8px;
 }
 .hub-link:hover { color: #cfd6e4; border-color: #3a4a6b; }
+
+/* Predefined reading editor — reviewed in the same pass as the shapes. */
+.rd { margin-top: 14px; border-top: 1px solid #1b2231; padding-top: 14px; }
+.rd-tag {
+  margin-left: 8px; font-size: 11px; color: #9ece6a;
+  border: 1px solid #35502a; border-radius: 999px; padding: 2px 8px;
+}
+.rd-field { margin-top: 14px; }
+.rd-label { display: block; font-size: 13px; color: #cfd6e4; margin-bottom: 6px; }
+.rd-hint { margin-left: 8px; color: #5d6780; font-size: 12px; font-weight: 400; }
+.rd-field textarea {
+  width: 100%; margin-top: 6px; background: #141925; border: 1px solid #2a3346;
+  color: #e6e9f0; border-radius: 8px; padding: 9px 11px; font-size: 13.5px;
+  line-height: 1.6; font-family: inherit; resize: vertical;
+}
+.rd-features { margin-top: 20px; }
+.rd-features h4 { font-size: 13px; color: #8a93a8; font-weight: 600; }
+.rd-foot { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
+.rd-source { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #8a93a8; }
+.rd-source select {
+  background: #141925; border: 1px solid #2a3346; color: #cfd6e4;
+  border-radius: 8px; padding: 6px 9px; font-size: 13px;
+}

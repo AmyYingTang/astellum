@@ -85,6 +85,11 @@ Two layers, merged at apply time:
 | shipped baseline | `packages/atlas/data/registry.json` (or `$ATLAS_REGISTRY`) | the project |
 | your overlay | `~/.astrolens/atlas/registry.json` (or `$ATLAS_USER_REGISTRY`) | you, locally |
 
+Predefined readings layer the same way (`readings.json` in each dir), and merge
+**field by field**: correcting one sentence keeps the shipped scale line,
+cultural note, fun facts and every per-annotation explanation you did not touch.
+Pulling a new release never overwrites your wording.
+
 Merged by object identity: your overlay **extends** the baseline — add
 annotations to an existing target, or add targets it does not cover — without
 touching the shipped file. No merge conflicts.
@@ -131,9 +136,15 @@ up are dropped rather than saved against nothing.
 
 ### Reviewing a draft
 
-Read it, fix it, then change `source` to `"human"`. Nothing enforces this; it is
-how you tell later which text a person has actually stood behind. The coverage
-report shows `~` for drafts and `✓` for reviewed.
+**In the atlas tool**, on the target you are already looking at: open an entry,
+**Edit canonical**, then **编辑现场解读 / Edit onsite reading** below the save
+button. Each approved annotation gets its own slot, so what is still unwritten
+is visible rather than inferred, and the panel lists what the reading is missing.
+Set the status to *已审核 / reviewed* when a person has stood behind the text.
+
+Which file it writes follows the atlas you opened — the shipped seed for a
+curator, your own data dir for a deployment. Editing by hand works too:
+`readings.json`, beside `atlas.json`.
 
 Each reading should cover five things — the standard the whole library is
 written against, and itself editable (§3):

@@ -58,7 +58,10 @@ export type PredefinedFeatureText = z.infer<typeof PredefinedFeatureText>;
  * and so a reviewer can see at a glance what's missing.
  */
 export const PredefinedStyle = z.object({
-  narrative: LocalizedString,
+  /** Optional so an overlay can correct one part of a shipped reading without
+   *  restating the rest. A reading with no narrative anywhere still renders —
+   *  the facts template covers it. */
+  narrative: LocalizedString.optional(),
   /** Element 2 — inside or outside the Milky Way, how far, how big. */
   scale: LocalizedString.optional(),
   /** Element 4 — naming, myth, history of observation. */
@@ -90,7 +93,32 @@ export type PredefinedLibrary = z.infer<typeof PredefinedLibrary>;
 
 export const PREDEFINED_VERSION = 1 as const;
 
-/** Merge libraries in priority order (later overlays win per target+style). */
+/**
+ * Merge one style over another, field by field.
+ *
+ * Style-level replacement was wrong for the case that matters most: a
+ * deployment correcting the wording it was shipped. Someone fixing a single
+ * sentence would have had to restate the scale line, the cultural note, the fun
+ * facts and every per-annotation explanation, or lose them silently. Per-feature
+ * text merges by annotation id for the same reason.
+ */
+function mergeStyle(base: PredefinedStyle, over: PredefinedStyle): PredefinedStyle {
+  const features = [...base.features];
+  for (const f of over.features) {
+    const i = features.findIndex((x) => x.annotation_id === f.annotation_id);
+    if (i >= 0) features[i] = { ...features[i]!, ...f };
+    else features.push(f);
+  }
+  return {
+    narrative: over.narrative ?? base.narrative,
+    scale: over.scale ?? base.scale,
+    culture: over.culture ?? base.culture,
+    fun_facts: over.fun_facts.length ? over.fun_facts : base.fun_facts,
+    features,
+  };
+}
+
+/** Merge libraries in priority order (later overlays win, field by field). */
 export function mergeLibraries(libs: PredefinedLibrary[]): PredefinedLibrary {
   const byKey = new Map<string, PredefinedReading>();
   const order: string[] = [];
@@ -103,7 +131,10 @@ export function mergeLibraries(libs: PredefinedLibrary[]): PredefinedLibrary {
         order.push(key);
       } else {
         for (const a of entry.aliases) if (!prev.aliases.includes(a)) prev.aliases.push(a);
-        prev.styles = { ...prev.styles, ...entry.styles }; // overlay wins per style
+        for (const [name, style] of Object.entries(entry.styles)) {
+          const base = prev.styles[name];
+          prev.styles[name] = base ? mergeStyle(base, style) : style;
+        }
         prev.source = entry.source;
       }
     }
@@ -140,7 +171,7 @@ export function pickStyle(
 /** Which of the five elements a style is still missing — drives the review UI. */
 export function missingElements(style: PredefinedStyle): ReadingElement[] {
   const out: ReadingElement[] = [];
-  if (!style.narrative.zh && !style.narrative.en) out.push('property_and_position');
+  if (!style.narrative?.zh && !style.narrative?.en) out.push('property_and_position');
   if (!style.scale) out.push('sense_of_scale');
   if (!style.features.length) out.push('important_features');
   if (!style.culture) out.push('culture');

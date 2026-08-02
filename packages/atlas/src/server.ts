@@ -19,7 +19,8 @@ import {
   createCompositeCatalogClient,
 } from '@astrolens/identify';
 import type { FactSheet } from '@astrolens/schema';
-import { AtlasEntry, AtlasFile, normalizeId } from './atlas.js';
+import { PredefinedReading, findPredefined } from '@astrolens/schema';
+import { AtlasEntry, AtlasFile, findEntry, normalizeId } from './atlas.js';
 import { LocalAtlasStore, type AtlasStore } from './store.js';
 import { FEATURE_TYPES } from './featureTypes.js';
 import { SEED_TARGETS } from './seedTargets.js';
@@ -384,6 +385,52 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
       res.json({ ok: true, rev: result.rev } satisfies SaveEntryResponse);
     } catch (e) {
       res.status(400).json({ ok: false, error: (e as Error).message } satisfies SaveEntryResponse);
+    }
+  });
+
+  // --- predefined readings -------------------------------------------------
+  // Reviewed next to the annotations they describe: the same target, the same
+  // pass. The layer you write follows the atlas you opened, so a deployment
+  // correcting the shipped wording never edits the shipped file.
+
+  app.get('/api/readings/:id', async (req, res) => {
+    try {
+      const atlas = await store.loadAtlas();
+      const entry = findEntry(atlas, req.params.id);
+      const lib = await store.loadReadings();
+      const ids = entry ? [entry.primary_id, ...entry.aliases] : [req.params.id];
+      const found = findPredefined(lib, ids);
+      res.json({
+        ok: true,
+        reading: found ?? null,
+        // The annotations that need a line each, so the editor can show a slot
+        // per approved shape rather than a free-text blob.
+        annotations: (entry?.annotations ?? [])
+          .filter((a) => a.status === 'approved')
+          .map((a) => ({
+            id: a.id,
+            feature_type: a.feature_type,
+            label: a.label,
+            note: a.note ?? null,
+          })),
+      });
+    } catch (e) {
+      res.status(500).json({ ok: false, error: (e as Error).message });
+    }
+  });
+
+  app.put('/api/readings/:id', async (req, res) => {
+    try {
+      const body = req.body as { reading?: unknown };
+      const parsed = PredefinedReading.parse(body.reading);
+      const lib = await store.loadReadings();
+      const key = normalizeId(parsed.primary_id);
+      const entries = lib.entries.filter((e) => normalizeId(e.primary_id) !== key);
+      entries.push({ ...parsed, updated_at: new Date().toISOString() });
+      await store.saveReadings({ schema_version: 1, entries });
+      res.json({ ok: true });
+    } catch (e) {
+      res.status(400).json({ ok: false, error: (e as Error).message });
     }
   });
 
