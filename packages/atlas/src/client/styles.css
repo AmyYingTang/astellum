@@ -750,3 +750,4 @@ button.link {
   background: #141925; border: 1px solid #2a3346; color: #cfd6e4;
   border-radius: 8px; padding: 6px 9px; font-size: 13px;
 }
+.rd-draft { margin-top: 20px; padding-top: 16px; border-top: 1px dashed #232c3d; }

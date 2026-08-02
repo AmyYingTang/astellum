@@ -120,6 +120,14 @@ came from the last two so nothing generic is passed off as specific:
 
 ### Coverage, then drafting
 
+**In the atlas**, on the target you have open: the reading editor offers
+**AI 起草一份 / Draft with AI** whenever settings has the reading mode set to
+the LLM. It uses the approved annotations — including the notes you wrote — as
+material, fills the form, and **does not save**: a draft is something to read
+and correct, and saving it silently would make the status flag a lie.
+
+From a terminal, for a batch:
+
 ```bash
 ./quickastrolens readings              # who has text, and which elements are missing
 ./quickastrolens draft "NGC 3372"      # draft one

@@ -7,7 +7,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "build": "tsc -b && pnpm --filter @astrolens/editor run build:client && pnpm --filter @astrolens/viewer run build",
+    "build": "tsc -b && pnpm --filter @astrolens/editor run build:client && pnpm --filter @astrolens/atlas run build:client && pnpm --filter @astrolens/viewer run build",
     "clean": "tsc -b --clean",
     "test": "vitest run",
     "lint": "eslint .",

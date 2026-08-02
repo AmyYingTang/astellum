@@ -28,6 +28,14 @@ interface Loaded {
   annotations: AnnotationSlot[];
 }
 
+interface DraftedStyle {
+  narrative?: LocalizedString;
+  scale?: LocalizedString;
+  culture?: LocalizedString;
+  fun_facts: LocalizedString[];
+  features: { annotation_id: string; explanation: LocalizedString }[];
+}
+
 const EMPTY: LocalizedString = { zh: '', en: '' };
 const has = (s?: LocalizedString | null): boolean => !!s && (!!s.zh.trim() || !!s.en.trim());
 
@@ -84,6 +92,16 @@ export function ReadingEditor({
   const [source, setSource] = useState<PredefinedReading['source']>('human');
   const [status, setStatus] = useState('');
   const [open, setOpen] = useState(false);
+  const [drafting, setDrafting] = useState(false);
+  // Only offered when an LLM is actually configured to write text.
+  const [canDraft, setCanDraft] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/config')
+      .then((r) => r.json())
+      .then((c: { readingMode?: string }) => setCanDraft(c.readingMode === 'ai'))
+      .catch(() => setCanDraft(false));
+  }, []);
 
   const load = useCallback(async () => {
     if (!primaryId.trim()) return;
@@ -106,6 +124,34 @@ export function ReadingEditor({
   }, [open, load]);
 
   if (!primaryId.trim()) return null;
+
+  /** Fill the form from an AI pass. Deliberately does not save: a draft is
+   *  something to read and correct, and saving it silently would make the
+   *  status flag a lie. */
+  const draft = async (): Promise<void> => {
+    setDrafting(true);
+    setStatus('AI 起草中…这一步要联网,可能要几十秒。');
+    try {
+      const r = await fetch(`/api/readings/${encodeURIComponent(primaryId.trim())}/draft`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ style }),
+      });
+      const j = (await r.json()) as { ok: boolean; style?: DraftedStyle; error?: string };
+      if (!j.ok || !j.style) throw new Error(j.error ?? '起草失败');
+      setNarrative(j.style.narrative ?? EMPTY);
+      setScale(j.style.scale ?? EMPTY);
+      setCulture(j.style.culture ?? EMPTY);
+      setFunFact(j.style.fun_facts?.[0] ?? EMPTY);
+      setFeatures(Object.fromEntries((j.style.features ?? []).map((f) => [f.annotation_id, f.explanation])));
+      setSource('ai_draft');
+      setStatus('已生成草稿 —— 请通读、修改,确认无误后把状态改成「已审核」再保存。');
+    } catch (e) {
+      setStatus((e as Error).message);
+    } finally {
+      setDrafting(false);
+    }
+  };
 
   const save = async (): Promise<void> => {
     setStatus('保存中…');
@@ -190,6 +236,17 @@ export function ReadingEditor({
               />
             ))}
           </div>
+
+          {canDraft && (
+            <div className="rd-draft">
+              <button className="wide-ghost" disabled={drafting} onClick={() => void draft()}>
+                {drafting ? 'AI 起草中…' : 'AI 起草一份'}
+              </button>
+              <p className="hint">
+                会用已批准的标注(含你写的备注)当素材。生成的内容<b>不会自动保存</b> —— 先读一遍再存。
+              </p>
+            </div>
+          )}
 
           <div className="rd-foot">
             <label className="rd-source">

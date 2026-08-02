@@ -10,7 +10,10 @@
       "default": "./dist/server.js"
     }
   },
-  "files": ["dist", "data"],
+  "files": [
+    "dist",
+    "data"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -20,6 +23,7 @@
   },
   "dependencies": {
     "@astrolens/identify": "workspace:*",
+    "@astrolens/reader": "workspace:*",
     "@astrolens/schema": "workspace:*",
     "express": "^4.21.2",
     "sharp": "^0.33.5",

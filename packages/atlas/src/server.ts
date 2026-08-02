@@ -20,6 +20,8 @@ import {
 } from '@astrolens/identify';
 import type { FactSheet } from '@astrolens/schema';
 import { PredefinedReading, findPredefined } from '@astrolens/schema';
+import { loadConfig } from '@astrolens/schema/node';
+import { draftPredefinedStyle } from '@astrolens/reader';
 import { AtlasEntry, AtlasFile, findEntry, normalizeId } from './atlas.js';
 import { LocalAtlasStore, type AtlasStore } from './store.js';
 import { FEATURE_TYPES } from './featureTypes.js';
@@ -165,6 +167,9 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
       localSolver: isLocalSolver(),
       // Set when launched from the hub, so the UI can offer a way back.
       hubUrl: process.env.ASTROLENS_HUB_URL || undefined,
+      // Whether an LLM is configured to write text — decides whether the
+      // reading editor offers to draft one.
+      readingMode: loadConfig().reading.mode,
     }),
   );
 
@@ -416,6 +421,48 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
       });
     } catch (e) {
       res.status(500).json({ ok: false, error: (e as Error).message });
+    }
+  });
+
+  // Draft this target's reading with the LLM, from the annotations that are
+  // already approved. The same job `astrolens readings-draft` does, offered
+  // where the work actually happens — an annotator reviewing a target should
+  // not have to leave for a terminal to get a first pass.
+  //
+  // The result is returned, not saved: it lands in the form for a person to
+  // read and correct, which is the whole point of calling it a draft.
+  app.post('/api/readings/:id/draft', async (req, res) => {
+    try {
+      const cfg = loadConfig();
+      if (cfg.reading.mode !== 'ai') {
+        throw new Error('Reading mode is set to the predefined library — nothing to draft with.');
+      }
+      const atlas = await store.loadAtlas();
+      const entry = findEntry(atlas, req.params.id);
+      if (!entry) throw new Error(`Not in the atlas: ${req.params.id}`);
+      const approved = entry.annotations.filter((a) => a.status === 'approved');
+      const style = String((req.body as { style?: string } | undefined)?.style ?? cfg.reading.style);
+
+      const drafted = await draftPredefinedStyle(
+        {
+          primary_id: entry.primary_id,
+          aliases: entry.aliases,
+          annotations: approved.map((a) => ({
+            id: a.id,
+            feature_type: a.feature_type,
+            geometry: a.geometry,
+            label: a.label,
+            ...(a.note ? { note: a.note } : {}),
+          })),
+        },
+        { style, model: cfg.reading.model ?? undefined },
+      );
+      res.json({ ok: true, style: drafted, styleName: style, annotations: approved.length });
+    } catch (e) {
+      // The CLI's failures quote the whole prompt back, which is useful in a
+      // terminal and a wall of text in a status line. Keep the first line.
+      const msg = (e as Error).message.split('\n')[0]!.slice(0, 300);
+      res.status(400).json({ ok: false, error: msg });
     }
   });
 

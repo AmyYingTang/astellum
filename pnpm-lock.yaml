@@ -32,6 +32,9 @@ importers:
       '@astrolens/identify':
         specifier: workspace:*
         version: link:../identify
+      '@astrolens/reader':
+        specifier: workspace:*
+        version: link:../reader
       '@astrolens/schema':
         specifier: workspace:*
         version: link:../schema
