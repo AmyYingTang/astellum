@@ -243,7 +243,13 @@ curl -s -o /dev/null -w '%{http_code}\n' http://localhost:3100/   # expect 401
 pmset -g assertions | grep -i caffeinate                          # expect a match
 ```
 
-…then open the tunnel URL on mobile data and confirm it prompts for a password.
+…then open the tunnel URL on mobile data and confirm it challenges you.
+
+What you see from outside depends on what is in front of it. With Cloudflare
+Access configured, the public URL answers **302** — a redirect to its login —
+and the app's own 401 only appears after you are through. Without Access, you
+get the 401 directly. Either way, an unchallenged 200 from outside means
+something is wrong.
 
 ---
 
