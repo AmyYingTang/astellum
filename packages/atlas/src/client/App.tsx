@@ -68,7 +68,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((res, rej) => {
     const im = new window.Image();
     im.onload = () => res(im);
-    im.onerror = () => rej(new Error('无法解码图像 · Could not decode image (JPG/PNG only — FITS/XISF not supported yet)'));
+    im.onerror = () => rej(new Error('无法解码图像 · Could not decode image (JPG/PNG here; FITS works in the kiosk)'));
     im.src = src;
   });
 }

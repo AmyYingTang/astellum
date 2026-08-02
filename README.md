@@ -9,10 +9,14 @@ Requires Node ≥ 18 and the [`claude` CLI](https://claude.com/claude-code) (BYO
 
 ```bash
 ./quickastrolens setup   # one time: install deps + build
-./quickastrolens         # open the studio in your browser
+./quickastrolens         # open the navigation page in your browser
 ```
 
-That's it. The studio (at `http://localhost:3000`) is the whole tool in one window:
+That's it. The navigation page (at `http://localhost:3000`) leads to three
+surfaces — **Studio** (make a frame), **Atlas** (draw the baseline annotations),
+**Kiosk** (show a frame to an audience) — plus **Settings**.
+
+The studio is the one you'll spend most time in:
 
 - **New reading** — pick an image, add an optional object hint + language, optionally choose
   **style** presets (audience: kids/experienced/playful · focus: artistic/history/cultures) or
@@ -27,14 +31,15 @@ Edits auto-save. Stop the server with Ctrl+C. Everything lives under `out/<name>
 
 For most use, the two commands above are all you need.
 
-**Setting up from a fresh clone?** Two guides:
+**Setting up from a fresh clone?** Three guides:
 
-- **[docs/SETUP_ASTROLENS.md](docs/SETUP_ASTROLENS.md)** — the reading tool:
-  prerequisites, install, choosing a plate-solver (incl. fully offline solving),
-  running the studio and CLI.
-- **[docs/SETUP_ATLAS.md](docs/SETUP_ATLAS.md)** — the feature-atlas annotation
-  tool: annotating, the atlas data model, hosting it for a reviewer, and
-  contributing annotations back.
+- **[docs/SETUP.md](docs/SETUP.md)** — prerequisites, install, choosing a
+  plate-solver (including fully offline), the four surfaces and their settings.
+- **[docs/CURATING.md](docs/CURATING.md)** — the workflow: annotate → review →
+  export → draft readings → review the text, plus the wording you can change
+  without rebuilding, and hosting the atlas for a reviewer.
+- **[docs/ONSITE.md](docs/ONSITE.md)** — running the kiosk at an event: what to
+  download before you leave, the three ways to launch it, and how it degrades.
 
 ---
 
