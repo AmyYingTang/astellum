@@ -4,6 +4,7 @@ import { join, resolve, extname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { loadConfig } from '@astrolens/schema/node';
 import { offlineCatalogStatus, isOfflineReady } from '@astrolens/identify';
+import { KIOSK_FAVICON } from '@astrolens/renderer';
 import { runKiosk } from './kiosk.js';
 import { exitWhenOrphaned } from '../supervised.js';
 
@@ -40,6 +41,7 @@ function page(opts: {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>astrolens · 现场</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{min-height:100vh;background:#05070c;color:#e6e9f0;display:flex;align-items:center;
@@ -154,6 +156,10 @@ export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
 
   const app = express();
   app.use(express.json({ limit: '256mb' })); // a FITS master is not small
+
+  app.get('/favicon.svg', (_req, res) => {
+    res.type('image/svg+xml').set('cache-control', 'max-age=86400').send(KIOSK_FAVICON);
+  });
 
   app.get('/', async (_req, res) => {
     const status = await offlineCatalogStatus().catch(() => []);

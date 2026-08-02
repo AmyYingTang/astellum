@@ -20,6 +20,32 @@ import { COLOR_PALETTE, type Feature, type Reading } from '@astrolens/schema';
  *    picture and whatever is known, with a plain-language line about the rest.
  */
 
+/**
+ * The kiosk's icon, in the same family as the hub, studio and atlas ones: dark
+ * sky, the accent blue, a couple of stars. Each shows what that surface *does* —
+ * the atlas draws an outline, the studio points at an object, the hub is the
+ * instrument. This one is a label being touched, which is the whole interaction.
+ *
+ * Exported so the kiosk's front door can serve the same mark; the generated page
+ * inlines it as a data URI instead, because that page's defining property is
+ * that it is one portable file.
+ *
+ * Careful: XML forbids a double hyphen inside a comment. One makes the file
+ * unparseable and the browser silently shows nothing.
+ */
+export const KIOSK_FAVICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#141825"/>
+  <circle cx="5.5" cy="5.5" r="1" fill="#c8d0e0" opacity=".5"/>
+  <circle cx="27" cy="27" r="1" fill="#c8d0e0" opacity=".45"/>
+  <rect x="5" y="8" width="22" height="15" rx="2.6" fill="#7aa2f7" fill-opacity=".16"
+        stroke="#7aa2f7" stroke-width="2.1"/>
+  <circle cx="13" cy="15.5" r="3.4" fill="none" stroke="#9ab8ff" stroke-width="1.8"/>
+  <circle cx="20.5" cy="18.5" r="2.6" fill="#9ab8ff"/>
+</svg>`;
+
+/** The same mark, ready to drop into a `<link rel="icon">` in a standalone file. */
+export const KIOSK_FAVICON_DATA_URI = `data:image/svg+xml,${encodeURIComponent(KIOSK_FAVICON)}`;
+
 function paragraphs(f: Feature, lang: 'zh' | 'en'): string[] {
   return [f.explanation[lang], f.physics?.[lang], f.interesting?.[lang]]
     .filter((s): s is string => !!s)
@@ -205,6 +231,7 @@ export function generateKioskHtml(report: Reading, opts: KioskOptions): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>${esc(report.object.name[lang])} — astrolens</title>
+<link rel="icon" type="image/svg+xml" href="${KIOSK_FAVICON_DATA_URI}">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;overflow:hidden;background:#05070c;
