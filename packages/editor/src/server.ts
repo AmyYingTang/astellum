@@ -1,5 +1,5 @@
 import express from 'express';
-import { readFile, writeFile, mkdir, readdir, access } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, readdir, access, rename } from 'node:fs/promises';
 import { resolve, dirname, join, basename, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
@@ -27,6 +27,8 @@ import {
   loadRegistries,
   loadRegistry,
   atlasTypeFor,
+  isFitsPath,
+  fitsToPng,
   mergeRegistries,
   userRegistryPath,
   defaultRegistryPaths,
@@ -137,7 +139,8 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
   };
 
   const app = express();
-  app.use(express.json({ limit: '48mb' }));
+  // A stacked FITS master runs far past what a JPEG needs.
+  app.use(express.json({ limit: '256mb' }));
 
   // The control file: which profile is in force and every knob it resolves to.
   // The settings UI reads this; the kiosk reads only `profile.reading` from it.
@@ -333,10 +336,25 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
       const dir = join(workspace, slug);
       await mkdir(dir, { recursive: true });
 
-      const imageName = `image${ext}`;
       const b64 = body.imageBase64.replace(/^data:[^;]+;base64,/, '');
-      const imagePath = join(dir, imageName);
-      await writeFile(imagePath, Buffer.from(b64, 'base64'));
+      const sourcePath = join(dir, `source${ext}`);
+      await writeFile(sourcePath, Buffer.from(b64, 'base64'));
+
+      // A stacker writes FITS and nothing downstream can open one, so convert
+      // at the door with a display stretch — a linear master is nearly black,
+      // and the solver needs to see stars as much as the reader does. The
+      // original is kept beside it; only the PNG is used from here on.
+      let imageName = `image${ext}`;
+      let imagePath = join(dir, imageName);
+      let hintFromFile: string | undefined;
+      if (isFitsPath(sourcePath)) {
+        imageName = 'image.png';
+        imagePath = join(dir, imageName);
+        const f = await fitsToPng(sourcePath, imagePath);
+        hintFromFile = f.objectName;
+      } else {
+        await rename(sourcePath, imagePath);
+      }
 
       const meta = await sharp(imagePath).metadata();
       if (!meta.width || !meta.height) throw new Error('Could not read image dimensions');
@@ -346,7 +364,9 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
       res.json({ ok: true, slug });
       void runIdentify(slug, dir, imagePath, imageName, meta.width, meta.height, {
         apiKey,
-        hint: body.hint || undefined,
+        // A FITS header's OBJECT is what the capture program was pointed at —
+        // as good a hint as the one the user would have typed.
+        hint: body.hint || hintFromFile || undefined,
         lang: body.lang === 'en' ? 'en' : 'zh',
       });
     } catch (e) {

@@ -138,7 +138,7 @@ export function Home(): React.JSX.Element {
         <h2>{t.newReading}</h2>
         <p className="muted">{t.newReadingDesc}</p>
         <label className="file-pick">
-          <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          <input type="file" accept=".fits,.fit,.fts,image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
           <span>{file ? file.name : t.pickImage}</span>
         </label>
         <div className="row">
