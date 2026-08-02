@@ -1,7 +1,11 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
+import { preferredLang } from '@astrolens/schema';
 
-// Minimal bilingual layer — zh default, matches astrolens convention. UI strings
-// are keyed; annotation labels are stored bilingually in the data, not here.
+// Minimal bilingual layer. The starting language follows the browser's locale
+// and the choice is remembered; UI strings are keyed, while annotation labels
+// are stored bilingually in the data, not here.
+
+const LANG_KEY = 'astrolens.atlas.lang';
 
 export type Lang = 'zh' | 'en';
 
@@ -141,7 +145,17 @@ interface Ctx {
 const LangCtx = createContext<Ctx | null>(null);
 
 export function LangProvider({ children }: { children: ReactNode }): JSX.Element {
-  const [lang, setLang] = useState<Lang>('zh');
+  // Start from the browser's locale, and remember a change — the tool was
+  // hardcoded to Chinese and forgot the choice on every reload.
+  const [lang, setLangState] = useState<Lang>(
+    () =>
+      (localStorage.getItem(LANG_KEY) as Lang | null) ??
+      preferredLang(navigator.languages ?? [navigator.language]),
+  );
+  const setLang = useCallback((l: Lang) => {
+    localStorage.setItem(LANG_KEY, l);
+    setLangState(l);
+  }, []);
   const t = (k: Key): string => STRINGS[k][lang];
   return <LangCtx.Provider value={{ lang, setLang, t }}>{children}</LangCtx.Provider>;
 }

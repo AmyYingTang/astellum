@@ -2,7 +2,7 @@ import express from 'express';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { AstrolensConfig, PartialConfig, mergeConfig } from '@astrolens/schema';
+import { AstrolensConfig, PartialConfig, mergeConfig, preferredLang } from '@astrolens/schema';
 import { loadConfig, userConfigPath } from '@astrolens/schema/node';
 import {
   offlineCatalogStatus,
@@ -63,6 +63,38 @@ interface IndexJob {
   error?: string;
 }
 
+/**
+ * The hub is server-rendered, so the language is resolved per request rather
+ * than shipped twice into the page: a saved cookie if there is one, otherwise
+ * what the browser asked for. The toggle sets the cookie and reloads — cheap
+ * on a static page, and it keeps every label, placeholder and option in one
+ * language without threading a second copy through the markup.
+ */
+type Lang = 'zh' | 'en';
+
+function langFor(req: { headers: Record<string, unknown> }): Lang {
+  const cookie = String(req.headers['cookie'] ?? '');
+  const saved = /(?:^|;\s*)astrolens_lang=(zh|en)/.exec(cookie)?.[1];
+  if (saved === 'zh' || saved === 'en') return saved;
+  const accept = String(req.headers['accept-language'] ?? '');
+  return preferredLang(accept.split(',').map((p) => p.split(';')[0]!.trim()).filter(Boolean));
+}
+
+/** Pick one of a bilingual pair. */
+const T = (lang: Lang) => (zh: string, en: string): string => (lang === 'zh' ? zh : en);
+
+/** Flip the cookie and reload. A page this static costs nothing to re-render,
+ *  and it keeps one language in the markup instead of two. */
+const LANG_SCRIPT = `<script>
+function astroLang(){
+  var cur=(document.cookie.match(/astrolens_lang=(zh|en)/)||[])[1]
+        || (document.documentElement.lang==='zh'?'zh':'en');
+  var next=cur==='zh'?'en':'zh';
+  document.cookie='astrolens_lang='+next+';path=/;max-age=31536000';
+  location.reload();
+}
+</script>`;
+
 const esc = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -86,6 +118,10 @@ h1{font-size:28px;font-weight:700;}
 .badge.warn{color:#e0af68;border-color:#5c471f;}
 a.back{display:inline-block;margin-bottom:20px;color:#8a93a8;text-decoration:none;font-size:14px;}
 a.back:hover{color:#cfd6e4;}
+.lang{position:absolute;right:24px;top:32px;background:#141925;border:1px solid #2a3346;
+  color:#cfd6e4;border-radius:9px;padding:7px 13px;font-size:13px;cursor:pointer;}
+.lang:hover{background:#1c2333;}
+.wrap{position:relative;}
 label{display:block;margin-top:18px;font-size:13px;color:#8a93a8;}
 select,input[type=text]{width:100%;margin-top:7px;background:#141925;border:1px solid #2a3346;
   color:#e6e9f0;border-radius:10px;padding:11px 13px;font-size:15px;}
@@ -110,40 +146,62 @@ function navPage(o: {
   config: AstrolensConfig;
   catalogsReady: boolean;
   snapshotFields: number;
+  lang: Lang;
 }): string {
-  const mode = `${o.config.solve.mode === 'local' ? '本地解析' : 'nova 在线解析'} · ${
-    o.config.reading.mode === 'ai' ? 'AI 解读' : '预定义解读'
-  }`;
-  return `<!doctype html><html lang="zh"><head><meta charset="utf-8">
+  const t = T(o.lang);
+  const mode =
+    `${o.config.solve.mode === 'local' ? t('本地解析', 'local solving') : t('nova 在线解析', 'nova (online)')}` +
+    ` · ${o.config.reading.mode === 'ai' ? t('AI 解读', 'AI readings') : t('预定义解读', 'predefined readings')}`;
+  return `<!doctype html><html lang="${o.lang}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>astrolens</title><style>${SHELL}</style></head><body><div class="wrap">
+<button class="lang" onclick="astroLang()">${o.lang === 'zh' ? 'EN' : '中文'}</button>
 <h1>astrolens</h1>
 <p class="sub">${esc(mode)}
   <span class="badge ${o.catalogsReady ? 'ok' : 'warn'}">${
-    o.catalogsReady ? '离线星表齐全' : '离线星表不全'
+    o.catalogsReady
+      ? t('离线星表齐全', 'offline catalogues ready')
+      : t('离线星表不全', 'offline catalogues incomplete')
   }</span></p>
 <div class="grid">
   <a class="card" href="http://localhost:${o.studio}/">
-    <h2>工作台 Studio</h2>
-    <p>做一张图:上传、识别、微调标注、AI 写解读、导出海报。每个环节都能改。</p>
+    <h2>${t('工作台 Studio', 'Studio')}</h2>
+    <p>${t(
+      '做一张图:上传、识别、微调标注、AI 写解读、导出海报。每个环节都能改。',
+      'Make a frame: upload, identify, adjust the annotations, have the AI write it up, export a poster. Every stage is adjustable.',
+    )}</p>
     <span class="port">localhost:${o.studio}</span>
   </a>
   <a class="card" href="http://localhost:${o.atlas}/">
-    <h2>基准标注库 Atlas</h2>
-    <p>画并审核 B 类形态标注。这里的标注会按天球坐标转移到任何一张同目标的图上。</p>
+    <h2>${t('基准标注库 Atlas', 'Feature atlas')}</h2>
+    <p>${t(
+      '画并审核 B 类形态标注。这里的标注会按天球坐标转移到任何一张同目标的图上。',
+      'Draw and review the baseline annotations. Stored in sky coordinates, they project onto any future image of the same target.',
+    )}</p>
     <span class="port">localhost:${o.atlas}</span>
   </a>
   <a class="card" href="http://localhost:${o.kiosk}/">
-    <h2>现场 Kiosk</h2>
-    <p>选一张图(FITS/JPG/PNG),几秒后出一张全屏可点的页面给观众看。可离线。</p>
+    <h2>${t('现场 Kiosk', 'Kiosk')}</h2>
+    <p>${t(
+      '选一张图(FITS/JPG/PNG),几秒后出一张全屏可点的页面给观众看。可离线。',
+      'Pick an image (FITS/JPG/PNG) and get a fullscreen page an audience can touch. Works offline.',
+    )}</p>
     <span class="port">localhost:${o.kiosk}</span>
   </a>
   <a class="card" href="/settings">
-    <h2>设置 Settings</h2>
-    <p>解析器用本地还是在线、解读用 AI 还是预定义、离线数据是否就绪。</p>
-    <span class="port">${o.snapshotFields} 片天区已预热</span>
+    <h2>${t('设置 Settings', 'Settings')}</h2>
+    <p>${t(
+      '解析器用本地还是在线、解读用 AI 还是预定义、离线数据是否就绪。',
+      'Local or online solving, AI or predefined readings, and whether the offline data is ready.',
+    )}</p>
+    <span class="port">${
+      o.lang === 'zh'
+        ? `${o.snapshotFields} 片天区已预热`
+        : `${o.snapshotFields} field(s) prewarmed`
+    }</span>
   </a>
 </div>
+${LANG_SCRIPT}
 </div></body></html>`;
 }
 
@@ -151,87 +209,107 @@ function settingsPage(o: {
   config: AstrolensConfig;
   catalogs: { key: string; present: boolean }[];
   snapshotFields: number;
+  lang: Lang;
 }): string {
   const p = o.config;
+  const t = T(o.lang);
   const opt = (v: string, cur: string, label: string): string =>
     `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(label)}</option>`;
-  return `<!doctype html><html lang="zh"><head><meta charset="utf-8">
+  const check = (name: string, on: boolean, label: string): string =>
+    `<div class="check"><input type="checkbox" name="${name}" ${on ? 'checked' : ''}><span>${esc(label)}</span></div>`;
+  return `<!doctype html><html lang="${o.lang}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>设置 · astrolens</title><style>${SHELL}</style></head><body><div class="wrap">
-<a class="back" href="/">← 返回导航</a>
-<h1>设置</h1>
-<p class="sub">写入 <code>${esc(userConfigPath())}</code>。环境变量(<code>.env</code>)仍然优先级最高,
-所以那里设过的项在这里改了也不会生效。</p>
+<title>${t('设置', 'Settings')} · astrolens</title><style>${SHELL}</style></head><body><div class="wrap">
+<button class="lang" onclick="astroLang()">${o.lang === 'zh' ? 'EN' : '中文'}</button>
+<a class="back" href="/">← ${t('返回导航', 'Back')}</a>
+<h1>${t('设置', 'Settings')}</h1>
+<p class="sub">${t('写入', 'Written to')} <code>${esc(userConfigPath())}</code>${t('。', '. ')}${t(
+    '环境变量(.env)仍然优先级最高,所以那里设过的项在这里改了也不会生效。',
+    'Environment variables (.env) still win, so anything set there will not take effect here.',
+  )}</p>
 <form id="f">
-
-  <fieldset><legend>解析 Plate solving</legend>
-    <label>解析器
+  <fieldset><legend>${t('解析 Plate solving', 'Plate solving')}</legend>
+    <label>${t('解析器', 'Solver')}
       <select name="solve.mode">
-        ${opt('local', p.solve.mode, '本地 astrometry.net(离线,需索引文件)')}
-        ${opt('nova', p.solve.mode, 'nova.astrometry.net(在线,需 API key)')}
+        ${opt('local', p.solve.mode, t('本地 astrometry.net(离线,需索引文件)', 'Local astrometry.net (offline, needs index files)'))}
+        ${opt('nova', p.solve.mode, t('nova.astrometry.net(在线,需 API key)', 'nova.astrometry.net (online, needs an API key)'))}
       </select>
     </label>
-    <div class="check"><input type="checkbox" name="solve.cache" ${p.solve.cache ? 'checked' : ''}>
-      <span>缓存解析结果(同一张图只解一次)</span></div>
-    <div class="check"><input type="checkbox" name="solve.hintFromTarget" ${p.solve.hintFromTarget ? 'checked' : ''}>
-      <span>已知目标时给解析器位置提示(现场提速明显)</span></div>
+    ${check('solve.cache', p.solve.cache, t('缓存解析结果(同一张图只解一次)', 'Cache solves (each image is solved once)'))}
+    ${check('solve.hintFromTarget', p.solve.hintFromTarget, t('已知目标时给解析器位置提示(现场提速明显)', 'Hint the solver with a known target position (much faster in the field)'))}
   </fieldset>
 
-  <fieldset><legend>目录 Catalogs</legend>
-    <label>数据来源
+  <fieldset><legend>${t('目录 Catalogs', 'Catalogues')}</legend>
+    <label>${t('数据来源', 'Source')}
       <select name="catalog.preset">
-        ${opt('online', p.catalog.sources.includes('simbad') ? 'online' : 'offline', '在线:SIMBAD + VizieR + OpenNGC')}
-        ${opt('offline', p.catalog.sources.includes('simbad') ? 'online' : 'offline', '离线:本地星表包 + 快照')}
+        ${opt('online', p.catalog.sources.includes('simbad') ? 'online' : 'offline', t('在线:SIMBAD + VizieR + OpenNGC', 'Online: SIMBAD + VizieR + OpenNGC'))}
+        ${opt('offline', p.catalog.sources.includes('simbad') ? 'online' : 'offline', t('离线:本地星表包 + 快照', 'Offline: the local star-table pack + snapshot'))}
       </select>
     </label>
     <table>${o.catalogs
-      .map((c) => `<tr><td>${esc(c.key)}</td><td>${c.present ? '✓' : '缺失'}</td></tr>`)
+      .map((c) => `<tr><td>${esc(c.key)}</td><td>${c.present ? '✓' : t('缺失', 'missing')}</td></tr>`)
       .join('')}
-      <tr><td>在线答案快照</td><td>${o.snapshotFields} 片天区</td></tr></table>
-    <p class="hint">缺失的用 <code>./quickastrolens prefetch</code> 下载。</p>
+      <tr><td>${t('在线答案快照', 'Answer snapshot')}</td><td>${
+        o.lang === 'zh' ? `${o.snapshotFields} 片天区` : `${o.snapshotFields} field(s)`
+      }</td></tr></table>
+    <p class="hint">${t('缺失的用', 'Download what is missing with')} <code>./quickastrolens prefetch</code>${t(' 下载。', '.')}</p>
   </fieldset>
 
-  <fieldset id="idx"${p.solve.mode === 'local' ? '' : ' style="display:none"'}><legend>解析索引 Plate-solve indexes</legend>
-    <p class="hint">只有本地解析需要。大小完全由<b>你要支持的最小视场</b>决定
-      —— 越窄的视场需要越细的索引档,而每细一档大小翻倍。</p>
-    <div id="idx-state" class="hint">读取中…</div>
-    <label>最小视场(角分)
+  <fieldset id="idx"${p.solve.mode === 'local' ? '' : ' style="display:none"'}><legend>${t('解析索引 Plate-solve indexes', 'Plate-solve indexes')}</legend>
+    <p class="hint">${t(
+      '只有本地解析需要。大小完全由你要支持的最小视场决定 —— 越窄的视场需要越细的索引档,而每细一档大小翻倍。',
+      'Needed only for local solving. The size is decided entirely by the narrowest field you must solve — each finer band is about twice the size of the one above it.',
+    )}</p>
+    <div id="idx-state" class="hint">${t('读取中…', 'Reading…')}</div>
+    <label>${t('最小视场(角分)', 'Narrowest field (arcmin)')}
       <select id="idx-arcmin"></select>
     </label>
-    <label>存放目录
+    <label>${t('存放目录', 'Directory')}
       <input type="text" id="idx-dir" placeholder="~/astrometry-indexes">
     </label>
-    <p class="hint">下载后需要让解析器知道这个目录:
-      <code>echo "add_path &lt;目录&gt;" &gt;&gt; "$(brew --prefix)/etc/astrometry.cfg"</code></p>
-    <button type="button" id="idx-go">下载索引</button>
+    <p class="hint">${t('下载后需要让解析器知道这个目录:', 'Point the solver at it afterwards:')}
+      <code>echo "add_path &lt;dir&gt;" &gt;&gt; "$(brew --prefix)/etc/astrometry.cfg"</code></p>
+    <button type="button" id="idx-go">${t('下载索引', 'Download indexes')}</button>
     <p class="status" id="idx-status"></p>
   </fieldset>
 
-  <fieldset><legend>解读 Reading</legend>
-    <label>文字来源
+  <fieldset><legend>${t('解读 Reading', 'Reading')}</legend>
+    <label>${t('文字来源', 'Written by')}
       <select name="reading.mode">
-        ${opt('ai', p.reading.mode, 'AI 生成(需联网 + claude CLI)')}
-        ${opt('predefined', p.reading.mode, '预定义解读库(离线)')}
+        ${opt('ai', p.reading.mode, t('AI 生成(需联网 + claude CLI)', 'The LLM (needs a network and the claude CLI)'))}
+        ${opt('predefined', p.reading.mode, t('预定义解读库(离线)', 'The predefined library (offline)'))}
       </select>
     </label>
-    <label>预定义风格<input type="text" name="reading.style" value="${esc(p.reading.style)}"></label>
-    <div class="check"><input type="checkbox" name="reading.customPrompt" ${p.reading.customPrompt ? 'checked' : ''}>
-      <span>工作台里保留自定义 prompt 输入框</span></div>
-    <div class="check"><input type="checkbox" name="kiosk.switchableStyle" ${p.kiosk.switchableStyle ? 'checked' : ''}>
-      <span>现场页面上可以切换讲解风格</span></div>
+    <label>${t('预定义风格', 'Predefined style')}<input type="text" name="reading.style" value="${esc(p.reading.style)}"></label>
+    ${check('reading.customPrompt', p.reading.customPrompt, t('工作台里保留自定义 prompt 输入框', "Keep the studio's free-text prompt box"))}
   </fieldset>
 
-  <fieldset><legend>现场展示 Kiosk</legend>
-    <div class="check"><input type="checkbox" name="kiosk.dropContext" ${p.kiosk.dropContext ? 'checked' : ''}>
-      <span>丢掉次要的陪衬天体(宁缺毋滥)</span></div>
-    <div class="check"><input type="checkbox" name="kiosk.requireAtlasForB" ${p.kiosk.requireAtlasForB ? 'checked' : ''}>
-      <span>只画标注库里已审核的形态特征</span></div>
+  <fieldset><legend>${t('现场展示 Kiosk', 'Kiosk')}</legend>
+    ${check('kiosk.dropContext', p.kiosk.dropContext, t('丢掉次要的陪衬天体(宁缺毋滥)', 'Drop incidental context objects — few, confident labels'))}
+    ${check('kiosk.requireAtlasForB', p.kiosk.requireAtlasForB, t('只画标注库里已审核的形态特征', 'Only draw features approved in the atlas'))}
+    ${check('kiosk.switchableStyle', p.kiosk.switchableStyle, t('现场页面上可以切换讲解风格', 'Offer the reading-style switch on screen'))}
   </fieldset>
 
-  <button type="submit">保存</button>
+  <button type="submit">${t('保存', 'Save')}</button>
   <p class="status" id="st"></p>
 </form>
+${LANG_SCRIPT}
 <script>
+var IDX_T = ${JSON.stringify({
+    have: t('已有', 'On disk:'),
+    files: t('个索引文件', 'file(s)'),
+    none: t('还没有索引文件', 'No index files yet'),
+    over: t('′ 以上的视场 — 约 ', '′ and wider — about '),
+    starting: t('启动中…', 'Starting…'),
+    downloading: t('下载中', 'Downloading'),
+    done: t('完成:新下载', 'Done: downloaded'),
+    existed: t(',已存在', ', already present'),
+    failed: t(',失败', ', failed'),
+    saving: t('保存中…', 'Saving…'),
+    saved: t('已保存。重启相关页面后生效。', 'Saved. Restart the affected page to pick it up.'),
+    failedSave: t('保存失败', 'Save failed'),
+  })};
+
 // --- plate-solve indexes ---------------------------------------------------
 var idxSel=document.getElementById('idx-arcmin'), idxDir=document.getElementById('idx-dir'),
     idxState=document.getElementById('idx-state'), idxStatus=document.getElementById('idx-status'),
@@ -242,22 +320,22 @@ async function idxRefresh(){
   if(!idxSel.options.length){
     j.options.forEach(function(o){
       var op=document.createElement('option');
-      op.value=o.arcmin; op.textContent=o.arcmin+'′ 以上的视场 — 约 '+mb(o.mb);
+      op.value=o.arcmin; op.textContent=o.arcmin+IDX_T.over+mb(o.mb);
       idxSel.appendChild(op);
     });
-    idxSel.value='60';
+    if([...idxSel.options].some(o=>o.value==='64')) idxSel.value='64';
   }
   if(!idxDir.value) idxDir.value=j.dir;
   idxState.textContent = j.onDisk
-    ? '已有 '+j.onDisk+' 个索引文件,'+j.gb.toFixed(2)+' GB — '+j.dir
-    : '还没有索引文件 — '+j.dir;
+    ? IDX_T.have+' '+j.onDisk+' '+IDX_T.files+', '+j.gb.toFixed(2)+' GB — '+j.dir
+    : IDX_T.none+' — '+j.dir;
   var job=j.job;
   if(job){
     var pct=job.total?Math.round((job.done+job.skipped)/job.total*100):0;
     idxStatus.className='status';
     idxStatus.textContent = job.running
-      ? '下载中 '+pct+'%('+(job.done+job.skipped)+'/'+job.total+')'+(job.current?' · '+job.current:'')
-      : '完成:新下载 '+job.done+',已存在 '+job.skipped+(job.failed?',失败 '+job.failed:'');
+      ? IDX_T.downloading+' '+pct+'% ('+(job.done+job.skipped)+'/'+job.total+')'+(job.current?' · '+job.current:'')
+      : IDX_T.done+' '+job.done+IDX_T.existed+' '+job.skipped+(job.failed?IDX_T.failed+' '+job.failed:'');
     if(job.failed && !job.running) idxStatus.className='status err';
     idxGo.disabled=job.running;
     if(!job.running && idxTimer){ clearInterval(idxTimer); idxTimer=null; }
@@ -265,7 +343,7 @@ async function idxRefresh(){
 }
 idxGo.addEventListener('click', async function(){
   idxGo.disabled=true;
-  idxStatus.className='status'; idxStatus.textContent='启动中…';
+  idxStatus.className='status'; idxStatus.textContent=IDX_T.starting;
   var r=await fetch('/api/indexes',{method:'POST',headers:{'content-type':'application/json'},
     body:JSON.stringify({arcmin:Number(idxSel.value), dir:idxDir.value.trim()||undefined})});
   var j=await r.json();
@@ -289,12 +367,12 @@ document.getElementById('f').addEventListener('submit', async function(e){
   new Set([...f.keys()]).forEach(function(k){ body[k]=f.get(k); });
   e.target.querySelectorAll('input[type=checkbox]').forEach(function(c){ body[c.name]=c.checked; });
   var st=document.getElementById('st');
-  st.className='status'; st.textContent='保存中…';
+  st.className='status'; st.textContent=IDX_T.saving;
   var r=await fetch('/api/settings',{method:'POST',headers:{'content-type':'application/json'},
     body:JSON.stringify(body)});
   var j=await r.json();
-  if(j.ok){ st.className='status ok'; st.textContent='已保存。重启相关页面后生效。'; }
-  else { st.className='status err'; st.textContent=j.error||'保存失败'; }
+  if(j.ok){ st.className='status ok'; st.textContent=IDX_T.saved; }
+  else { st.className='status err'; st.textContent=j.error||IDX_T.failedSave; }
 });
 </script>
 </div></body></html>`;
@@ -387,7 +465,7 @@ export async function runHub(args: HubArgs = {}): Promise<void> {
     };
   };
 
-  app.get('/', async (_req, res) => {
+  app.get('/', async (req, res) => {
     const s = await state();
     res.type('html').send(
       navPage({
@@ -397,17 +475,19 @@ export async function runHub(args: HubArgs = {}): Promise<void> {
         config: s.cfg,
         catalogsReady: s.ready,
         snapshotFields: s.snapshotFields,
+        lang: langFor(req),
       }),
     );
   });
 
-  app.get('/settings', async (_req, res) => {
+  app.get('/settings', async (req, res) => {
     const s = await state();
     res.type('html').send(
       settingsPage({
         config: s.cfg,
         catalogs: s.catalogs,
         snapshotFields: s.snapshotFields,
+        lang: langFor(req),
       }),
     );
   });

@@ -1,4 +1,26 @@
 {
   "schema_version": 1,
-  "entries": []
+  "entries": [
+    {
+      "schema_version": 1,
+      "primary_id": "NGC 3372",
+      "aliases": [
+        "船底座星雲",
+        "Carina Nebula",
+        "[HJH2016] G287.41-00.64",
+        "IRAS 10419-5925",
+        "RCW 53",
+        "Ced 109",
+        "RCW 52"
+      ],
+      "styles": {
+        "general": {
+          "fun_facts": [],
+          "features": []
+        }
+      },
+      "source": "ai_draft",
+      "updated_at": "2026-08-02T02:34:07.976Z"
+    }
+  ]
 }

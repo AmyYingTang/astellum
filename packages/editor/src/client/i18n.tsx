@@ -1,5 +1,6 @@
 import type * as React from 'react';
 import { createContext, useCallback, useContext, useState } from 'react';
+import { preferredLang } from '@astrolens/schema';
 
 export type UiLang = 'zh' | 'en';
 
@@ -282,7 +283,9 @@ const STORAGE_KEY = 'astrolens.uiLang';
 
 export function LangProvider({ children }: { children: React.ReactNode }): React.JSX.Element {
   const [lang, setLangState] = useState<UiLang>(
-    () => (localStorage.getItem(STORAGE_KEY) as UiLang | null) ?? 'zh',
+    () =>
+      (localStorage.getItem(STORAGE_KEY) as UiLang | null) ??
+      preferredLang(navigator.languages ?? [navigator.language]),
   );
   const setLang = useCallback((l: UiLang) => {
     localStorage.setItem(STORAGE_KEY, l);
