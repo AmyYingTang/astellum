@@ -96,6 +96,31 @@ function astroLang(){
 }
 </script>`;
 
+/**
+ * The hub's icon. Same family as the studio and atlas ones — dark sky, the app's
+ * accent blue, a couple of stars — but where those show an *act* (drawing an
+ * outline, pointing at an object), this is the instrument itself, because the
+ * hub is the way in to all of them rather than one of them.
+ *
+ * Served rather than bundled: these pages are strings from a CLI, with no Vite
+ * public dir behind them.
+ *
+ * Careful: XML forbids a double hyphen inside a comment. One makes the whole
+ * file unparseable and the browser silently shows a blank icon, which is how the
+ * first version of the atlas icon shipped broken.
+ */
+const FAVICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#141825"/>
+  <circle cx="6" cy="7" r="1" fill="#c8d0e0" opacity=".6"/>
+  <circle cx="26" cy="6" r="1.1" fill="#c8d0e0" opacity=".5"/>
+  <circle cx="27" cy="26" r="1" fill="#c8d0e0" opacity=".45"/>
+  <circle cx="16" cy="16" r="9" fill="none" stroke="#7aa2f7" stroke-width="2.2"/>
+  <circle cx="16" cy="16" r="4.4" fill="#7aa2f7" fill-opacity=".9"/>
+  <circle cx="13.4" cy="13.4" r="1.5" fill="#dce7ff"/>
+</svg>`;
+
+const HEAD_ICON = '<link rel="icon" type="image/svg+xml" href="/favicon.svg">';
+
 const esc = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -155,7 +180,7 @@ function navPage(o: {
     ` · ${o.config.reading.mode === 'ai' ? t('AI 解读', 'AI readings') : t('预定义解读', 'predefined readings')}`;
   return `<!doctype html><html lang="${o.lang}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>astrolens</title><style>${SHELL}</style></head><body><div class="wrap">
+<title>astrolens</title>${HEAD_ICON}<style>${SHELL}</style></head><body><div class="wrap">
 <button class="lang" onclick="astroLang()">${o.lang === 'zh' ? 'EN' : '中文'}</button>
 <h1>astrolens</h1>
 <p class="sub">${esc(mode)}
@@ -220,7 +245,7 @@ function settingsPage(o: {
     `<div class="check"><input type="checkbox" name="${name}" ${on ? 'checked' : ''}><span>${esc(label)}</span></div>`;
   return `<!doctype html><html lang="${o.lang}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${t('设置', 'Settings')} · astrolens</title><style>${SHELL}</style></head><body><div class="wrap">
+<title>${t('设置', 'Settings')} · astrolens</title>${HEAD_ICON}<style>${SHELL}</style></head><body><div class="wrap">
 <button class="lang" onclick="astroLang()">${o.lang === 'zh' ? 'EN' : '中文'}</button>
 <a class="back" href="/">← ${t('返回导航', 'Back')}</a>
 <h1>${t('设置', 'Settings')}</h1>
@@ -482,6 +507,10 @@ export async function runHub(args: HubArgs = {}): Promise<void> {
       snapshotFields: snap.entries,
     };
   };
+
+  app.get('/favicon.svg', (_req, res) => {
+    res.type('image/svg+xml').set('cache-control', 'max-age=86400').send(FAVICON);
+  });
 
   app.get('/', async (req, res) => {
     const s = await state();
