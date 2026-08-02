@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { ContentOverlay, setContentOverlay } from './content.js';
 import {
   AstrolensConfig,
   DEFAULT_CONFIG,
@@ -107,4 +108,60 @@ export function loadConfig(opts: { cwd?: string; profile?: string } = {}): Loade
     profileName,
     profile: applyEnvOverrides(resolveProfile(file, profileName)),
   };
+}
+
+// --- curator content overlay ------------------------------------------------
+
+/** The shipped overlay, edited by whoever curates this deployment. */
+export function contentPath(): string {
+  return process.env.ASTROLENS_CONTENT ?? resolve('packages/atlas/data/content.json');
+}
+
+/** A self-deployer's own overrides, merged on top. */
+export function userContentPath(): string {
+  return process.env.ASTROLENS_USER_CONTENT ?? join(homedir(), '.astrolens', 'content.json');
+}
+
+/**
+ * Read the content overlay and install it.
+ *
+ * Every section is optional and merges over the built-ins, so a missing file is
+ * the normal state and a partial file is a legitimate one — a curator who only
+ * wants to reword two feature notes writes exactly those two.
+ *
+ * A malformed file is reported and then ignored rather than thrown: text that
+ * fails to parse should not stop a kiosk from running, and the built-in wording
+ * is a perfectly good frame to fall back to.
+ */
+export function loadContent(): ContentOverlay {
+  const merged: ContentOverlay = {};
+  for (const path of [contentPath(), userContentPath()]) {
+    const raw = readJson(path);
+    if (raw == null) continue;
+    const parsed = ContentOverlay.safeParse(raw);
+    if (!parsed.success) {
+      console.error(
+        `[content] ignoring ${path}: ${parsed.error.issues[0]?.path.join('.')} ${
+          parsed.error.issues[0]?.message
+        }`,
+      );
+      continue;
+    }
+    // An empty section means "I didn't specify this", not "make it empty" —
+    // the shipped template has every key present so it can be filled in, and
+    // reading that as a replacement would blank the built-ins.
+    const o = parsed.data;
+    if (o.featureNotes && Object.keys(o.featureNotes).length) {
+      merged.featureNotes = { ...merged.featureNotes, ...o.featureNotes };
+    }
+    if (o.nicknames && Object.keys(o.nicknames).length) {
+      merged.nicknames = { ...merged.nicknames, ...o.nicknames };
+    }
+    if (o.stylePresets?.length) merged.stylePresets = o.stylePresets;
+    if (o.readingBrief && Object.keys(o.readingBrief).length) {
+      merged.readingBrief = { ...merged.readingBrief, ...o.readingBrief };
+    }
+  }
+  setContentOverlay(merged);
+  return merged;
 }

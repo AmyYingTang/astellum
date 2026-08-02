@@ -40,6 +40,10 @@ astrolens 便捷运行脚本
   ./quickastrolens readings                     预定义解读覆盖率:哪些目标还没录、缺哪几项
   ./quickastrolens draft [目标|all]              用 AI 起草预定义解读(联网;写入随包解读库)
 
+可改的文字(不用重新构建,存盘即生效):
+  packages/atlas/data/content.json              通用说明 / 民间俗名 / 风格预设 / 给 AI 的写作要求
+                                                (省略哪项就用内置的;文件里有说明)
+
 提示:把 ASTROMETRY_API_KEY 放进仓库根的 .env(identify / read / studio 都会自动读)。
 提示:现场模式请先 `./quickastrolens prefetch`,再用 `prefetch check` 确认可以断网。
 

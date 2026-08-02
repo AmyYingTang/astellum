@@ -20,6 +20,7 @@ import { Sidebar } from './Sidebar.js';
 import { FactsPanel } from './FactsPanel.js';
 import { LangToggle, useUi } from './i18n.js';
 import { PRESETS } from './presets.js';
+import { getConfig } from './api.js';
 
 const EXPORT_ORDER: ExportFormat[] = ['annotated', 'embed', 'poster', 'all'];
 
@@ -120,6 +121,14 @@ function Editor({
   const [styleFree, setStyleFree] = useState('');
   const [savingPredef, setSavingPredef] = useState<'idle' | 'saving' | 'done'>('idle');
   const [savingAnns, setSavingAnns] = useState<'idle' | 'saving' | 'done'>('idle');
+  // Style presets are curator copy: the server sends them when a content
+  // overlay supplies them, otherwise the built-in list stands.
+  const [presets, setPresets] = useState(PRESETS);
+  useEffect(() => {
+    getConfig()
+      .then((c) => c.stylePresets?.length && setPresets(c.stylePresets))
+      .catch(() => undefined);
+  }, []);
 
   const togglePreset = (id: string): void =>
     setPresetIds((prev) => {
@@ -129,7 +138,7 @@ function Editor({
       return next;
     });
   const buildTone = (): string | undefined => {
-    const parts = PRESETS.filter((p) => presetIds.has(p.id)).map((p) =>
+    const parts = presets.filter((p) => presetIds.has(p.id)).map((p) =>
       uiLang === 'en' ? p.textEn : p.textZh,
     );
     if (styleFree.trim()) parts.push(styleFree.trim());
@@ -435,7 +444,7 @@ function Editor({
                       <span className="chip-group-label">
                         {group === 'audience' ? t.audienceLabel : t.focusLabel}
                       </span>
-                      {PRESETS.filter((p) => p.group === group).map((p) => (
+                      {presets.filter((p) => p.group === group).map((p) => (
                         <button
                           type="button"
                           key={p.id}

@@ -2,6 +2,7 @@
 import { cac } from 'cac';
 import { TOOL_VERSION } from './version.js';
 import { loadEnv } from './env.js';
+import { loadContent } from '@astrolens/schema/node';
 import { identifyImage } from './commands/identify.js';
 import { identifyAi } from './commands/identifyAi.js';
 import { readReport } from './commands/read.js';
@@ -235,6 +236,7 @@ cli.version(TOOL_VERSION);
 async function main(): Promise<void> {
   try {
     loadEnv(); // pick up ASTROMETRY_API_KEY etc. from ./.env (shell vars still win)
+    loadContent(); // curator-editable text, overlaid on the built-ins
     cli.parse(process.argv, { run: false });
     await cli.runMatchedCommand();
   } catch (err) {

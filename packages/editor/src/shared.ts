@@ -1,4 +1,4 @@
-import type { Reading, FactSheet, Profile } from '@astrolens/schema';
+import type { Reading, FactSheet, Profile, StylePreset } from '@astrolens/schema';
 
 export interface ProjectSummary {
   slug: string;
@@ -97,6 +97,8 @@ export interface ConfigResponse {
   offlineCatalog: boolean;
   /** Present when the hub launched this studio. */
   hubUrl?: string;
+  /** Curator-supplied style presets; absent means use the built-ins. */
+  stylePresets?: StylePreset[];
   readiness?: {
     catalogsReady: boolean;
     missingCatalogs: string[];

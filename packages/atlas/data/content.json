@@ -1,0 +1,22 @@
+{
+  "_readme": [
+    "策展人可改的文字。任何一项省略就用代码里的内置版本 —— 空文件也是合法的。",
+    "改完存盘即生效,不需要 ./quickastrolens build。",
+    "Curator-editable text. Anything omitted falls back to the built-in value."
+  ],
+  "_featureNotes": [
+    "11 类形态特征的通用说明 —— 现场没有专属解读时用这段。写给 8–12 年级,避开专业术语。",
+    "键: pillar 象鼻/柱 · ionization_front 电离锋面 · snr_filament 丝状结构 ·",
+    "     silhouette_shape 剪影暗形 · cometary_globule 暗球 · dust_lane 尘埃暗带 ·",
+    "     bubble_shell 壳/泡 · spiral_arm 旋臂 · tidal_tail 潮汐尾 ·",
+    "     emission_color_region 区域标注 · hh_jet 喷流",
+    "格式: \"pillar\": { \"zh\": \"…\", \"en\": \"…\" } —— 中英都必须给。"
+  ],
+  "featureNotes": {},
+  "_nicknames": "民间俗名 —— 目录里查不到、只在观星软件和圈子里流传的名字。键是编目号。",
+  "nicknames": {},
+  "_stylePresets": "工作台里 AI 解读旁边那排快捷风格按钮。给出这一项会整体替换内置列表。",
+  "stylePresets": [],
+  "_readingBrief": "给 AI 的写作要求:styleBrief = 写给谁、什么调子;elements = 每段解读要覆盖哪几点。",
+  "readingBrief": {}
+}

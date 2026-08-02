@@ -11,6 +11,7 @@ import {
   findPredefined,
   pickStyle,
   mergeLibraries,
+  contentOverlay,
   Registry,
   pixelToWorld,
 } from '@astrolens/schema';
@@ -177,6 +178,8 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
       offlineCatalog: isOfflineCatalog(config.profile.catalog.sources),
       // Set when launched from the hub, so the UI can offer a way back.
       hubUrl: process.env.ASTROLENS_HUB_URL || undefined,
+      // Style presets are curator copy; the overlay wins over the built-ins.
+      stylePresets: contentOverlay().stylePresets,
       readiness: await readiness().catch(() => undefined),
     });
   });

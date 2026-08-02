@@ -18,6 +18,7 @@ export * from './registry.js';
 // Predefined (no-LLM) readings + the type-level generic notes they fall back to.
 export * from './predefined.js';
 export * from './featureNotes.js';
+export * from './content.js';
 
 // The control file. Pure schema only — the disk/env loader is server-side and
 // lives behind the `@astrolens/schema/node` subpath (this package is bundled

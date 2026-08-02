@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path';
 import {
   DEFAULT_STYLE,
   PredefinedLibrary,
-  featureNote,
+  featureNoteFor,
   findPredefined,
   mergeLibraries,
   pickStyle,
@@ -215,7 +215,7 @@ export function resolvePredefinedText(
         continue;
       }
       if (layer === 'feature_generic') {
-        const note = obj.feature_type ? featureNote(obj.feature_type) : undefined;
+        const note = obj.feature_type ? featureNoteFor(obj.feature_type) : undefined;
         if (note) {
           byId.set(obj.id, { explanation: note });
           sources.set(obj.id, 'feature_generic');

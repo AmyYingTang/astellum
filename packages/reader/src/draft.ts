@@ -3,6 +3,7 @@ import {
   PredefinedStyle,
   type LocalizedString,
   type PredefinedReading,
+  contentOverlay,
   type RegistryEntry,
 } from '@astrolens/schema';
 import { runClaude, type RunClaudeOptions } from './claudeCli.js';
@@ -22,16 +23,26 @@ import { extractJson } from './parseJson.js';
  * the kiosk shows what layer each line came from.
  */
 
-/** School year 8–12, and it must cover the five elements. */
-const STYLE_BRIEF = `写给 8–12 年级(约 13–18 岁)的读者:句子短、不堆术语、
+/** School year 8–12. Overridable: who the writing is for is a curator's call,
+ *  not a constant. */
+const DEFAULT_STYLE_BRIEF = `写给 8–12 年级(约 13–18 岁)的读者:句子短、不堆术语、
 凡是专有名词都顺带解释一句。这个程度对成年人科普也刚好够用。
 不要使用「令人叹为观止」这类空话,宁可少写也不要写空。`;
 
-const ELEMENTS = `1. property_and_position —— 这是什么、在哪个星座
-2. sense_of_scale —— 尤其说清在银河系**之内**还是**之外**,以及距离和大小
-3. important_features —— 逐条标注各写一句(见下面的清单)
-4. culture —— 命名来源、神话、观测史
-5. fun_facts —— 有趣的冷知识,1–2 条`;
+const DEFAULT_ELEMENTS = [
+  'property_and_position —— 这是什么、在哪个星座',
+  'sense_of_scale —— 尤其说清在银河系**之内**还是**之外**,以及距离和大小',
+  'important_features —— 逐条标注各写一句(见下面的清单)',
+  'culture —— 命名来源、神话、观测史',
+  'fun_facts —— 有趣的冷知识,1–2 条',
+];
+
+const styleBrief = (): string =>
+  contentOverlay().readingBrief?.styleBrief ?? DEFAULT_STYLE_BRIEF;
+const elements = (): string =>
+  (contentOverlay().readingBrief?.elements ?? DEFAULT_ELEMENTS)
+    .map((s, i) => `${i + 1}. ${s}`)
+    .join('\n');
 
 function shapeFor(annotationIds: readonly string[]): string {
   return `{
@@ -71,10 +82,10 @@ export function buildDraftPrompt(entry: RegistryEntry, style: string): string {
 天体:${entry.primary_id}${entry.aliases.length ? `(别名:${entry.aliases.join('、')})` : ''}
 风格档位:${style}
 
-${STYLE_BRIEF}
+${styleBrief()}
 
-内容必须覆盖这五点:
-${ELEMENTS}
+内容必须覆盖以下几点:
+${elements()}
 
 这张图上已经人工标注、需要逐条配文的结构:
 ${list}

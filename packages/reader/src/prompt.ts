@@ -1,4 +1,4 @@
-import { FEATURE_TAXONOMY, type FeatureTypeKey } from '@astrolens/schema';
+import { FEATURE_TAXONOMY, contentOverlay, type FeatureTypeKey } from '@astrolens/schema';
 
 export interface TailorItem {
   id: string;
@@ -12,12 +12,21 @@ export interface TailorItem {
   featureType?: FeatureTypeKey;
 }
 
-/** The five things every reading should cover, predefined or AI-written. */
-const ELEMENTS = `1. 这是什么、在哪里(类型 + 所在星座/方位)
-2. 尺度感 —— 尤其要说清它在银河系**之内**还是**之外**,以及距离/大小
-3. 这张图上值得看的结构
-4. 文化相关(命名来源、神话、观测史)
-5. 有趣的冷知识`;
+/** The things every reading should cover, predefined or AI-written. Curators
+ *  revise this as they learn what lands with an audience, so it is overridable
+ *  without a rebuild. */
+const DEFAULT_ELEMENTS = [
+  '这是什么、在哪里(类型 + 所在星座/方位)',
+  '尺度感 —— 尤其要说清它在银河系**之内**还是**之外**,以及距离/大小',
+  '这张图上值得看的结构',
+  '文化相关(命名来源、神话、观测史)',
+  '有趣的冷知识',
+];
+
+function elements(): string {
+  const list = contentOverlay().readingBrief?.elements ?? DEFAULT_ELEMENTS;
+  return list.map((s, i) => `${i + 1}. ${s}`).join('\n');
+}
 
 export interface TailorPromptOptions {
   /** Headline subject (the primary object's display name). */
@@ -77,8 +86,8 @@ ${SHAPE}
 1. features 数组中的 id 必须与上面给定的 id 一一对应,不增不删。
 2. 每个天体给一条 explanation(2-3 句),中英各一份、语义对应(不是逐字直译)。
 3. narrative 是整段导读,**围绕「${opts.headline}」这个主题**把下列天体串成一个画面,中英各一份。
-4. narrative 合起来应覆盖这五点:
-${ELEMENTS}
+4. narrative 合起来应覆盖这几点:
+${elements()}
 5. 方括号里给出的是该结构的精确分类,请据此写出针对它的解读,而不是笼统的类别描述。
 6. physics / interesting 可选,有把握再写。
 7. 绝不编造身份或位置——这些已由识别系统接地。${toneBlock}`;

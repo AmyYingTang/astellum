@@ -7,6 +7,8 @@
  * map. Keyed by a catalogue designation; extend it as new targets come up.
  */
 
+import { contentOverlay } from '@astrolens/schema';
+
 export interface Nickname {
   en: string;
   zh?: string;
@@ -28,14 +30,33 @@ function norm(d: string): string {
   return d.replace(/\s+/g, ' ').trim().toUpperCase();
 }
 
-const INDEX: Record<string, Nickname> = Object.fromEntries(
-  Object.entries(NICKNAMES).map(([k, v]) => [norm(k), v]),
-);
+/**
+ * Normalised lookup, built from the built-in map plus any curator overlay.
+ *
+ * Cached against the overlay object so it is built once per process in the
+ * normal case, but a test (or a reload) that swaps the overlay still sees the
+ * change rather than a stale index.
+ */
+let cachedFor: object | null = null;
+let index: Record<string, Nickname> = {};
+
+function lookupIndex(): Record<string, Nickname> {
+  const extra = contentOverlay().nicknames;
+  const key = extra ?? NICKNAMES;
+  if (cachedFor !== key) {
+    index = Object.fromEntries(
+      Object.entries({ ...NICKNAMES, ...(extra ?? {}) }).map(([k, v]) => [norm(k), v]),
+    );
+    cachedFor = key;
+  }
+  return index;
+}
 
 /** First curated nickname matching any of the object's designations, if any. */
 export function lookupNickname(designations: string[]): Nickname | undefined {
+  const idx = lookupIndex();
   for (const d of designations) {
-    const n = INDEX[norm(d)];
+    const n = idx[norm(d)];
     if (n) return n;
   }
   return undefined;
