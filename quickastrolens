@@ -229,7 +229,7 @@ case "$cmd" in
     target="${2:-}"
     base="$(basename "$image")"
     name="${base%.*}"
-    out="$ROOT/out/$name-kiosk"
+    out="$ROOT/out/kiosk/$name"
     args=(kiosk "$image" --out "$out")
     if [ -n "$target" ]; then args+=(--target "$target"); fi
     echo "==> 现场识别: $image -> $out/kiosk.html"

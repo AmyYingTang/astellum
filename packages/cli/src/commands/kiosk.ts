@@ -110,7 +110,10 @@ export async function runKiosk(args: KioskArgs): Promise<KioskResult | null> {
   }
 
   const source = resolve(args.image);
-  const outDir = resolve(args.out ?? join('out', basename(source, extname(source)) + '-kiosk'));
+  // Not `out/` — that is the studio's workspace, and a kiosk run leaves a
+  // reading.json with no image beside it, which lists there as a project whose
+  // thumbnail cannot load. Kiosk output is a frame to show, not a project.
+  const outDir = resolve(args.out ?? join('out', 'kiosk', basename(source, extname(source))));
   await mkdir(outDir, { recursive: true });
 
   // A stacker writes FITS, and nothing downstream can open one. Convert at the

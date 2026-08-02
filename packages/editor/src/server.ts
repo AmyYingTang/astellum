@@ -191,6 +191,11 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
       if (!e.isDirectory()) continue;
       try {
         const r = await loadReport(e.name);
+        // A kiosk run writes a reading.json next to a self-contained
+        // kiosk.html and no image file — the picture is inlined. Left in the
+        // workspace it would list as a project whose thumbnail 404s on every
+        // render, so skip anything whose image isn't actually there.
+        if (!(await exists(join(workspace, e.name, basename(r.image.src))))) continue;
         const summary: ProjectSummary = {
           slug: e.name,
           name: r.object.name[r.display_language],
@@ -642,7 +647,12 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
   app.get('/api/projects/:slug/image', async (req, res) => {
     try {
       const report = await loadReport(req.params.slug);
-      res.sendFile(join(projectDir(req.params.slug), report.image.src));
+      const file = join(projectDir(req.params.slug), basename(report.image.src));
+      if (!(await exists(file))) {
+        res.status(404).type('text').send('No image for this project');
+        return;
+      }
+      res.sendFile(file);
     } catch (e) {
       res.status(404).send((e as Error).message);
     }
