@@ -222,7 +222,7 @@ case "$cmd" in
     ensure_built
     # No file named → the operator wants the front door, not a one-shot run.
     if [ $# -lt 1 ]; then
-      node "$CLI" kiosk-serve --profile kiosk
+      node "$CLI" kiosk-serve
       exit 0
     fi
     image="$1"
@@ -230,9 +230,7 @@ case "$cmd" in
     base="$(basename "$image")"
     name="${base%.*}"
     out="$ROOT/out/$name-kiosk"
-    # This wrapper is the curator entry point, so the onsite profile is what's
-    # wanted here even if the config file says otherwise.
-    args=(kiosk "$image" --profile kiosk --out "$out")
+    args=(kiosk "$image" --out "$out")
     if [ -n "$target" ]; then args+=(--target "$target"); fi
     echo "==> 现场识别: $image -> $out/kiosk.html"
     node "$CLI" "${args[@]}"
@@ -247,7 +245,7 @@ case "$cmd" in
     ensure_built
     dir="$1"
     target="${2:-}"
-    args=(kiosk-watch "$dir" --profile kiosk --out "$ROOT/out/kiosk")
+    args=(kiosk-watch "$dir" --out "$ROOT/out/kiosk")
     if [ -n "$target" ]; then args+=(--target "$target"); fi
     node "$CLI" "${args[@]}"
     ;;

@@ -42,7 +42,6 @@ export interface KioskArgs {
   out?: string;
   lang?: string;
   style?: string;
-  profile?: string;
   /** Open the finished page in a browser. Default true — the command exists to
    *  put something on a screen, and another tool invoking it shouldn't have to
    *  know how. */
@@ -92,14 +91,12 @@ export interface KioskResult {
 /** Build one frame. Returns null when nothing could be identified — the one
  *  case where no page is produced, because identity is never fabricated. */
 export async function runKiosk(args: KioskArgs): Promise<KioskResult | null> {
-  const cfg = loadConfig({ profile: args.profile });
-  const p = cfg.profile;
+  const p = loadConfig();
   const lang = args.lang === 'en' ? 'en' : 'zh';
   const style = args.style ?? p.reading.style;
-  console.log(
-    `Profile "${cfg.profileName}": solve=${p.solve.mode}, catalog=${p.catalog.sources.join('+')}, ` +
-      `reading=${p.reading.mode}${p.reading.mode === 'predefined' ? `:${style}` : ''}`,
-  );
+  // A kiosk always reads from the library — it has to work unplugged, so that
+  // is what it is rather than something to configure.
+  console.log(`solve=${p.solve.mode}, catalog=${p.catalog.sources.join('+')}, reading=predefined:${style}`);
 
   // Fail loudly *here*, with the audience not yet watching, rather than halfway
   // through the first frame of the night.
@@ -146,8 +143,6 @@ export async function runKiosk(args: KioskArgs): Promise<KioskResult | null> {
       // as good a target name as the operator would have typed.
       targetName: args.target ?? hintFromFile,
       registryPaths: defaultRegistryPaths(),
-      ...(p.select.nebulaMinArcmin ? { nebulaMinArcmin: p.select.nebulaMinArcmin } : {}),
-      ...(p.select.galaxyMinArcmin ? { galaxyMinArcmin: p.select.galaxyMinArcmin } : {}),
     },
     {
       solve: createConfiguredSolveClient({
@@ -163,13 +158,13 @@ export async function runKiosk(args: KioskArgs): Promise<KioskResult | null> {
   // Precision over recall onsite: drop the incidental context objects and any
   // B-class feature a human hasn't approved in the atlas.
   let objects = sheet.objects;
-  if (p.select.dropContext) objects = objects.filter((o) => o.role !== 'context' || o.tier === 'B');
-  if (p.select.requireAtlasForB) {
+  if (p.kiosk.dropContext) objects = objects.filter((o) => o.role !== 'context' || o.tier === 'B');
+  if (p.kiosk.requireAtlasForB) {
     objects = objects.filter((o) => o.tier !== 'B' || o.detection_source === 'atlas');
   }
-  if (p.select.maxFeatures) {
+  if (p.kiosk.maxFeatures) {
     const a = objects.filter((o) => o.tier !== 'B');
-    const b = objects.filter((o) => o.tier === 'B').slice(0, p.select.maxFeatures);
+    const b = objects.filter((o) => o.tier === 'B').slice(0, p.kiosk.maxFeatures);
     objects = [...a, ...b];
   }
   const trimmed: FactSheet = { ...sheet, objects };
@@ -207,9 +202,9 @@ export async function runKiosk(args: KioskArgs): Promise<KioskResult | null> {
     imageDataUri: `data:${mime};base64,${buf.toString('base64')}`,
     textSources: Object.fromEntries(coverage.sources),
     state,
-    styles: library ? styleNames(library) : undefined,
+    styles: p.kiosk.switchableStyle && library ? styleNames(library) : undefined,
     currentStyle: coverage.style ?? style,
-    idleResetSec: p.flow.idleResetSec,
+    idleResetSec: p.kiosk.idleResetSec,
   });
   const htmlPath = join(outDir, 'kiosk.html');
   await writeFile(htmlPath, html, 'utf8');

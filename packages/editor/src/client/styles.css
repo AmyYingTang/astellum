@@ -901,7 +901,7 @@ textarea.explanation {
 }
 
 /* Control-file profile switch + readiness self-check (studio header). */
-.profile-box { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.status-box { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .ready-badge {
   font-size: 11.5px; color: #8a93a8; border: 1px solid #2a3346;
   border-radius: 999px; padding: 4px 10px; white-space: nowrap;

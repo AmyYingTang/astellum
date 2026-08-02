@@ -70,8 +70,7 @@ cli
   .command('kiosk <image>', 'Onsite: one-shot identify → predefined reading → fullscreen page')
   .option('--target <name>', 'The target you shot, e.g. "M42" (recommended — it is the identity)')
   .option('--lang <lang>', 'Display language: zh or en', { default: 'zh' })
-  .option('--style <name>', 'Predefined reading style (default: the profile\'s)')
-  .option('--profile <name>', 'Config profile to run under (default: the active one)')
+  .option('--style <name>', 'Predefined reading style (default: from settings)')
   .option('--out <dir>', 'Output directory')
   .option('--no-open', 'Do not open the finished page in a browser')
   .action(async (image: string, options) => {
@@ -80,7 +79,6 @@ cli
       target: options.target,
       lang: options.lang,
       style: options.style,
-      profile: options.profile,
       out: options.out,
       open: options.open,
     });
@@ -89,13 +87,11 @@ cli
 cli
   .command('kiosk-serve', 'Onsite: a browser page to pick a file from (FITS / JPG / PNG)')
   .option('--port <port>', 'Port to serve on', { default: 3200 })
-  .option('--profile <name>', 'Config profile to run under')
   .option('--workdir <dir>', 'Where generated frames are written')
   .option('--no-open', 'Do not open the browser automatically')
   .action(async (options) => {
     await serveKiosk({
       port: Number(options.port),
-      profile: options.profile,
       workdir: options.workdir,
       open: options.open,
     });
@@ -106,7 +102,6 @@ cli
   .option('--target <name>', 'Fixed target for every image (default: guessed from the filename)')
   .option('--lang <lang>', 'Display language: zh or en', { default: 'zh' })
   .option('--style <name>', 'Predefined reading style')
-  .option('--profile <name>', 'Config profile to run under')
   .option('--out <dir>', 'Output directory')
   .action(async (dir: string, options) => {
     await watchKiosk({
@@ -114,7 +109,6 @@ cli
       target: options.target,
       lang: options.lang,
       style: options.style,
-      profile: options.profile,
       out: options.out,
     });
   });

@@ -134,13 +134,19 @@ Each also starts on its own — `./quickastrolens studio [port]`,
 
 ## 5. Settings
 
-The navigation page's **Settings** writes `~/.astrolens/config.json`. Two
-profiles ship:
+The navigation page's **Settings** writes `~/.astrolens/config.json`. One global
+set of choices — there are no profiles to switch between:
 
-- **`studio`** — where a frame is made. Every stage adjustable, AI reading with
-  a free-text prompt, posters. *Not* "online mode": local solving works here too.
-- **`kiosk`** — where a frame is shown. Local solve, offline catalogues,
-  predefined readings, tighter selection, fullscreen output.
+| section | what it decides |
+|---|---|
+| **Plate solving** | local or nova, caching, position hints |
+| **Catalogues** | online services or the offline pack, and the answer snapshot |
+| **Reading** | which tool writes the text: the LLM, or the curated library |
+| **Kiosk** | how a frame is presented to a room — label count, idle reset |
+
+What separates the studio from the kiosk is not settings but *what the two
+programs do*: a kiosk shows pre-written readings because that is what a kiosk
+is, and it works with the network unplugged. Neither is a preference.
 
 > **`.env` still wins.** Anything set there overrides the settings page, so a
 > value saved in the UI can appear not to take effect. The page says so, but it

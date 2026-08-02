@@ -7,7 +7,6 @@ import {
   Reading,
   FactSheet,
   PredefinedLibrary,
-  profileNames,
   findPredefined,
   pickStyle,
   mergeLibraries,
@@ -144,7 +143,7 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
 
   // The control file: which profile is in force and every knob it resolves to.
   // The settings UI reads this; the kiosk reads only `profile.reading` from it.
-  let config = loadConfig();
+  const config = loadConfig();
 
   /** Can this machine actually do what the active profile promises? */
   const readiness = async (): Promise<{
@@ -160,7 +159,7 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
     const covered = library
       ? targets.filter((o) => {
           const found = findPredefined(library, [o.primary_id, ...o.aliases]);
-          return !!(found && pickStyle(found, config.profile.reading.style));
+          return !!(found && pickStyle(found, config.reading.style));
         }).length
       : 0;
     return {
@@ -173,32 +172,16 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
 
   app.get('/api/config', async (_req, res) => {
     res.json({
-      solver: config.profile.solve.mode === 'local' ? 'local astrometry.net' : 'nova',
-      localSolver: config.profile.solve.mode === 'local',
-      profileName: config.profileName,
-      profiles: profileNames(config.file),
-      profile: config.profile,
-      offlineCatalog: isOfflineCatalog(config.profile.catalog.sources),
+      solver: config.solve.mode === 'local' ? 'local astrometry.net' : 'nova',
+      localSolver: config.solve.mode === 'local',
+      config,
+      offlineCatalog: isOfflineCatalog(config.catalog.sources),
       // Set when launched from the hub, so the UI can offer a way back.
       hubUrl: process.env.ASTROLENS_HUB_URL || undefined,
       // Style presets are curator copy; the overlay wins over the built-ins.
       stylePresets: contentOverlay().stylePresets,
       readiness: await readiness().catch(() => undefined),
     });
-  });
-
-  // Switch the active profile without restarting — this is what lets the kiosk
-  // change audience mid-session (a schools group, then the public).
-  app.post('/api/config/profile', (req, res) => {
-    try {
-      const name = ((req.body ?? {}) as { profile?: string }).profile;
-      if (!name) throw new Error('profile is required');
-      if (!profileNames(config.file).includes(name)) throw new Error(`Unknown profile: ${name}`);
-      config = loadConfig({ profile: name });
-      res.json({ ok: true, profileName: config.profileName, profile: config.profile });
-    } catch (e) {
-      res.status(400).json({ ok: false, error: (e as Error).message });
-    }
   });
 
   app.get('/api/projects', async (_req, res) => {
@@ -237,7 +220,7 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
     const apiKey = process.env.ASTROMETRY_API_KEY;
     // The local solver needs no key — and the active profile, not just the env
     // var, is what decides which solver runs.
-    if (!apiKey && config.profile.solve.mode !== 'local' && !isLocalSolver()) {
+    if (!apiKey && config.solve.mode !== 'local' && !isLocalSolver()) {
       throw new Error(
         'Plate-solving needs a nova API key. Put ASTROMETRY_API_KEY in a .env file (where you run the studio) or export it, then restart — or set ASTROLENS_SOLVER=local for offline solving. Free key from nova.astrometry.net.',
       );
@@ -269,11 +252,11 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
         {
           solve: createConfiguredSolveClient({
             apiKey: opts.apiKey,
-            mode: config.profile.solve.mode,
-            cache: config.profile.solve.cache,
+            mode: config.solve.mode,
+            cache: config.solve.cache,
           }),
-          catalog: createCatalogFromSources(config.profile.catalog.sources, {
-            snapshot: config.profile.catalog.snapshot,
+          catalog: createCatalogFromSources(config.catalog.sources, {
+            snapshot: config.catalog.snapshot,
           }),
         },
       );
@@ -294,13 +277,13 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
       //  - `predefined` (onsite): the curated library fills it in right here, so
       //    the frame is complete and showable with no network and no LLM.
       const { reading, coverage } =
-        config.profile.reading.mode === 'predefined'
+        config.reading.mode === 'predefined'
           ? readingFromPredefined(factsheet, await loadReadingLibraries(defaultReadingsPaths()), {
               toolVersion,
               displayLanguage: opts.lang,
               imageSrc: imageName,
-              style: config.profile.reading.style,
-              fallback: config.profile.reading.fallback,
+              style: config.reading.style,
+              fallback: config.reading.fallback,
             })
           : {
               reading: readingFromFactsheet(factsheet, {
@@ -517,7 +500,7 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
   // offsite work fills it as a side effect.
   app.post('/api/projects/:slug/save-predefined', async (req, res) => {
     try {
-      const style = ((req.body ?? {}) as { style?: string }).style || config.profile.reading.style;
+      const style = ((req.body ?? {}) as { style?: string }).style || config.reading.style;
       const reading = await loadReport(req.params.slug);
       const factsheet = await loadFactsheet(req.params.slug).catch(() => null);
       if (!factsheet) throw new Error('No factsheet for this project — re-identify it first.');

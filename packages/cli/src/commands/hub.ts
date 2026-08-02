@@ -2,13 +2,7 @@ import express from 'express';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import {
-  AstrolensConfig,
-  BUILTIN_PROFILES,
-  profileNames,
-  resolveProfile,
-  type Profile,
-} from '@astrolens/schema';
+import { AstrolensConfig, PartialConfig, mergeConfig } from '@astrolens/schema';
 import { loadConfig, userConfigPath } from '@astrolens/schema/node';
 import {
   offlineCatalogStatus,
@@ -113,19 +107,18 @@ function navPage(o: {
   studio: number;
   atlas: number;
   kiosk: number;
-  profileName: string;
-  profile: Profile;
+  config: AstrolensConfig;
   catalogsReady: boolean;
   snapshotFields: number;
 }): string {
-  const mode = `${o.profile.solve.mode === 'local' ? '本地解析' : 'nova 在线解析'} · ${
-    o.profile.reading.mode === 'ai' ? 'AI 解读' : '预定义解读'
+  const mode = `${o.config.solve.mode === 'local' ? '本地解析' : 'nova 在线解析'} · ${
+    o.config.reading.mode === 'ai' ? 'AI 解读' : '预定义解读'
   }`;
   return `<!doctype html><html lang="zh"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>astrolens</title><style>${SHELL}</style></head><body><div class="wrap">
 <h1>astrolens</h1>
-<p class="sub">当前配置档 <b>${esc(o.profileName)}</b> — ${esc(mode)}
+<p class="sub">${esc(mode)}
   <span class="badge ${o.catalogsReady ? 'ok' : 'warn'}">${
     o.catalogsReady ? '离线星表齐全' : '离线星表不全'
   }</span></p>
@@ -155,14 +148,11 @@ function navPage(o: {
 }
 
 function settingsPage(o: {
-  file: AstrolensConfig;
-  profileName: string;
-  profile: Profile;
-  profiles: string[];
+  config: AstrolensConfig;
   catalogs: { key: string; present: boolean }[];
   snapshotFields: number;
 }): string {
-  const p = o.profile;
+  const p = o.config;
   const opt = (v: string, cur: string, label: string): string =>
     `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(label)}</option>`;
   return `<!doctype html><html lang="zh"><head><meta charset="utf-8">
@@ -173,12 +163,6 @@ function settingsPage(o: {
 <p class="sub">写入 <code>${esc(userConfigPath())}</code>。环境变量(<code>.env</code>)仍然优先级最高,
 所以那里设过的项在这里改了也不会生效。</p>
 <form id="f">
-  <label>配置档
-    <select name="activeProfile">${o.profiles
-      .map((n) => opt(n, o.profileName, n === 'studio' ? 'studio — 工作台' : n === 'kiosk' ? 'kiosk — 现场' : n))
-      .join('')}</select>
-  </label>
-  <p class="hint">下面改的是<b>当前选中这一档</b>的设置。</p>
 
   <fieldset><legend>解析 Plate solving</legend>
     <label>解析器
@@ -233,14 +217,14 @@ function settingsPage(o: {
     <label>预定义风格<input type="text" name="reading.style" value="${esc(p.reading.style)}"></label>
     <div class="check"><input type="checkbox" name="reading.customPrompt" ${p.reading.customPrompt ? 'checked' : ''}>
       <span>工作台里保留自定义 prompt 输入框</span></div>
-    <div class="check"><input type="checkbox" name="reading.switchableInKiosk" ${p.reading.switchableInKiosk ? 'checked' : ''}>
+    <div class="check"><input type="checkbox" name="kiosk.switchableStyle" ${p.kiosk.switchableStyle ? 'checked' : ''}>
       <span>现场页面上可以切换讲解风格</span></div>
   </fieldset>
 
-  <fieldset><legend>取舍 Selection</legend>
-    <div class="check"><input type="checkbox" name="select.dropContext" ${p.select.dropContext ? 'checked' : ''}>
+  <fieldset><legend>现场展示 Kiosk</legend>
+    <div class="check"><input type="checkbox" name="kiosk.dropContext" ${p.kiosk.dropContext ? 'checked' : ''}>
       <span>丢掉次要的陪衬天体(宁缺毋滥)</span></div>
-    <div class="check"><input type="checkbox" name="select.requireAtlasForB" ${p.select.requireAtlasForB ? 'checked' : ''}>
+    <div class="check"><input type="checkbox" name="kiosk.requireAtlasForB" ${p.kiosk.requireAtlasForB ? 'checked' : ''}>
       <span>只画标注库里已审核的形态特征</span></div>
   </fieldset>
 
@@ -316,25 +300,19 @@ document.getElementById('f').addEventListener('submit', async function(e){
 </div></body></html>`;
 }
 
-/** Apply a flat `section.key` form body onto the profile's stored deltas. */
-function applySettings(file: AstrolensConfig, body: Record<string, unknown>): AstrolensConfig {
-  const name = String(body['activeProfile'] ?? file.activeProfile);
-  const patch: Record<string, Record<string, unknown>> = {
-    ...(JSON.parse(JSON.stringify(file.profiles[name] ?? {})) as Record<
-      string,
-      Record<string, unknown>
-    >),
-  };
+/** Apply a flat `section.key` form body onto the stored config. */
+function applySettings(current: AstrolensConfig, body: Record<string, unknown>): AstrolensConfig {
+  const patch: Record<string, Record<string, unknown>> = {};
   const set = (section: string, key: string, value: unknown): void => {
     patch[section] = { ...(patch[section] ?? {}), [key]: value };
   };
   for (const [k, v] of Object.entries(body)) {
-    if (k === 'activeProfile' || k === 'catalog.preset') continue;
+    if (k === 'catalog.preset') continue;
     const [section, key] = k.split('.');
     if (!section || !key) continue;
     set(section, key, v);
   }
-  // The catalog choice is a preset, not a raw list — a settings page is the
+  // The catalogue choice is a preset, not a raw list — a settings page is the
   // wrong place to ask someone to compose a source array by hand.
   if (body['catalog.preset'] === 'offline') {
     set('catalog', 'sources', ['offline', 'snapshot']);
@@ -343,11 +321,7 @@ function applySettings(file: AstrolensConfig, body: Record<string, unknown>): As
     set('catalog', 'sources', ['simbad', 'vizier', 'openngc']);
     set('catalog', 'snapshotOnly', false);
   }
-  return AstrolensConfig.parse({
-    version: 1,
-    activeProfile: name,
-    profiles: { ...file.profiles, [name]: patch },
-  });
+  return mergeConfig(current, PartialConfig.parse(patch));
 }
 
 function launch(name: string, args: string[], port: number, hubUrl: string): Child {
@@ -397,7 +371,7 @@ export async function runHub(args: HubArgs = {}): Promise<void> {
   app.use(express.json({ limit: '1mb' }));
 
   const state = async (): Promise<{
-    cfg: ReturnType<typeof loadConfig>;
+    cfg: AstrolensConfig;
     catalogs: { key: string; present: boolean }[];
     ready: boolean;
     snapshotFields: number;
@@ -420,8 +394,7 @@ export async function runHub(args: HubArgs = {}): Promise<void> {
         studio: studioPort,
         atlas: atlasPort,
         kiosk: kioskPort,
-        profileName: s.cfg.profileName,
-        profile: s.cfg.profile,
+        config: s.cfg,
         catalogsReady: s.ready,
         snapshotFields: s.snapshotFields,
       }),
@@ -432,10 +405,7 @@ export async function runHub(args: HubArgs = {}): Promise<void> {
     const s = await state();
     res.type('html').send(
       settingsPage({
-        file: s.cfg.file,
-        profileName: s.cfg.profileName,
-        profile: s.cfg.profile,
-        profiles: profileNames(s.cfg.file),
+        config: s.cfg,
         catalogs: s.catalogs,
         snapshotFields: s.snapshotFields,
       }),
@@ -532,11 +502,7 @@ export async function runHub(args: HubArgs = {}): Promise<void> {
 
   app.post('/api/settings', async (req, res) => {
     try {
-      const cfg = loadConfig();
-      const next = applySettings(cfg.file, req.body as Record<string, unknown>);
-      // Round-trip through resolveProfile so a bad combination fails here,
-      // with the form still on screen, rather than at the next solve.
-      resolveProfile(next, next.activeProfile);
+      const next = applySettings(loadConfig(), req.body as Record<string, unknown>);
       const path = userConfigPath();
       await mkdir(dirname(path), { recursive: true });
       await writeFile(path, JSON.stringify(next, null, 2) + '\n', 'utf8');
@@ -549,7 +515,7 @@ export async function runHub(args: HubArgs = {}): Promise<void> {
   await new Promise<void>((ok) => app.listen(port, () => ok()));
   console.log(`astrolens: ${hubUrl}`);
   console.log(`  工作台 ${studioPort} · 标注库 ${atlasPort} · 现场 ${kioskPort}`);
-  console.log(`  配置档 ${loadConfig().profileName}(内置:${Object.keys(BUILTIN_PROFILES).join(' / ')})`);
+
   console.log('Ctrl+C 停止全部。');
   if (args.open !== false) {
     const cmd =

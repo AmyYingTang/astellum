@@ -59,11 +59,10 @@ export async function prefetchCatalogs(args: PrefetchArgs = {}): Promise<void> {
     );
 
     const cfg = loadConfig();
-    const offline = cfg.profile.catalog.sources.includes('offline');
+    const offline = cfg.catalog.sources.includes('offline');
     console.log(
-      `\nActive profile: ${cfg.profileName} ` +
-        `(solve=${cfg.profile.solve.mode}, catalog=${cfg.profile.catalog.sources.join('+')}, ` +
-        `reading=${cfg.profile.reading.mode})`,
+      `\nsolve=${cfg.solve.mode}, catalog=${cfg.catalog.sources.join('+')}, ` +
+        `reading=${cfg.reading.mode}`,
     );
     if (isOfflineReady(status)) {
       console.log('Ready to run with the network unplugged.');

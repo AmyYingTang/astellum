@@ -67,7 +67,7 @@ export function Home(): React.JSX.Element {
         <h1 className="home-title">astrolens</h1>
         <div className="home-header-actions">
           {config && (
-            <div className="profile-box">
+            <div className="status-box">
               <span
                 className={`solver-badge${config.localSolver ? ' local' : ''}`}
                 title={
@@ -76,7 +76,7 @@ export function Home(): React.JSX.Element {
                     : 'Remote nova.astrometry.net — needs network'
                 }
               >
-                {t.solverLabel}: {config.solver} · {config.profile.reading.mode}
+                {t.solverLabel}: {config.solver} · {config.config.reading.mode}
               </span>
               {config.offlineCatalog && config.readiness && (
                 <span
@@ -90,7 +90,7 @@ export function Home(): React.JSX.Element {
                   {config.readiness.catalogsReady ? t.readyOffline : t.notReadyOffline}
                 </span>
               )}
-              {config.profile.reading.mode === 'predefined' && config.readiness && (
+              {config.config.reading.mode === 'predefined' && config.readiness && (
                 <span className="ready-badge">
                   {t.readingsCovered} {config.readiness.readingsCovered}/
                   {config.readiness.readingTargets}

@@ -3,7 +3,6 @@ import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { join, resolve, extname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { loadConfig } from '@astrolens/schema/node';
-import { profileNames } from '@astrolens/schema';
 import { offlineCatalogStatus, isOfflineReady } from '@astrolens/identify';
 import { runKiosk } from './kiosk.js';
 import { exitWhenOrphaned } from '../supervised.js';
@@ -25,14 +24,11 @@ const ACCEPT = '.fits,.fit,.fts,.jpg,.jpeg,.png,.tif,.tiff';
 
 export interface KioskServeArgs {
   port?: number;
-  profile?: string;
   open?: boolean;
   workdir?: string;
 }
 
 function page(opts: {
-  profileName: string;
-  profiles: string[];
   styles: string[];
   ready: boolean;
   missing: string[];
@@ -91,11 +87,6 @@ button.go:disabled{background:#243447;color:#6b768f;cursor:default;}
     <label>语言
       <select id="lang"><option value="zh">中文</option><option value="en">English</option></select>
     </label>
-    <label>配置档
-      <select id="profile">${opts.profiles
-        .map((p) => `<option${p === opts.profileName ? ' selected' : ''}>${p}</option>`)
-        .join('')}</select>
-    </label>
     ${
       opts.styles.length > 1
         ? `<label>讲解风格<select id="style">${opts.styles
@@ -109,7 +100,7 @@ button.go:disabled{background:#243447;color:#6b768f;cursor:default;}
   <p class="status" id="status"></p>
 
   <p class="foot">
-    配置档 <b>${opts.profileName}</b>${
+    ${
       opts.ready
         ? ' · 离线星表齐全,可断网运行'
         : ` · <span class="warn">离线星表缺 ${opts.missing.join('、')},先跑 astrolens prefetch</span>`
@@ -139,7 +130,6 @@ document.getElementById('f').addEventListener('submit', async function(e){
       body:JSON.stringify({filename:f.name, dataUrl:b64,
         target:document.getElementById('target').value.trim()||undefined,
         lang:document.getElementById('lang').value,
-        profile:document.getElementById('profile').value,
         style:(document.getElementById('style')||{}).value})});
     var j=await r.json();
     if(!j.ok) throw new Error(j.error||'识别失败');
@@ -160,7 +150,7 @@ export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
   const port = args.port ?? 3200;
   const workdir = resolve(args.workdir ?? join(tmpdir(), 'astrolens-kiosk'));
   await mkdir(workdir, { recursive: true });
-  const cfg = loadConfig({ profile: args.profile });
+  const cfg = loadConfig();
 
   const app = express();
   app.use(express.json({ limit: '256mb' })); // a FITS master is not small
@@ -169,9 +159,7 @@ export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
     const status = await offlineCatalogStatus().catch(() => []);
     res.type('html').send(
       page({
-        profileName: cfg.profileName,
-        profiles: profileNames(cfg.file),
-        styles: [cfg.profile.reading.style],
+        styles: [cfg.reading.style],
         ready: status.length ? isOfflineReady(status) : true,
         missing: status.filter((s) => !s.present).map((s) => s.key),
         hubUrl: process.env.ASTROLENS_HUB_URL || undefined,
@@ -187,7 +175,6 @@ export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
         dataUrl?: string;
         target?: string;
         lang?: string;
-        profile?: string;
         style?: string;
       };
       if (!body.dataUrl) throw new Error('No file received');
@@ -205,7 +192,6 @@ export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
         target: body.target,
         lang: body.lang,
         style: body.style,
-        profile: body.profile,
         out: dir,
         open: false,
       });
@@ -233,7 +219,7 @@ export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
   });
   const url = `http://localhost:${port}/`;
   console.log(`Kiosk front door: ${url}`);
-  console.log(`Profile "${cfg.profileName}" · frames written to ${workdir}`);
+  console.log(`Frames written to ${workdir}`);
   console.log('Ctrl+C to stop.');
   exitWhenOrphaned();
   if (args.open !== false) {

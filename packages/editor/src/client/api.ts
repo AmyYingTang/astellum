@@ -107,16 +107,6 @@ export async function getConfig(): Promise<ConfigResponse> {
   return (await res.json()) as ConfigResponse;
 }
 
-export async function setProfile(profile: string): Promise<void> {
-  const res = await fetch('/api/config/profile', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ profile }),
-  });
-  const body = (await res.json()) as { ok: boolean; error?: string };
-  if (!body.ok) throw new Error(body.error ?? `Failed to switch profile (${res.status})`);
-}
-
 /** Promote this project's reading into the predefined library (the F3 loop). */
 export async function savePredefined(slug: string, style?: string): Promise<SavePredefinedResponse> {
   const res = await fetch(`/api/projects/${encodeURIComponent(slug)}/save-predefined`, {
