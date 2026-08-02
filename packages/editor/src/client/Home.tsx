@@ -1,7 +1,7 @@
 import type * as React from 'react';
 import { useEffect, useState } from 'react';
 import type { ConfigResponse, ProjectSummary } from '../shared.js';
-import { createProject, fetchJob, getConfig, imageUrl, listProjects, setProfile } from './api.js';
+import { createProject, fetchJob, getConfig, imageUrl, listProjects } from './api.js';
 import { LangToggle, useUi } from './i18n.js';
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
@@ -32,18 +32,6 @@ export function Home(): React.JSX.Element {
       .then(setConfig)
       .catch(() => setConfig(null));
   }, []);
-
-  // Switching profile is the whole point of the control file: one field decides
-  // solver, catalogs, whether the text is written by the LLM or read from the
-  // curated library, and how tightly candidates are filtered.
-  const switchProfile = async (name: string): Promise<void> => {
-    try {
-      await setProfile(name);
-      setConfig(await getConfig());
-    } catch (e) {
-      setError((e as Error).message);
-    }
-  };
 
   // Home only runs Stage 1 (identify). The AI reading is generated later from the
   // editor, after the user has reviewed the annotations.
@@ -80,19 +68,6 @@ export function Home(): React.JSX.Element {
         <div className="home-header-actions">
           {config && (
             <div className="profile-box">
-              <label className="profile-pick">
-                <span>{t.profileLabel}</span>
-                <select
-                  value={config.profileName}
-                  onChange={(e) => void switchProfile(e.target.value)}
-                >
-                  {config.profiles.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
-              </label>
               <span
                 className={`solver-badge${config.localSolver ? ' local' : ''}`}
                 title={

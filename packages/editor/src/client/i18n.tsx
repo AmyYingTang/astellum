@@ -7,7 +7,6 @@ export interface Strings {
   newReading: string;
   atlasLink: string;
   solverLabel: string;
-  profileLabel: string;
   backToHub: string;
   readyOffline: string;
   notReadyOffline: string;
@@ -98,7 +97,6 @@ const STRINGS: Record<UiLang, Strings> = {
     newReading: '新读图',
     atlasLink: '基准标注库',
     solverLabel: '解算器',
-    profileLabel: '配置档',
     backToHub: '导航',
     readyOffline: '可离线运行',
     notReadyOffline: '离线星表不全,先跑 astrolens prefetch',
@@ -187,7 +185,6 @@ const STRINGS: Record<UiLang, Strings> = {
     newReading: 'New reading',
     atlasLink: 'Feature Atlas',
     solverLabel: 'Solver',
-    profileLabel: 'Profile',
     backToHub: 'Home',
     readyOffline: 'Ready offline',
     notReadyOffline: 'Catalog pack incomplete — run astrolens prefetch',
