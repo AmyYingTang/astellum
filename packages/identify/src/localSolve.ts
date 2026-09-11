@@ -1,4 +1,4 @@
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import { mkdtemp, rm, access } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -32,6 +32,168 @@ export interface LocalSolveOptions {
   downsample?: number;
   /** Hard time budget per solve, seconds (default 90). */
   cpuLimitSec?: number;
+  /** How often to print a "still solving" heartbeat, seconds (default 15; 0 = off).
+   *  A blind solve is minutes of silence otherwise — see runSolveField. */
+  progressSec?: number;
+}
+
+/** What we managed to learn from solve-field's own output while it ran. */
+interface SolveProgress {
+  /** Sources simplexy extracted — the single best predictor of a hopeless solve. */
+  sources?: number;
+  /** Current depth round, e.g. "11-20": which field objects are being matched. */
+  round?: string;
+  /** Most recent index file tried. */
+  index?: string;
+  /** How many index files have been tried in total. */
+  tried: number;
+  /** Depth rounds seen, in order. */
+  rounds: string[];
+  /** solve-field gave up on its own --cpulimit rather than exhausting the indexes. */
+  cpuLimitHit?: boolean;
+}
+
+interface RunOutcome {
+  progress: SolveProgress;
+  /** Non-null when we killed it ourselves for exceeding the wall-clock budget. */
+  timedOut: boolean;
+  code: number | null;
+  signal: NodeJS.Signals | null;
+  /** Last few output lines, for a failure message that says something. */
+  tail: string[];
+  /** Set when the binary itself could not be started (bad path, not executable). */
+  spawnError?: string;
+}
+
+/**
+ * Run solve-field with its output *streamed* rather than buffered.
+ *
+ * This used to be execFile, which meant the entire run — minutes, for a blind
+ * all-sky solve — produced exactly one log line at the start and, on failure,
+ * only the first line of execFile's own error ("Command failed: solve-field
+ * …"). That message never says *why*, so a timeout, a missing index directory
+ * and an honest no-match were indistinguishable from the outside.
+ *
+ * Forwarding every line is no good either: one blind pass over a full index set
+ * is ~289 "did not solve" lines, repeated per depth round. So we parse the
+ * lines into a running summary and print a heartbeat instead — enough to tell
+ * "still working, round 2 of the deep indexes" from "stuck" or "found only 3
+ * sources, this will never solve".
+ */
+async function runSolveField(
+  bin: string,
+  args: string[],
+  o: { wallLimitMs: number; progressSec: number; log: (m: string) => void },
+): Promise<RunOutcome> {
+  const progress: SolveProgress = { tried: 0, rounds: [] };
+  const tail: string[] = [];
+  const t0 = Date.now();
+
+  return await new Promise<RunOutcome>((resolve) => {
+    const child = spawn(bin, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    let timedOut = false;
+    let settled = false;
+    let spawnError: string | undefined;
+
+    const secs = (): string => ((Date.now() - t0) / 1000).toFixed(0);
+
+    const onLine = (line: string): void => {
+      const s = line.trimEnd();
+      if (!s) return;
+      tail.push(s);
+      if (tail.length > 12) tail.shift();
+
+      const src = /simplexy: found (\d+) sources/.exec(s);
+      if (src) {
+        progress.sources = Number(src[1]);
+        o.log(`extracted ${progress.sources} sources`);
+        return;
+      }
+      // "Field 1 did not solve (index index-4207-11.fits, field objects 1-10)."
+      const att = /did not solve \(index (\S+?),\s*field objects (\d+-\d+)\)/.exec(s);
+      if (att) {
+        progress.tried += 1;
+        progress.index = att[1];
+        const round = att[2]!;
+        if (progress.round !== round) {
+          if (progress.round != null) {
+            // A new depth round means the previous one walked *every* index
+            // without a match. That is the expensive fact a blind solve hides.
+            o.log(
+              `depth ${progress.round} found nothing after ${progress.tried - 1} indexes ` +
+                `(${secs()}s) — retrying deeper with field objects ${round}`,
+            );
+          }
+          progress.round = round;
+          progress.rounds.push(round);
+        }
+        return;
+      }
+      // solve-field's own budget, not ours — a different fix (raise cpulimit)
+      // from having genuinely run out of indexes.
+      if (/CPU time limit reached/.test(s)) {
+        progress.cpuLimitHit = true;
+        return;
+      }
+      // Worth surfacing verbatim: setup problems and the winning solution.
+      if (/^(Field center|Field size|Field rotation angle|Field parity):/.test(s)) {
+        o.log(s);
+        return;
+      }
+      if (/Warning:|ERROR|failed to open/.test(s)) o.log(s);
+    };
+
+    // Line-buffer both streams; solve-field writes progress to stdout and
+    // warnings to stderr, and we care about both.
+    for (const stream of [child.stdout, child.stderr]) {
+      let buf = '';
+      stream?.setEncoding('utf8');
+      stream?.on('data', (chunk: string) => {
+        buf += chunk;
+        let nl: number;
+        while ((nl = buf.indexOf('\n')) >= 0) {
+          onLine(buf.slice(0, nl));
+          buf = buf.slice(nl + 1);
+        }
+        // Keep a runaway single line from growing without bound.
+        if (buf.length > 64 * 1024) buf = buf.slice(-1024);
+      });
+    }
+
+    const beat =
+      o.progressSec > 0
+        ? setInterval(() => {
+            const where = progress.index
+              ? `${progress.index}, depth ${progress.round}`
+              : 'starting up';
+            o.log(`…still solving (${secs()}s, ${progress.tried} indexes tried, at ${where})`);
+          }, o.progressSec * 1000)
+        : null;
+    beat?.unref?.();
+
+    // --cpulimit is CPU seconds; loading a large index set is I/O-bound, so
+    // wall-clock can run well past it. This is the backstop that actually fires.
+    const killer = setTimeout(() => {
+      timedOut = true;
+      child.kill('SIGTERM');
+      setTimeout(() => child.kill('SIGKILL'), 5000).unref?.();
+    }, o.wallLimitMs);
+    killer.unref?.();
+
+    const finish = (code: number | null, signal: NodeJS.Signals | null): void => {
+      if (settled) return;
+      settled = true;
+      if (beat) clearInterval(beat);
+      clearTimeout(killer);
+      resolve({ progress, timedOut, code, signal, tail, spawnError });
+    };
+
+    child.on('error', (e) => {
+      spawnError = e.message;
+      finish(null, null);
+    });
+    child.on('close', (code, signal) => finish(code, signal));
+  });
 }
 
 interface WcsInfo {
@@ -149,17 +311,51 @@ export function createLocalSolveClient(opts: LocalSolveOptions = {}): SolveClien
       }
       args.push(input.imagePath);
 
+      const scaleHint = opts.scaleLowDeg != null && opts.scaleHighDeg != null;
       log(
         `solve-field ${input.width}×${input.height} (downsample ${downsample}, cpulimit ${cpuLimit}s` +
+          `${scaleHint ? `, field ${opts.scaleLowDeg}–${opts.scaleHighDeg}°` : ''}` +
           `${input.hint ? `, near ${input.hint.ra_deg.toFixed(2)},${input.hint.dec_deg.toFixed(2)} r=${input.hint.radius_deg}°` : ''})…`,
       );
-      await exec(solveField, args, { timeout: (cpuLimit + 30) * 1000, maxBuffer: 16 * 1024 * 1024 }).catch((e) => {
-        // solve-field exits non-zero when it can't solve; treat as no-solution below.
-        log(`solve-field: ${(e as Error).message.split('\n')[0]}`);
+      if (!scaleHint && !input.hint) {
+        // The kiosk case: a stranger's image, no target, no idea of the scale.
+        // This is supported on purpose — just say what it costs, so minutes of
+        // quiet aren't mistaken for a hang.
+        log('no field-width or position hint — blind all-sky solve, expect minutes');
+      }
+      const run = await runSolveField(solveField, args, {
+        wallLimitMs: (cpuLimit + 30) * 1000,
+        progressSec: opts.progressSec ?? 15,
+        log,
       });
 
       if (!(await exists(`${base}.solved`))) {
-        return { status: 'failed', error: 'local solve-field found no solution', elapsed_ms: Date.now() - t0 };
+        // Say which of the three very different failures this was, because the
+        // fix differs: raise the budget, fix the image/extraction, or accept
+        // that the field genuinely isn't in the indexes.
+        const p = run.progress;
+        const walked =
+          p.tried > 0
+            ? `walked ${p.tried} index files over ${p.rounds.length} depth round(s)`
+            : 'never got as far as matching an index';
+        let why: string;
+        if (run.spawnError) {
+          why = `could not run ${solveField}: ${run.spawnError}`;
+        } else if (run.timedOut) {
+          why = `local solve-field hit its ${cpuLimit + 30}s wall-clock budget — ${walked}`;
+        } else if (p.cpuLimitHit) {
+          why = `local solve-field gave up at its ${cpuLimit}s cpulimit — ${walked}`;
+        } else if (p.sources != null && p.sources < 10) {
+          why = `local solve-field extracted only ${p.sources} sources — too few to match`;
+        } else if (p.tried > 0) {
+          why = `local solve-field found no solution — ${walked}`;
+        } else {
+          why = `local solve-field failed before matching (exit ${run.code ?? run.signal})`;
+        }
+        log(`✗ ${why}`);
+        // The tail is where the real cause hides when it's a setup problem.
+        for (const l of run.tail.slice(-4)) log(`  | ${l}`);
+        return { status: 'failed', error: why, elapsed_ms: Date.now() - t0 };
       }
       const { stdout } = await exec(wcsinfoBin, [`${base}.wcs`], { maxBuffer: 4 * 1024 * 1024 });
       const info = parseWcsinfo(stdout);
