@@ -7,6 +7,8 @@ dist/
 
 # test/coverage
 coverage/
+# scratch input images for manual runs (committed fixtures live in examples/)
+test/
 
 # logs
 *.log
