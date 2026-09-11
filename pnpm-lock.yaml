@@ -29,13 +29,13 @@ importers:
 
   packages/atlas:
     dependencies:
-      '@astrolens/identify':
+      '@astellum/identify':
         specifier: workspace:*
         version: link:../identify
-      '@astrolens/reader':
+      '@astellum/reader':
         specifier: workspace:*
         version: link:../reader
-      '@astrolens/schema':
+      '@astellum/schema':
         specifier: workspace:*
         version: link:../schema
       express:
@@ -78,22 +78,22 @@ importers:
 
   packages/cli:
     dependencies:
-      '@astrolens/atlas':
+      '@astellum/atlas':
         specifier: workspace:*
         version: link:../atlas
-      '@astrolens/editor':
+      '@astellum/editor':
         specifier: workspace:*
         version: link:../editor
-      '@astrolens/identify':
+      '@astellum/identify':
         specifier: workspace:*
         version: link:../identify
-      '@astrolens/reader':
+      '@astellum/reader':
         specifier: workspace:*
         version: link:../reader
-      '@astrolens/renderer':
+      '@astellum/renderer':
         specifier: workspace:*
         version: link:../renderer
-      '@astrolens/schema':
+      '@astellum/schema':
         specifier: workspace:*
         version: link:../schema
       cac:
@@ -112,16 +112,16 @@ importers:
 
   packages/editor:
     dependencies:
-      '@astrolens/identify':
+      '@astellum/identify':
         specifier: workspace:*
         version: link:../identify
-      '@astrolens/reader':
+      '@astellum/reader':
         specifier: workspace:*
         version: link:../reader
-      '@astrolens/renderer':
+      '@astellum/renderer':
         specifier: workspace:*
         version: link:../renderer
-      '@astrolens/schema':
+      '@astellum/schema':
         specifier: workspace:*
         version: link:../schema
       express:
@@ -161,7 +161,7 @@ importers:
 
   packages/identify:
     dependencies:
-      '@astrolens/schema':
+      '@astellum/schema':
         specifier: workspace:*
         version: link:../schema
       ofetch:
@@ -176,7 +176,7 @@ importers:
 
   packages/reader:
     dependencies:
-      '@astrolens/schema':
+      '@astellum/schema':
         specifier: workspace:*
         version: link:../schema
       execa:
@@ -191,7 +191,7 @@ importers:
 
   packages/renderer:
     dependencies:
-      '@astrolens/schema':
+      '@astellum/schema':
         specifier: workspace:*
         version: link:../schema
       puppeteer:
@@ -209,7 +209,7 @@ importers:
 
   packages/viewer:
     dependencies:
-      '@astrolens/schema':
+      '@astellum/schema':
         specifier: workspace:*
         version: link:../schema
       react-dom:

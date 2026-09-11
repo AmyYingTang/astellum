@@ -9,7 +9,7 @@ import {
   createOpenNgcCatalogClient,
   createCompositeCatalogClient,
   defaultRegistryPaths,
-} from '@astrolens/identify';
+} from '@astellum/identify';
 
 export interface IdentifyArgs {
   image: string;

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { worldToPixel, pixelToWorld, type Wcs } from '@astrolens/schema';
+import { worldToPixel, pixelToWorld, type Wcs } from '@astellum/schema';
 import { Canvas, type Shape } from './Canvas.js';
 import { ReadingEditor } from './Readings.js';
 import { useLang } from './i18n.js';
@@ -662,7 +662,7 @@ export function App(): JSX.Element {
         <div className="topbar-right">
           {solverInfo?.hubUrl && (
             <a className="hub-link" href={solverInfo.hubUrl}>
-              ← astrolens
+              ← ASTELLUM
             </a>
           )}
           {solverInfo && (

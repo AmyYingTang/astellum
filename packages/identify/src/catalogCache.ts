@@ -25,7 +25,7 @@ const log = (m: string): void => console.error(`[catcache] ${m}`);
 const CACHE_VERSION = 1;
 
 export function defaultCatalogCacheDir(): string {
-  return process.env.ASTROLENS_CATALOG_CACHE ?? join(homedir(), '.cache', 'astrolens', 'region');
+  return process.env.ASTELLUM_CATALOG_CACHE ?? join(homedir(), '.cache', 'astellum', 'region');
 }
 
 interface CacheFile {

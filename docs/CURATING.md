@@ -38,11 +38,11 @@ progress; the CLI for a batch afterwards.
 
 The atlas is where B-class morphology features (pillars, ionization fronts,
 filaments, dust lanes, shells…) come from. You draw them **once** on a reference
-image, in sky coordinates; astrolens then projects them onto **any** future image
+image, in sky coordinates; ASTELLUM then projects them onto **any** future image
 of that target via that image's WCS. No ML, no image matching — deterministic.
 
 ```bash
-./quickastrolens atlas          # or the Atlas card on the navigation page
+./astellum atlas          # or the Atlas card on the navigation page
 ```
 
 A plate-solver is required here too: uploading a reference image solves and
@@ -73,14 +73,14 @@ photo of the same target and check the annotations still land correctly.
 |---|---|---|
 | `atlas.json` | annotations + review status + each entry's reference WCS | yes (small, text) |
 | `refimg/` | the reference images | **no** (gitignored — large binaries) |
-| `registry.json` | approved-only export; **this is what astrolens reads** | yes (the shipped artifact) |
+| `registry.json` | approved-only export; **this is what ASTELLUM reads** | yes (the shipped artifact) |
 
 Two layers, merged at apply time:
 
 | layer | file | owner |
 |---|---|---|
 | shipped baseline | `packages/atlas/data/registry.json` (or `$ATLAS_REGISTRY`) | the project |
-| your overlay | `~/.astrolens/atlas/registry.json` (or `$ATLAS_USER_REGISTRY`) | you, locally |
+| your overlay | `~/.astellum/atlas/registry.json` (or `$ATLAS_USER_REGISTRY`) | you, locally |
 
 Predefined readings layer the same way (`readings.json` in each dir), and merge
 **field by field**: correcting one sentence keeps the shipped scale line,
@@ -91,10 +91,11 @@ Merged by object identity: your overlay **extends** the baseline — add
 annotations to an existing target, or add targets it does not cover — without
 touching the shipped file. No merge conflicts.
 
-`./quickastrolens atlas` deliberately points at the **shipped seed**
+`./astellum atlas` deliberately points at the **shipped seed**
 (`packages/atlas/data`), because this repo's launcher is the curator's entry
-point. Extending the atlas for yourself: use the bare CLI (`astrolens atlas`,
-which defaults to `~/.astrolens/atlas`) or pass `--data-dir`.
+point. Extending the atlas for yourself: call the CLI directly
+(`node packages/cli/dist/index.js atlas` — not the `./astellum` launcher —
+which defaults to `~/.astellum/atlas`) or pass `--data-dir`.
 
 > **Re-export after upgrading.** Registries exported before annotation ids were
 > carried through do not have them, and predefined reading text attaches to those
@@ -126,9 +127,9 @@ and correct, and saving it silently would make the status flag a lie.
 From a terminal, for a batch:
 
 ```bash
-./quickastrolens readings              # who has text, and which elements are missing
-./quickastrolens draft "NGC 3372"      # draft one
-./quickastrolens draft all             # draft everything still uncovered
+./astellum readings              # who has text, and which elements are missing
+./astellum draft "NGC 3372"      # draft one
+./astellum draft all             # draft everything still uncovered
 ```
 
 Drafting needs a network and a logged-in `claude` CLI. Output goes to
@@ -220,7 +221,7 @@ ATLAS_PASSWORD=pick-something-long
 ```
 
 ```bash
-caffeinate -s ./quickastrolens atlas
+caffeinate -s ./astellum atlas
 ```
 
 - **`ATLAS_PASSWORD`** puts HTTP Basic auth over the whole tool — pages, API and

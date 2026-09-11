@@ -1,4 +1,4 @@
-import { pixelToWorld, FEATURE_TAXONOMY, type Wcs } from '@astrolens/schema';
+import { pixelToWorld, FEATURE_TAXONOMY, type Wcs } from '@astellum/schema';
 import type { ImageRaster } from './luminance.js';
 
 /**

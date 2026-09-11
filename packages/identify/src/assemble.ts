@@ -1,5 +1,5 @@
-import { FactSheet } from '@astrolens/schema';
-import type { ObjectCategory, Registry } from '@astrolens/schema';
+import { FactSheet } from '@astellum/schema';
+import type { ObjectCategory, Registry } from '@astellum/schema';
 import type { CatalogCandidate, Wcs } from './types.js';
 import type { GatedCandidate } from './select.js';
 import { objectTypeLabel } from './otype.js';
@@ -107,7 +107,7 @@ export interface AssembleArgs {
    * factsheet output (atlas is now B-class's only source); still accepted so
    * callers don't break — no longer rendered. */
   morphology?: { result: MorphResult; selected: MorphFeature[] };
-  /** The approved atlas registry (from @astrolens/atlas export). B-class features
+  /** The approved atlas registry (from @astellum/atlas export). B-class features
    * are projected from it onto the user image. null / absent → no B-class. */
   registry?: Registry | null;
 }

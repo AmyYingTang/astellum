@@ -17,11 +17,11 @@ import {
   createVizierCatalogClient,
   createOpenNgcCatalogClient,
   createCompositeCatalogClient,
-} from '@astrolens/identify';
-import type { FactSheet } from '@astrolens/schema';
-import { PredefinedReading, findPredefined } from '@astrolens/schema';
-import { loadConfig } from '@astrolens/schema/node';
-import { draftPredefinedStyle } from '@astrolens/reader';
+} from '@astellum/identify';
+import type { FactSheet } from '@astellum/schema';
+import { PredefinedReading, findPredefined } from '@astellum/schema';
+import { loadConfig } from '@astellum/schema/node';
+import { draftPredefinedStyle } from '@astellum/reader';
 import { AtlasEntry, AtlasFile, findEntry, normalizeId } from './atlas.js';
 import { LocalAtlasStore, type AtlasStore } from './store.js';
 import { FEATURE_TYPES } from './featureTypes.js';
@@ -128,7 +128,7 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
     const apiKey = process.env.ASTROMETRY_API_KEY;
     if (!apiKey && !isLocalSolver()) {
       throw new Error(
-        'Plate-solving needs a nova API key. Put ASTROMETRY_API_KEY in a .env file (where you run the atlas server) or export it, then restart — or set ASTROLENS_SOLVER=local for offline solving. Free key from nova.astrometry.net.',
+        'Plate-solving needs a nova API key. Put ASTROMETRY_API_KEY in a .env file (where you run the atlas server) or export it, then restart — or set ASTELLUM_SOLVER=local for offline solving. Free key from nova.astrometry.net.',
       );
     }
     return apiKey;
@@ -149,7 +149,7 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
         const pass = given.slice(given.indexOf(':') + 1);
         if (safeEqual(pass, password)) return next();
       }
-      res.set('WWW-Authenticate', 'Basic realm="astrolens atlas", charset="UTF-8"');
+      res.set('WWW-Authenticate', 'Basic realm="astellum atlas", charset="UTF-8"');
       res.status(401).send('Authentication required.');
     });
   }
@@ -166,7 +166,7 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
       solver: solverName(),
       localSolver: isLocalSolver(),
       // Set when launched from the hub, so the UI can offer a way back.
-      hubUrl: process.env.ASTROLENS_HUB_URL || undefined,
+      hubUrl: process.env.ASTELLUM_HUB_URL || undefined,
       // Whether an LLM is configured to write text — decides whether the
       // reading editor offers to draft one.
       readingMode: loadConfig().reading.mode,
@@ -210,7 +210,7 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
         try {
           const meta = await sharp(buf).metadata();
           if (!meta.width || !meta.height) throw new Error('Could not read image dimensions');
-          const dir = join(tmpdir(), 'astrolens-atlas');
+          const dir = join(tmpdir(), 'astellum-atlas');
           await mkdir(dir, { recursive: true });
           const tmpPath = join(dir, imageRef);
           await writeFile(tmpPath, buf);
@@ -426,7 +426,7 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
   });
 
   // Draft this target's reading with the LLM, from the annotations that are
-  // already approved. The same job `astrolens readings-draft` does, offered
+  // already approved. The same job `astellum readings-draft` does, offered
   // where the work actually happens — an annotator reviewing a target should
   // not have to leave for a terminal to get a first pass.
   //

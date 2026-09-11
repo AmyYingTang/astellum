@@ -2,7 +2,7 @@
 import { cac } from 'cac';
 import { TOOL_VERSION } from './version.js';
 import { loadEnv } from './env.js';
-import { loadContent } from '@astrolens/schema/node';
+import { loadContent } from '@astellum/schema/node';
 import { identifyImage } from './commands/identify.js';
 import { identifyAi } from './commands/identifyAi.js';
 import { readReport } from './commands/read.js';
@@ -16,7 +16,7 @@ import { serveKiosk } from './commands/kioskServe.js';
 import { runHub } from './commands/hub.js';
 import { readingsStatus, readingsDraft } from './commands/readings.js';
 
-const cli = cac('astrolens');
+const cli = cac('astellum');
 
 cli
   .command('hub', 'Navigation page for all three surfaces, plus settings')
@@ -53,7 +53,7 @@ cli
   .option('--all', 'Draft every annotated target that has no reading yet')
   .option('--style <name>', 'Style to write into', { default: 'general' })
   .option('--model <model>', 'Model passed to the claude CLI')
-  .option('--out <file>', 'Library file to write (default: ~/.astrolens/readings.json)')
+  .option('--out <file>', 'Library file to write (default: ~/.astellum/readings.json)')
   .option('--force', 'Redraft targets that already have a reading')
   .action(async (target: string | undefined, options) => {
     await readingsDraft({
@@ -115,7 +115,7 @@ cli
 
 cli
   .command('prefetch', 'Download the offline catalog pack (run once, with a network)')
-  .option('--dir <dir>', 'Pack directory (default: ~/.cache/astrolens/catalogs)')
+  .option('--dir <dir>', 'Pack directory (default: ~/.cache/astellum/catalogs)')
   .option('--check', 'Report what is on disk instead of downloading')
   .option('--targets', 'Warm the online-answer snapshot for every annotated target')
   .option('--indexes <arcmin>', 'Download plate-solve indexes down to this field width (e.g. 60)')
@@ -199,10 +199,10 @@ cli
   });
 
 cli
-  .command('studio', 'Launch the astrolens studio (home + editor) in the browser')
+  .command('studio', 'Launch the astellum studio (home + editor) in the browser')
   .option('--workspace <dir>', 'Projects directory', { default: 'out' })
   .option('--port <port>', 'Port to serve on', { default: 3000 })
-  .option('--atlas-data-dir <dir>', 'Feature-atlas data dir (default ~/.astrolens/atlas)')
+  .option('--atlas-data-dir <dir>', 'Feature-atlas data dir (default ~/.astellum/atlas)')
   .option('--atlas-port <port>', 'Port for the co-launched feature-atlas tool', { default: 3100 })
   .option('--no-open', 'Do not open the browser automatically')
   .action(async (options) => {
@@ -217,7 +217,7 @@ cli
 
 cli
   .command('atlas', 'Launch the feature-atlas annotation tool (build the B-class baseline library)')
-  .option('--data-dir <dir>', 'Atlas data dir (default ~/.astrolens/atlas; seed curators pass packages/atlas/data)')
+  .option('--data-dir <dir>', 'Atlas data dir (default ~/.astellum/atlas; seed curators pass packages/atlas/data)')
   .option('--port <port>', 'Port to serve on', { default: 3100 })
   .option('--no-open', 'Do not open the browser automatically')
   .action(async (options) => {
@@ -234,7 +234,7 @@ async function main(): Promise<void> {
     cli.parse(process.argv, { run: false });
     await cli.runMatchedCommand();
   } catch (err) {
-    console.error(`astrolens: ${(err as Error).message}`);
+    console.error(`astellum: ${(err as Error).message}`);
     process.exitCode = 1;
   }
 }

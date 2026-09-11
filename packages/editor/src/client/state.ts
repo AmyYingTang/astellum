@@ -1,4 +1,4 @@
-import type { Circle, ColorKey, Feature, Reading } from '@astrolens/schema';
+import type { Circle, ColorKey, Feature, Reading } from '@astellum/schema';
 
 export interface EditorState {
   report: Reading;

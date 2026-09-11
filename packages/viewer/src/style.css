@@ -1,4 +1,4 @@
-.astrolens-reading {
+.astellum-reading {
   --ar-bg: #0b0e14;
   --ar-panel: #141925;
   --ar-text: #e6e9f0;
@@ -11,37 +11,37 @@
   overflow: hidden;
   font-family: -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
 }
-.astrolens-reading * {
+.astellum-reading * {
   box-sizing: border-box;
 }
-.astrolens-reading .ar-stage {
+.astellum-reading .ar-stage {
   position: relative;
   flex: 1 1 420px;
   min-width: 0;
   line-height: 0;
 }
-.astrolens-reading .ar-stage img {
+.astellum-reading .ar-stage img {
   width: 100%;
   display: block;
 }
-.astrolens-reading .ar-svg {
+.astellum-reading .ar-svg {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
-.astrolens-reading .ar-feat {
+.astellum-reading .ar-feat {
   cursor: pointer;
 }
-.astrolens-reading .ar-circle {
+.astellum-reading .ar-circle {
   opacity: 0.7;
   transition: opacity 0.15s;
 }
-.astrolens-reading .ar-feat:hover .ar-circle,
-.astrolens-reading .ar-feat.active .ar-circle {
+.astellum-reading .ar-feat:hover .ar-circle,
+.astellum-reading .ar-feat.active .ar-circle {
   opacity: 1;
 }
-.astrolens-reading .ar-tip {
+.astellum-reading .ar-tip {
   position: absolute;
   transform: translate(-50%, -115%);
   background: rgba(11, 14, 20, 0.95);
@@ -55,48 +55,48 @@
   z-index: 5;
   pointer-events: none;
 }
-.astrolens-reading .ar-tip b {
+.astellum-reading .ar-tip b {
   display: block;
   margin-bottom: 4px;
 }
-.astrolens-reading .ar-tip p {
+.astellum-reading .ar-tip p {
   margin: 6px 0 0;
   color: #aeb6c6;
 }
-.astrolens-reading .ar-panel {
+.astellum-reading .ar-panel {
   flex: 1 1 280px;
   padding: 18px;
   max-height: 560px;
   overflow-y: auto;
   background: var(--ar-panel);
 }
-.astrolens-reading .ar-panel h3 {
+.astellum-reading .ar-panel h3 {
   margin: 0;
   font-size: 18px;
 }
-.astrolens-reading .ar-meta {
+.astellum-reading .ar-meta {
   color: var(--ar-muted);
   font-size: 12px;
   margin: 4px 0 12px;
 }
-.astrolens-reading .ar-narr {
+.astellum-reading .ar-narr {
   font-size: 13px;
   line-height: 1.7;
   color: #cfd6e4;
   margin: 0 0 16px;
 }
-.astrolens-reading .ar-feature {
+.astellum-reading .ar-feature {
   display: flex;
   gap: 10px;
   padding: 8px;
   border-radius: 8px;
   cursor: pointer;
 }
-.astrolens-reading .ar-feature:hover,
-.astrolens-reading .ar-feature.active {
+.astellum-reading .ar-feature:hover,
+.astellum-reading .ar-feature.active {
   background: #1c2333;
 }
-.astrolens-reading .ar-dot {
+.astellum-reading .ar-dot {
   flex-shrink: 0;
   width: 24px;
   height: 24px;
@@ -108,10 +108,10 @@
   align-items: center;
   justify-content: center;
 }
-.astrolens-reading .ar-feature b {
+.astellum-reading .ar-feature b {
   font-size: 14px;
 }
-.astrolens-reading .ar-feature p {
+.astellum-reading .ar-feature p {
   margin: 3px 0 0;
   font-size: 12.5px;
   line-height: 1.6;

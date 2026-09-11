@@ -1,5 +1,5 @@
 import sharp from 'sharp';
-import { pixelToWorld, FEATURE_TAXONOMY, type FactSheet, type Wcs } from '@astrolens/schema';
+import { pixelToWorld, FEATURE_TAXONOMY, type FactSheet, type Wcs } from '@astellum/schema';
 import { visibleRadiusPx } from './features.js';
 import { createLuminanceSampler, estimateBackground } from './luminance.js';
 

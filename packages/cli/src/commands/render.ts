@@ -1,7 +1,7 @@
 import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
 import { resolve, dirname, join, basename, extname } from 'node:path';
-import { Reading } from '@astrolens/schema';
-import { renderAnnotated, generateEmbedHtml, renderPoster } from '@astrolens/renderer';
+import { Reading } from '@astellum/schema';
+import { renderAnnotated, generateEmbedHtml, renderPoster } from '@astellum/renderer';
 
 const FORMATS = ['annotated', 'embed', 'poster', 'all'] as const;
 type Format = (typeof FORMATS)[number];

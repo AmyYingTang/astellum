@@ -2,9 +2,9 @@ import { resolve, join } from 'node:path';
 import { homedir } from 'node:os';
 import { spawn } from 'node:child_process';
 import { exitWhenOrphaned } from '../supervised.js';
-import { startStudioServer } from '@astrolens/editor';
-import { startAtlasServer } from '@astrolens/atlas';
-import { solverName } from '@astrolens/identify';
+import { startStudioServer } from '@astellum/editor';
+import { startAtlasServer } from '@astellum/atlas';
+import { solverName } from '@astellum/identify';
 import { TOOL_VERSION } from '../version.js';
 
 export interface StudioArgs {
@@ -23,7 +23,7 @@ export async function studio(args: StudioArgs): Promise<void> {
   // Co-launch the feature-atlas tool so the home-page "Feature Atlas" link works
   // out of the box. Best-effort: if its port is taken, the studio still runs.
   const atlasPort = args.atlasPort ?? 3100;
-  const atlasDataDir = resolve(args.atlasDataDir ?? join(homedir(), '.astrolens', 'atlas'));
+  const atlasDataDir = resolve(args.atlasDataDir ?? join(homedir(), '.astellum', 'atlas'));
   let atlas: { close: () => Promise<void> } | undefined;
   try {
     atlas = await startAtlasServer({ dataDir: atlasDataDir, port: atlasPort });
@@ -32,7 +32,7 @@ export async function studio(args: StudioArgs): Promise<void> {
     console.error(`(feature-atlas tool not started: ${(e as Error).message})`);
   }
 
-  console.log(`astrolens studio running at ${handle.url}`);
+  console.log(`astellum studio running at ${handle.url}`);
   console.log(`Workspace: ${workspace}`);
   console.log(`Plate-solver: ${solverName()}`);
   console.log('Press Ctrl+C to stop.');

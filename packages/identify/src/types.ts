@@ -1,5 +1,5 @@
-// The WCS type + projection live in @astrolens/schema (shared with the editor).
-import type { Wcs, ObjectCategory } from '@astrolens/schema';
+// The WCS type + projection live in @astellum/schema (shared with the editor).
+import type { Wcs, ObjectCategory } from '@astellum/schema';
 export type { Wcs };
 
 export interface SolveInput {

@@ -1,4 +1,7 @@
-# astrolens
+# ASTELLUM
+
+**A**stronomical **S**tructure **T**agging, **E**xplanation and **L**evel-adaptive
+**L**earning for **U**nderstanding **M**orphology.
 
 An interactive astronomical image reader. Upload a deep-sky photo, get a structured reading
 report anchored to specific spots on the image.
@@ -8,8 +11,8 @@ report anchored to specific spots on the image.
 Requires Node ≥ 18 and the [`claude` CLI](https://claude.com/claude-code) (BYO subscription).
 
 ```bash
-./quickastrolens setup   # one time: install deps + build
-./quickastrolens         # open the navigation page in your browser
+./astellum setup   # one time: install deps + build
+./astellum         # open the navigation page in your browser
 ```
 
 That's it. The navigation page (at `http://localhost:3000`) leads to three
@@ -20,7 +23,7 @@ The studio is the one you'll spend most time in:
 
 - **New reading** — pick an image, add an optional object hint + language, optionally choose
   **style** presets (audience: kids/experienced/playful · focus: artistic/history/cultures) or
-  type your own, and astrolens identifies + auto-annotates it (~1 min), then opens the editor.
+  type your own, and ASTELLUM identifies + auto-annotates it (~1 min), then opens the editor.
 - **Open existing** — reopen any past reading to keep tweaking it.
 - **Editor** — drag circles to reposition/resize, edit the text and color keys, then
   **Export ▾** an annotated image, an interactive `embed.html`, or a shareable poster.
@@ -45,12 +48,12 @@ For most use, the two commands above are all you need.
 
 Everything below is the **underlying CLI**. The studio wraps all of it — reach for these
 only to script/automate, work without a browser, or understand what's happening under the
-hood. `quickastrolens` is a thin shell wrapper over this CLI (run `./quickastrolens help`).
+hood. `./astellum` is a thin shell wrapper over this CLI (run `./astellum help`).
 
 ## CLI
 
 ```bash
-pnpm install && pnpm build   # quickastrolens setup does this for you
+pnpm install && pnpm build   # ./astellum setup does this for you
 
 # Generate a reading from an image
 node packages/cli/dist/index.js read path/to/photo.jpg --hint "Sh2-308" --out ./out
@@ -62,7 +65,7 @@ node packages/cli/dist/index.js render ./out/report.json --format all
 # Open the browser editor for one report
 node packages/cli/dist/index.js edit ./out/report.json
 
-# Launch the studio (same as bare quickastrolens)
+# Launch just the studio (./astellum studio does the same)
 node packages/cli/dist/index.js studio
 ```
 
@@ -73,7 +76,7 @@ node packages/cli/dist/index.js studio
 | `edit <report.json>` | `--port <n>` (default 3000), `--no-open` |
 | `studio` | `--workspace <dir>` (default `out`), `--port <n>`, `--no-open` |
 
-The `quickastrolens` wrapper mirrors these: `read`, `render <report> [format]`,
+The `./astellum` wrapper mirrors these: `read`, `render <report> [format]`,
 `edit <report> [port]`, plus `setup` / `build` / `help`.
 
 ## Outputs: annotated / embed / poster
@@ -87,14 +90,14 @@ The `quickastrolens` wrapper mirrors these: `read`, `render <report> [format]`,
 - **`poster`** — `poster-portrait.png` + `poster-landscape.png`, a composed image + text
   layout for sharing (rendered with Puppeteer; downloads Chromium once on first install).
 
-## Viewer component (`@astrolens/viewer`)
+## Viewer component (`@astellum/viewer`)
 
 A small React component for embedding a reading into your own site (the consumer-mode path,
 vs. the standalone `embed.html`):
 
 ```tsx
-import { Reading } from '@astrolens/viewer';
-import '@astrolens/viewer/style.css';
+import { Reading } from '@astellum/viewer';
+import '@astellum/viewer/style.css';
 
 <Reading report={report} imageSrc="/photos/sh2-308.jpg" onFeatureClick={(f) => ...} />
 ```

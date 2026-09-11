@@ -7,7 +7,7 @@ import {
   formatDecDms,
   type FactSheet,
   type Reading,
-} from '@astrolens/schema';
+} from '@astellum/schema';
 import { useUi } from './i18n.js';
 
 export interface ReidentifyOptions {

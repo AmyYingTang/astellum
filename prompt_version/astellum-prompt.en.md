@@ -1,4 +1,4 @@
-# 🔭 astrolens — Read the Sky
+# 🔭 ASTELLUM — Read the Sky
 
 **A prompt that turns any vision-capable AI into a deep-sky image reader. No tools required.**
 
@@ -30,7 +30,7 @@ The reading report has five parts:
 
 **Why no circles?** Because chatbot AIs can't draw on your image — that's outside their capabilities. But "grid position + visual description" works just as well, and forces you to **actively search the image**, which improves understanding.
 
-If you want actual circle annotations, see the [astrolens tool](https://github.com/AmyT/astrolens) (work in progress).
+If you want actual circle annotations, see the [astellum tool](https://github.com/AmyYingTang/astellum) (work in progress).
 
 ---
 
@@ -176,7 +176,7 @@ This prompt is the lightweight version of "reading an image". If you want:
 - Interactive embeds for your website, posters, long-image exports
 - Batch processing across multiple images
 
-See the full **[astrolens tool](https://github.com/AmyYingTang/astrolens)** (work in progress).
+See the full **[astellum tool](https://github.com/AmyYingTang/astellum)** (work in progress).
 
 ---
 
@@ -186,6 +186,6 @@ This prompt is released under **CC0 / Public Domain** — use, modify, redistrib
 
 ---
 
-For the Chinese version, see `astrolens-prompt.zh.md`.
+For the Chinese version, see `astellum-prompt.zh.md`.
 
 By Amy T · 2026

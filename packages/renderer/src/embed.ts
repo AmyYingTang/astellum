@@ -1,4 +1,4 @@
-import { COLOR_PALETTE, type Feature, type Reading } from '@astrolens/schema';
+import { COLOR_PALETTE, type Feature, type Reading } from '@astellum/schema';
 
 function paragraphs(f: Feature, lang: 'zh' | 'en'): string[] {
   return [f.explanation[lang], f.physics?.[lang], f.interesting?.[lang]]
@@ -77,7 +77,7 @@ export function generateEmbedHtml(report: Reading, opts: EmbedOptions): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(o.name[lang])} — astrolens</title>
+<title>${esc(o.name[lang])} — ASTELLUM</title>
 <style>
 .al-embed{--al-bg:#0b0e14;--al-panel:#141925;--al-text:#e6e9f0;--al-muted:#8a93a8;
   background:var(--al-bg);color:var(--al-text);border-radius:10px;overflow:hidden;

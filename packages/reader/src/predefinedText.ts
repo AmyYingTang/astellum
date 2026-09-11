@@ -8,13 +8,13 @@ import {
   findPredefined,
   mergeLibraries,
   pickStyle,
-} from '@astrolens/schema';
+} from '@astellum/schema';
 import type {
   FactObject,
   FactSheet,
   LocalizedString,
   ReadingFallback,
-} from '@astrolens/schema';
+} from '@astellum/schema';
 
 /**
  * The no-LLM text source for onsite mode.
@@ -42,13 +42,13 @@ export const ALL_FALLBACKS: ReadingFallback[] = [
 
 /** The shipped, curated library (read-only from a user's perspective). */
 export function defaultReadingsPath(): string {
-  return process.env.ASTROLENS_READINGS ?? resolve('packages/atlas/data/readings.json');
+  return process.env.ASTELLUM_READINGS ?? resolve('packages/atlas/data/readings.json');
 }
 
 /** A self-deployer's own entries, merged on top of the baseline. */
 export function userReadingsPath(): string {
   return (
-    process.env.ASTROLENS_USER_READINGS ?? join(homedir(), '.astrolens', 'readings.json')
+    process.env.ASTELLUM_USER_READINGS ?? join(homedir(), '.astellum', 'readings.json')
   );
 }
 

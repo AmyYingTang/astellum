@@ -22,7 +22,7 @@ pnpm-debug.log*
 # os
 .DS_Store
 
-# astrolens generated artifacts
+# astellum generated artifacts
 raw_llm_output.txt
 out/
 

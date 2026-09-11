@@ -1,4 +1,4 @@
-# Setting up astrolens
+# Setting up ASTELLUM
 
 From a fresh `git clone` to a running system, on any machine.
 
@@ -31,9 +31,9 @@ Identification, annotation, predefined readings and export are unaffected.
 ## 2. Install
 
 ```bash
-git clone git@github.com:AmyYingTang/astrolens.git
-cd astrolens
-./quickastrolens setup        # pnpm install + build everything
+git clone git@github.com:AmyYingTang/astellum.git
+cd astellum
+./astellum setup        # pnpm install + build everything
 ```
 
 ## 3. Pick a plate-solver
@@ -80,7 +80,7 @@ Pick the widest one that covers your rigs — going one row further down doubles
 the download for fields you may never shoot.
 
 ```bash
-./quickastrolens prefetch indexes 64      # or from the settings page, §5
+./astellum prefetch indexes 64      # or from the settings page, §5
 echo "add_path $HOME/astrometry-indexes" >> "$(brew --prefix)/etc/astrometry.cfg"
 ```
 
@@ -96,14 +96,14 @@ all.
 
 ```bash
 # .env — equivalent to the Plate solving section of the settings page
-ASTROLENS_SOLVER=local
-ASTROLENS_FOV_LOW=2
-ASTROLENS_FOV_HIGH=3.5
+ASTELLUM_SOLVER=local
+ASTELLUM_FOV_LOW=2
+ASTELLUM_FOV_HIGH=3.5
 ```
 
-**Env reference:** `ASTROLENS_SOLVER` (`local`|`nova`), `ASTROMETRY_CFG`,
-`SOLVE_FIELD`, `WCSINFO` (binary/config paths), `ASTROLENS_FOV_LOW` /
-`ASTROLENS_FOV_HIGH`. Anything set here overrides the settings page.
+**Env reference:** `ASTELLUM_SOLVER` (`local`|`nova`), `ASTROMETRY_CFG`,
+`SOLVE_FIELD`, `WCSINFO` (binary/config paths), `ASTELLUM_FOV_LOW` /
+`ASTELLUM_FOV_HIGH`. Anything set here overrides the settings page.
 
 ### Which solver is active?
 
@@ -115,13 +115,13 @@ Three places tell you — worth a glance before a live session:
 3. **After the fact** — `factsheet.solve.solver`, per reading. On a cache hit
    that is the solver that *originally* solved the image.
 
-Successful solves are cached in `~/.cache/astrolens/solve`, so re-solving the
+Successful solves are cached in `~/.cache/astellum/solve`, so re-solving the
 same image is instant regardless of solver.
 
 ## 4. Run it
 
 ```bash
-./quickastrolens
+./astellum
 ```
 
 Opens a navigation page at **<http://localhost:3000>** with four cards:
@@ -133,12 +133,12 @@ Opens a navigation page at **<http://localhost:3000>** with four cards:
 | **Kiosk** | 3200 | show a frame to an audience |
 | **Settings** | — | solver, catalogues, reading source, offline data |
 
-Each also starts on its own — `./quickastrolens studio [port]`,
+Each also starts on its own — `./astellum studio [port]`,
 `atlas [port]`, `kiosk` — and `Ctrl+C` on the navigation page stops all of them.
 
 ## 5. Settings
 
-The navigation page's **Settings** writes `~/.astrolens/config.json`. One global
+The navigation page's **Settings** writes `~/.astellum/config.json`. One global
 set of choices — there are no profiles to switch between:
 
 | section | what it decides |
@@ -169,8 +169,8 @@ Everything except plate-solve indexes is small:
 | reference images (`refimg/`) | ~1 GB | **no** — curation only, gitignored |
 
 ```bash
-./quickastrolens prefetch          # star tables, ~4.5 MB
-./quickastrolens prefetch check    # what is on disk, and whether you can unplug
+./astellum prefetch          # star tables, ~4.5 MB
+./astellum prefetch check    # what is on disk, and whether you can unplug
 ```
 
 See [ONSITE.md](ONSITE.md) for the full before-you-leave checklist.
@@ -178,13 +178,13 @@ See [ONSITE.md](ONSITE.md) for the full before-you-leave checklist.
 ## 7. Without a browser (CLI)
 
 ```bash
-./quickastrolens identify <image> ["Object Name"]      # solve + catalogue → factsheet.json
-./quickastrolens read <image> ["Object Name"] [zh|en]  # identify + AI reading + render
-./quickastrolens render <reading.json> [annotated|embed|poster|all]
-./quickastrolens edit <reading.json> [port]
-./quickastrolens kiosk <image> ["Object Name"]         # one fullscreen frame
-./quickastrolens readings                              # predefined-reading coverage
-./quickastrolens help
+./astellum identify <image> ["Object Name"]      # solve + catalogue → factsheet.json
+./astellum read <image> ["Object Name"] [zh|en]  # identify + AI reading + render
+./astellum render <reading.json> [annotated|embed|poster|all]
+./astellum edit <reading.json> [port]
+./astellum kiosk <image> ["Object Name"]         # one fullscreen frame
+./astellum readings                              # predefined-reading coverage
+./astellum help
 ```
 
 ## 8. Image formats
@@ -227,5 +227,5 @@ at — feed a stacked master rather than a raw OSC light frame.
   (`packages/identify/src/solveClient.ts`).
 - **Two data layers everywhere.** A shipped baseline plus your own overlay,
   merged at read time, so you extend coverage without touching curated files:
-  registry (`~/.astrolens/atlas/registry.json`), predefined readings
-  (`~/.astrolens/readings.json`), curator text (`~/.astrolens/content.json`).
+  registry (`~/.astellum/atlas/registry.json`), predefined readings
+  (`~/.astellum/readings.json`), curator text (`~/.astellum/content.json`).

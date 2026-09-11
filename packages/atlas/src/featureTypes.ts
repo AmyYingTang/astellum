@@ -5,7 +5,7 @@
 // slice we build the seed atlas with. Bilingual labels are mandatory.
 //
 // NOTE: the consumer (Atlas Apply) will need feature_type → render-style too;
-// when that lands, promote this list into @astrolens/schema so both sides share
+// when that lands, promote this list into @astellum/schema so both sides share
 // one source. Kept local to the tool for now (no consumer yet).
 
 export type Geometry = 'polygon' | 'polyline' | 'point';

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Wcs } from '@astrolens/schema';
+import { Wcs } from '@astellum/schema';
 
 // The atlas storage contract (TOOL_HANDOFF §6) — the hard interface between the
 // annotation tool (writes) and Atlas Apply (reads). Geometry vertices are ICRS

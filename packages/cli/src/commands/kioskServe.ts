@@ -2,16 +2,16 @@ import express from 'express';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { join, resolve, extname } from 'node:path';
 import { tmpdir } from 'node:os';
-import { loadConfig } from '@astrolens/schema/node';
-import { offlineCatalogStatus, isOfflineReady } from '@astrolens/identify';
-import { KIOSK_FAVICON } from '@astrolens/renderer';
+import { loadConfig } from '@astellum/schema/node';
+import { offlineCatalogStatus, isOfflineReady } from '@astellum/identify';
+import { KIOSK_FAVICON } from '@astellum/renderer';
 import { runKiosk } from './kiosk.js';
 import { exitWhenOrphaned } from '../supervised.js';
 
 /**
  * The kiosk's own front door.
  *
- * `astrolens kiosk <file>` assumes somebody is at a terminal. On the night they
+ * `astellum kiosk <file>` assumes somebody is at a terminal. On the night they
  * usually aren't — the machine is plugged into a screen and whoever is running
  * the session wants to pick a file and have a frame appear. This serves that
  * one page, and nothing else: choose a file, optionally say what it is, go.
@@ -40,7 +40,7 @@ function page(opts: {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>astrolens · 现场</title>
+<title>ASTELLUM · 现场</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -72,7 +72,7 @@ button.go:disabled{background:#243447;color:#6b768f;cursor:default;}
 </head>
 <body>
 <form class="card" id="f">
-  ${opts.hubUrl ? `<a class="back" href="${opts.hubUrl}">← astrolens</a>` : ''}
+  ${opts.hubUrl ? `<a class="back" href="${opts.hubUrl}">← ASTELLUM</a>` : ''}
   <h1>现场识别</h1>
   <p class="sub">选一张图,几秒后出一张可点的全屏页。支持 FITS(自动拉伸)、JPG、PNG、TIFF。</p>
 
@@ -105,7 +105,7 @@ button.go:disabled{background:#243447;color:#6b768f;cursor:default;}
     ${
       opts.ready
         ? ' · 离线星表齐全,可断网运行'
-        : ` · <span class="warn">离线星表缺 ${opts.missing.join('、')},先跑 astrolens prefetch</span>`
+        : ` · <span class="warn">离线星表缺 ${opts.missing.join('、')},先跑 astellum prefetch</span>`
     }
   </p>
 </form>
@@ -150,7 +150,7 @@ document.getElementById('f').addEventListener('submit', async function(e){
 
 export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
   const port = args.port ?? 3200;
-  const workdir = resolve(args.workdir ?? join(tmpdir(), 'astrolens-kiosk'));
+  const workdir = resolve(args.workdir ?? join(tmpdir(), 'astellum-kiosk'));
   await mkdir(workdir, { recursive: true });
   const cfg = loadConfig();
 
@@ -168,7 +168,7 @@ export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
         styles: [cfg.reading.style],
         ready: status.length ? isOfflineReady(status) : true,
         missing: status.filter((s) => !s.present).map((s) => s.key),
-        hubUrl: process.env.ASTROLENS_HUB_URL || undefined,
+        hubUrl: process.env.ASTELLUM_HUB_URL || undefined,
       }),
     );
   });

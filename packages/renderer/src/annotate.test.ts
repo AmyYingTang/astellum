@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Reading } from '@astrolens/schema';
+import type { Reading } from '@astellum/schema';
 import { buildOverlaySvg } from './annotate.js';
 
 const report = {
@@ -32,7 +32,7 @@ const report = {
   ],
   extra_facts: [],
   created_at: '2026-05-27T00:00:00.000Z',
-  generator: { tool: 'astrolens', tool_version: '0.1.0', llm: 'claude' },
+  generator: { tool: 'astellum', tool_version: '0.1.0', llm: 'claude' },
 } satisfies Reading;
 
 describe('buildOverlaySvg', () => {

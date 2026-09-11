@@ -18,8 +18,8 @@ import type { FeatureTypeKey } from './taxonomy.js';
  * built-in value. So there is nothing to migrate, an empty file is valid, and a
  * typo in one entry cannot take the others down with it.
  *
- * This module is pure — @astrolens/schema is bundled into the browser clients.
- * Loading lives in `contentLoad.ts`, behind the `@astrolens/schema/node`
+ * This module is pure — @astellum/schema is bundled into the browser clients.
+ * Loading lives in `contentLoad.ts`, behind the `@astellum/schema/node`
  * subpath, and calls `setContentOverlay` once at startup.
  */
 

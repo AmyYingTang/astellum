@@ -1,5 +1,5 @@
 {
-  "name": "@astrolens/viewer",
+  "name": "@astellum/viewer",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -16,7 +16,7 @@
     "build": "tsc -p tsconfig.json && cp src/style.css dist/style.css"
   },
   "dependencies": {
-    "@astrolens/schema": "workspace:*"
+    "@astellum/schema": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=18",

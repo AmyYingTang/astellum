@@ -5,7 +5,7 @@ import {
   type PredefinedReading,
   contentOverlay,
   type RegistryEntry,
-} from '@astrolens/schema';
+} from '@astellum/schema';
 import { runClaude, type RunClaudeOptions } from './claudeCli.js';
 import { extractJson } from './parseJson.js';
 

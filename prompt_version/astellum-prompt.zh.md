@@ -1,4 +1,4 @@
-# 🔭 astrolens — 读懂星空
+# 🔭 ASTELLUM — 读懂星空
 
 **一份不需要任何工具的天文图片"读图"指令。**
 
@@ -30,7 +30,7 @@
 
 **为什么不画圈?** 因为聊天框里的 AI 不能在你的原图上画东西。但用"九宫格方位 + 视觉描述"指路,效果一样好,而且让你**主动在图上找**,印象更深。
 
-如果你想要带圈标注的版本,可以用 [astrolens 工具](https://github.com/AmyT/astrolens)(开发中)。
+如果你想要带圈标注的版本,可以用 [astellum 工具](https://github.com/AmyYingTang/astellum)(开发中)。
 
 ---
 
@@ -176,7 +176,7 @@
 - 导出可嵌入网站的交互页 / 海报 / 长图
 - 批量处理多张图,生成系列
 
-请看完整工具 **[astrolens](https://github.com/AmyYingTang/astrolens)**(开发中)。
+请看完整工具 **[astellum](https://github.com/AmyYingTang/astellum)**(开发中)。
 
 ---
 
@@ -186,6 +186,6 @@
 
 ---
 
-如果你想看英文版,请打开 `astrolens-prompt.en.md`。
+如果你想看英文版,请打开 `astellum-prompt.en.md`。
 
 By Amy T · 2026

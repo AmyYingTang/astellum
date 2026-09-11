@@ -1,4 +1,4 @@
-import type { Wcs } from '@astrolens/schema';
+import type { Wcs } from '@astellum/schema';
 import type { AtlasEntry } from './atlas.js';
 
 // Wire contracts shared by the atlas server and its React client.

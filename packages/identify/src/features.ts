@@ -1,4 +1,4 @@
-import { FEATURE_TAXONOMY, pixelToWorld, type ObjectCategory, type Wcs } from '@astrolens/schema';
+import { FEATURE_TAXONOMY, pixelToWorld, type ObjectCategory, type Wcs } from '@astellum/schema';
 import type { LuminanceSampler } from './luminance.js';
 
 /**

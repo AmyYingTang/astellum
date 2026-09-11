@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { FactSheet } from '@astrolens/schema';
+import type { FactSheet } from '@astellum/schema';
 import { extractJson, parseTailoring } from './parseJson.js';
 import { parseSimbadAscii } from './simbad.js';
 import { buildTailorPrompt } from './prompt.js';

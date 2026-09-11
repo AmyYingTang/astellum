@@ -30,7 +30,7 @@ function counting(candidates: CatalogCandidate[]): { client: CatalogClient; call
 }
 
 const withDir = async (fn: (dir: string) => Promise<void>): Promise<void> => {
-  const dir = await mkdtemp(join(tmpdir(), 'astrolens-catcache-'));
+  const dir = await mkdtemp(join(tmpdir(), 'astellum-catcache-'));
   try {
     await fn(dir);
   } finally {

@@ -1,5 +1,5 @@
 {
-  "name": "@astrolens/editor",
+  "name": "@astellum/editor",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/server.js",
@@ -18,10 +18,10 @@
     "typecheck:client": "tsc -p tsconfig.client.json --noEmit"
   },
   "dependencies": {
-    "@astrolens/identify": "workspace:*",
-    "@astrolens/reader": "workspace:*",
-    "@astrolens/renderer": "workspace:*",
-    "@astrolens/schema": "workspace:*",
+    "@astellum/identify": "workspace:*",
+    "@astellum/reader": "workspace:*",
+    "@astellum/renderer": "workspace:*",
+    "@astellum/schema": "workspace:*",
     "express": "^4.21.2",
     "sharp": "^0.33.5"
   },

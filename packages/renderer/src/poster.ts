@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { COLOR_PALETTE, type Feature, type Reading } from '@astrolens/schema';
+import { COLOR_PALETTE, type Feature, type Reading } from '@astellum/schema';
 import { buildOverlaySvg } from './annotate.js';
 
 function paragraphs(f: Feature, lang: 'zh' | 'en'): string[] {
@@ -22,7 +22,7 @@ const POSTER_STRINGS = {
     overview: '导读',
     features: '画面要点',
     facts: '冷知识',
-    footer: 'astrolens · 读图报告',
+    footer: 'astellum · 读图报告',
     stage: (n: number) => `阶段 ${n}`,
     distance: (ly: number) => `约 ${ly.toLocaleString()} 光年`,
     size: (am: number) => `视直径 ${am}′`,
@@ -31,7 +31,7 @@ const POSTER_STRINGS = {
     overview: 'Overview',
     features: 'Visual features',
     facts: 'Fun facts',
-    footer: 'astrolens · reading report',
+    footer: 'astellum · reading report',
     stage: (n: number) => `Stage ${n}`,
     distance: (ly: number) => `~${ly.toLocaleString()} light-years`,
     size: (am: number) => `angular size ${am}′`,

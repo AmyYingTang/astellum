@@ -6,11 +6,11 @@ import {
   createLuminanceSampler,
   estimateBackground,
   visibleRadiusPx,
-} from '@astrolens/identify';
-import { runClaude, extractJson } from '@astrolens/reader';
+} from '@astellum/identify';
+import { runClaude, extractJson } from '@astellum/reader';
 
 /**
- * EXPERIMENT (`astrolens identify-ai`): an AI Class-B feature pass, isolated from
+ * EXPERIMENT (`astellum identify-ai`): an AI Class-B feature pass, isolated from
  * the deterministic identify pipeline so it can be compared against the CV
  * morphology side-by-side. It feeds Claude (via the existing `claude` CLI + Read
  * tool — vision) a grid-annotated image plus the A-class prior (the plate-solved
@@ -20,7 +20,7 @@ import { runClaude, extractJson } from '@astrolens/reader';
  * 'ai'`); coordinates are coarse (the model sees the image downscaled), so they're
  * approximate markers to confirm/refine, not precise placements.
  *
- * Requires the `claude` CLI to be authenticated (same as `astrolens read`).
+ * Requires the `claude` CLI to be authenticated (same as `astellum read`).
  */
 
 const COLS = 8;

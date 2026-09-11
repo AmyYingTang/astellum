@@ -1,6 +1,6 @@
 import type * as React from 'react';
 import { useState } from 'react';
-import { ColorKey, COLOR_PALETTE, type Reading } from '@astrolens/schema';
+import { ColorKey, COLOR_PALETTE, type Reading } from '@astellum/schema';
 import type { Action } from './state.js';
 import { useUi } from './i18n.js';
 

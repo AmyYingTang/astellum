@@ -17,9 +17,9 @@ import { z } from 'zod';
  * solver, which catalogues, which tool writes the text. Those are here, one
  * value each.
  *
- * This module is PURE (zod + defaults) because @astrolens/schema is bundled into
+ * This module is PURE (zod + defaults) because @astellum/schema is bundled into
  * the browser clients. Disk loading + env overlay live in `configLoad.ts`,
- * behind the `@astrolens/schema/node` subpath.
+ * behind the `@astellum/schema/node` subpath.
  */
 
 export const SolveMode = z.enum(['nova', 'local']);
@@ -130,7 +130,7 @@ export const KioskConfig = z.object({
 });
 export type KioskConfig = z.infer<typeof KioskConfig>;
 
-export const AstrolensConfig = z.object({
+export const AstellumConfig = z.object({
   version: z.literal(1).default(1),
   solve: SolveConfig.default({}),
   catalog: CatalogConfig.default({}),
@@ -138,11 +138,11 @@ export const AstrolensConfig = z.object({
   reading: ReadingConfig.default({}),
   kiosk: KioskConfig.default({}),
 });
-export type AstrolensConfig = z.infer<typeof AstrolensConfig>;
+export type AstellumConfig = z.infer<typeof AstellumConfig>;
 
 export const CONFIG_VERSION = 1 as const;
 
-export const DEFAULT_CONFIG: AstrolensConfig = AstrolensConfig.parse({});
+export const DEFAULT_CONFIG: AstellumConfig = AstellumConfig.parse({});
 
 const SECTIONS = ['solve', 'catalog', 'atlas', 'reading', 'kiosk'] as const;
 
@@ -158,14 +158,14 @@ export const PartialConfig = z.object({
 export type PartialConfig = z.infer<typeof PartialConfig>;
 
 /** Shallow-merge per section — the shape is two levels deep, so this is all of it. */
-export function mergeConfig(base: AstrolensConfig, over: PartialConfig | undefined): AstrolensConfig {
+export function mergeConfig(base: AstellumConfig, over: PartialConfig | undefined): AstellumConfig {
   if (!over) return base;
   const out = { ...base } as Record<string, unknown>;
   for (const s of SECTIONS) {
     const patch = over[s];
     if (patch) out[s] = { ...base[s], ...patch };
   }
-  return AstrolensConfig.parse(out);
+  return AstellumConfig.parse(out);
 }
 
 /**

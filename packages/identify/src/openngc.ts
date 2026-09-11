@@ -159,7 +159,7 @@ function angSepDeg(ra1: number, dec1: number, ra2: number, dec2: number): number
 }
 
 function defaultOpenNgcCacheDir(): string {
-  return join(homedir(), '.cache', 'astrolens', 'openngc');
+  return join(homedir(), '.cache', 'astellum', 'openngc');
 }
 
 export function createOpenNgcCatalogClient(opts: OpenNgcOptions = {}): CatalogClient {

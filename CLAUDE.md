@@ -1,4 +1,10 @@
-# astrolens — working notes
+# ASTELLUM — working notes
+
+*Astronomical Structure Tagging, Explanation and Level-adaptive Learning for
+Understanding Morphology.* Renamed from **astrolens** in 2026-09 (name clash).
+Env vars, `~/.astellum` and the other local paths were cut over with no
+fallback; the one exception is `generator.tool` — old `"astrolens"` readings
+still parse and come back as `"astellum"`.
 
 An interactive astronomical image reader. Upload a deep-sky photo, get a
 structured, bilingual reading anchored to specific spots on the image — either
@@ -11,7 +17,7 @@ undo a decision.
 
 ## The four surfaces
 
-`./quickastrolens` opens a navigation page; each also starts on its own.
+`./astellum` opens a navigation page; each also starts on its own.
 
 | | port | what it is |
 |---|---|---|
@@ -20,9 +26,11 @@ undo a decision.
 | atlas | 3100 | draw and review baseline annotations; edit predefined readings |
 | kiosk | 3200 | pick a file, show a fullscreen page to an audience |
 
-`./quickastrolens` is the **curator** entry point: it points the atlas and the
-readings library at the shipped seed (`packages/atlas/data/`). The bare CLI
-(`astrolens atlas`) defaults to `~/.astrolens/` — a deployment's own layer.
+`./astellum` is the **curator** entry point: it points the atlas and the
+readings library at the shipped seed (`packages/atlas/data/`). The CLI called
+directly (`node packages/cli/dist/index.js atlas`) defaults to `~/.astellum/` —
+a deployment's own layer. The launcher and the CLI's `bin` are both named
+`astellum`; the `./` is the difference.
 
 ## Invariants — do not quietly break these
 
@@ -92,7 +100,7 @@ annotations themselves (drafts included), the **CLI** from the exported registry
 pnpm build          # tsc + all three clients (editor, atlas, viewer)
 pnpm test           # vitest, 135 tests
 pnpm lint           # eslint
-./quickastrolens help
+./astellum help
 ```
 
 `pnpm build` must include **every** client — it silently omitted the atlas one

@@ -1,6 +1,6 @@
 import { resolve, dirname, basename } from 'node:path';
 import { spawn } from 'node:child_process';
-import { startStudioServer } from '@astrolens/editor';
+import { startStudioServer } from '@astellum/editor';
 import { TOOL_VERSION } from '../version.js';
 
 export interface EditArgs {
@@ -20,7 +20,7 @@ export async function editReport(args: EditArgs): Promise<void> {
   const handle = await startStudioServer({ workspace, port: args.port, toolVersion: TOOL_VERSION });
   const url = `${handle.url}/#/p/${encodeURIComponent(slug)}`;
 
-  console.log(`astrolens editor running at ${url}`);
+  console.log(`astellum editor running at ${url}`);
   console.log(`Editing: ${reportPath}`);
   console.log('Press Ctrl+C to stop.');
 

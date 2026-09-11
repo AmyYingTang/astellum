@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { LocalizedString } from '@astrolens/schema';
+import { LocalizedString } from '@astellum/schema';
 
 /**
  * The LLM's tailoring output: bilingual narrative + per-feature bilingual text,

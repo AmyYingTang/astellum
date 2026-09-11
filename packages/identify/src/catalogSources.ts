@@ -1,4 +1,4 @@
-import type { CatalogSource } from '@astrolens/schema';
+import type { CatalogSource } from '@astellum/schema';
 import type { CatalogClient } from './types.js';
 import { createSimbadCatalogClient } from './simbad.js';
 import { createVizierCatalogClient } from './vizier.js';

@@ -95,7 +95,9 @@ export const Reading = z.object({
   created_at: z.string().datetime(),
   edited_at: z.string().datetime().optional(),
   generator: z.object({
-    tool: z.literal('astrolens'),
+    // Readings written before the rename say 'astrolens'; they still open, and
+    // come back as 'astellum' so a re-save or re-render carries the new name.
+    tool: z.enum(['astellum', 'astrolens']).transform(() => 'astellum' as const),
     tool_version: z.string(),
     llm: z.string(), // "claude-sonnet-4-x" etc
   }),

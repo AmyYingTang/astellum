@@ -17,7 +17,7 @@ const validReading = {
     },
   ],
   created_at: '2026-05-27T00:00:00.000Z',
-  generator: { tool: 'astrolens', tool_version: '0.1.0', llm: 'claude-opus-4-x' },
+  generator: { tool: 'astellum', tool_version: '0.1.0', llm: 'claude-opus-4-x' },
 };
 
 describe('Reading schema', () => {
@@ -61,6 +61,18 @@ describe('Reading schema', () => {
       object: { stage?: number };
     };
     bad.object.stage = 9;
+    expect(() => Reading.parse(bad)).toThrow();
+  });
+
+  it('still opens readings written under the old name, as astellum', () => {
+    const old = structuredClone(validReading);
+    old.generator.tool = 'astrolens';
+    expect(Reading.parse(old).generator.tool).toBe('astellum');
+  });
+
+  it('rejects an unknown generator tool', () => {
+    const bad = structuredClone(validReading);
+    bad.generator.tool = 'something-else';
     expect(() => Reading.parse(bad)).toThrow();
   });
 

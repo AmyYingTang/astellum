@@ -1,4 +1,4 @@
-import { FEATURE_TAXONOMY, contentOverlay, type FeatureTypeKey } from '@astrolens/schema';
+import { FEATURE_TAXONOMY, contentOverlay, type FeatureTypeKey } from '@astellum/schema';
 
 export interface TailorItem {
   id: string;

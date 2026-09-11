@@ -11,7 +11,7 @@ const numEnv = (k: string): number | undefined => {
 
 /** True when the configured solver is the offline local astrometry.net one. */
 export function isLocalSolver(): boolean {
-  return (process.env.ASTROLENS_SOLVER ?? '').toLowerCase() === 'local';
+  return (process.env.ASTELLUM_SOLVER ?? '').toLowerCase() === 'local';
 }
 
 /** Human name of the configured solver, for log lines. */
@@ -21,13 +21,13 @@ export function solverName(): string {
 
 /**
  * Build the plate-solve client from config, shared by the CLI, studio/editor and
- * the atlas tool. `ASTROLENS_SOLVER=local` selects the offline astrometry.net
+ * the atlas tool. `ASTELLUM_SOLVER=local` selects the offline astrometry.net
  * solver (solve-field) — for field/live use where nova's remote queue is
  * unreliable; otherwise nova (needs an API key). Wrapped in the on-disk cache
  * unless disabled.
  *
  * Local-solver env: ASTROMETRY_CFG (astrometry.cfg path), SOLVE_FIELD / WCSINFO
- * (binary paths), ASTROLENS_FOV_LOW / ASTROLENS_FOV_HIGH (field-width degree
+ * (binary paths), ASTELLUM_FOV_LOW / ASTELLUM_FOV_HIGH (field-width degree
  * bounds — a hint that greatly speeds the solve).
  */
 export function createConfiguredSolveClient(
@@ -50,13 +50,13 @@ export function createConfiguredSolveClient(
       solveField: process.env.SOLVE_FIELD,
       wcsinfo: process.env.WCSINFO,
       // Settings first; the env vars remain the override, as everywhere else.
-      scaleLowDeg: o.fovLowDeg ?? numEnv('ASTROLENS_FOV_LOW'),
-      scaleHighDeg: o.fovHighDeg ?? numEnv('ASTROLENS_FOV_HIGH'),
+      scaleLowDeg: o.fovLowDeg ?? numEnv('ASTELLUM_FOV_LOW'),
+      scaleHighDeg: o.fovHighDeg ?? numEnv('ASTELLUM_FOV_HIGH'),
     });
   } else {
     if (!o.apiKey) {
       throw new Error(
-        'Plate-solving needs a nova API key ($ASTROMETRY_API_KEY), or set ASTROLENS_SOLVER=local for offline solving.',
+        'Plate-solving needs a nova API key ($ASTROMETRY_API_KEY), or set ASTELLUM_SOLVER=local for offline solving.',
       );
     }
     inner = createNovaSolveClient({ apiKey: o.apiKey });

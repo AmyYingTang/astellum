@@ -64,7 +64,7 @@ export function Home(): React.JSX.Element {
   return (
     <div className="home">
       <div className="home-header">
-        <h1 className="home-title">astrolens</h1>
+        <h1 className="home-title">ASTELLUM</h1>
         <div className="home-header-actions">
           {config && (
             <div className="status-box">

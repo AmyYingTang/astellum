@@ -1,4 +1,4 @@
-import type { ObjectCategory } from '@astrolens/schema';
+import type { ObjectCategory } from '@astellum/schema';
 import type { CatalogCandidate, Wcs } from './types.js';
 import { worldToPixel } from './wcs.js';
 import { isOptical, objectCategory } from './otype.js';

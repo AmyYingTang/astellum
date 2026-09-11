@@ -7,8 +7,8 @@ import {
   solverName,
   createSimbadCatalogClient,
   defaultRegistryPaths,
-} from '@astrolens/identify';
-import { generateReading, ReaderError } from '@astrolens/reader';
+} from '@astellum/identify';
+import { generateReading, ReaderError } from '@astellum/reader';
 import { TOOL_VERSION } from '../version.js';
 
 export interface ReadArgs {

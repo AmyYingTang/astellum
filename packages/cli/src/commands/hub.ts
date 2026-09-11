@@ -2,8 +2,8 @@ import express from 'express';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { AstrolensConfig, PartialConfig, mergeConfig, preferredLang } from '@astrolens/schema';
-import { loadConfig, userConfigPath } from '@astrolens/schema/node';
+import { AstellumConfig, PartialConfig, mergeConfig, preferredLang } from '@astellum/schema';
+import { loadConfig, userConfigPath } from '@astellum/schema/node';
 import {
   offlineCatalogStatus,
   isOfflineReady,
@@ -12,7 +12,7 @@ import {
   indexUrls,
   isComplete,
   indexChoices,
-} from '@astrolens/identify';
+} from '@astellum/identify';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { stat } from 'node:fs/promises';
@@ -75,7 +75,7 @@ type Lang = 'zh' | 'en';
 
 function langFor(req: { headers: Record<string, unknown> }): Lang {
   const cookie = String(req.headers['cookie'] ?? '');
-  const saved = /(?:^|;\s*)astrolens_lang=(zh|en)/.exec(cookie)?.[1];
+  const saved = /(?:^|;\s*)astellum_lang=(zh|en)/.exec(cookie)?.[1];
   if (saved === 'zh' || saved === 'en') return saved;
   const accept = String(req.headers['accept-language'] ?? '');
   return preferredLang(accept.split(',').map((p) => p.split(';')[0]!.trim()).filter(Boolean));
@@ -88,10 +88,10 @@ const T = (lang: Lang) => (zh: string, en: string): string => (lang === 'zh' ? z
  *  and it keeps one language in the markup instead of two. */
 const LANG_SCRIPT = `<script>
 function astroLang(){
-  var cur=(document.cookie.match(/astrolens_lang=(zh|en)/)||[])[1]
+  var cur=(document.cookie.match(/astellum_lang=(zh|en)/)||[])[1]
         || (document.documentElement.lang==='zh'?'zh':'en');
   var next=cur==='zh'?'en':'zh';
-  document.cookie='astrolens_lang='+next+';path=/;max-age=31536000';
+  document.cookie='astellum_lang='+next+';path=/;max-age=31536000';
   location.reload();
 }
 </script>`;
@@ -181,7 +181,7 @@ function navPage(o: {
   studio: number;
   atlas: number;
   kiosk: number;
-  config: AstrolensConfig;
+  config: AstellumConfig;
   catalogsReady: boolean;
   snapshotFields: number;
   lang: Lang;
@@ -192,9 +192,9 @@ function navPage(o: {
     ` · ${o.config.reading.mode === 'ai' ? t('AI 解读', 'AI readings') : t('预定义解读', 'predefined readings')}`;
   return `<!doctype html><html lang="${o.lang}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>astrolens</title>${HEAD_ICON}<style>${SHELL}</style></head><body><div class="wrap">
+<title>ASTELLUM</title>${HEAD_ICON}<style>${SHELL}</style></head><body><div class="wrap">
 <button class="lang" onclick="astroLang()">${o.lang === 'zh' ? 'EN' : '中文'}</button>
-<h1>astrolens</h1>
+<h1>ASTELLUM</h1>
 <p class="sub">${esc(mode)}
   <span class="badge ${o.catalogsReady ? 'ok' : 'warn'}">${
     o.catalogsReady
@@ -244,7 +244,7 @@ ${LANG_SCRIPT}
 }
 
 function settingsPage(o: {
-  config: AstrolensConfig;
+  config: AstellumConfig;
   catalogs: { key: string; present: boolean }[];
   snapshotFields: number;
   lang: Lang;
@@ -257,7 +257,7 @@ function settingsPage(o: {
     `<div class="check"><input type="checkbox" name="${name}" ${on ? 'checked' : ''}><span>${esc(label)}</span></div>`;
   return `<!doctype html><html lang="${o.lang}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${t('设置', 'Settings')} · astrolens</title>${HEAD_ICON}<style>${SHELL}</style></head><body><div class="wrap">
+<title>${t('设置', 'Settings')} · ASTELLUM</title>${HEAD_ICON}<style>${SHELL}</style></head><body><div class="wrap">
 <button class="lang" onclick="astroLang()">${o.lang === 'zh' ? 'EN' : '中文'}</button>
 <a class="back" href="/">← ${t('返回导航', 'Back')}</a>
 <h1>${t('设置', 'Settings')}</h1>
@@ -300,7 +300,7 @@ function settingsPage(o: {
       <tr><td>${t('在线答案快照', 'Answer snapshot')}</td><td>${
         o.lang === 'zh' ? `${o.snapshotFields} 片天区` : `${o.snapshotFields} field(s)`
       }</td></tr></table>
-    <p class="hint">${t('缺失的用', 'Download what is missing with')} <code>./quickastrolens prefetch</code>${t(' 下载。', '.')}</p>
+    <p class="hint">${t('缺失的用', 'Download what is missing with')} <code>./astellum prefetch</code>${t(' 下载。', '.')}</p>
   </fieldset>
 
   <fieldset id="idx"${p.solve.mode === 'local' ? '' : ' style="display:none"'}><legend>${t('解析索引 Plate-solve indexes', 'Plate-solve indexes')}</legend>
@@ -456,7 +456,7 @@ document.getElementById('f').addEventListener('submit', async function(e){
 }
 
 /** Apply a flat `section.key` form body onto the stored config. */
-function applySettings(current: AstrolensConfig, body: Record<string, unknown>): AstrolensConfig {
+function applySettings(current: AstellumConfig, body: Record<string, unknown>): AstellumConfig {
   const patch: Record<string, Record<string, unknown>> = {};
   const set = (section: string, key: string, value: unknown): void => {
     patch[section] = { ...(patch[section] ?? {}), [key]: value };
@@ -489,7 +489,7 @@ function applySettings(current: AstrolensConfig, body: Record<string, unknown>):
 function launch(name: string, args: string[], port: number, hubUrl: string): Child {
   const proc = spawn(process.execPath, [process.argv[1]!, ...args], {
     stdio: ['ignore', 'inherit', 'inherit'],
-    env: { ...process.env, ASTROLENS_HUB_URL: hubUrl, ASTROLENS_SUPERVISED: '1' },
+    env: { ...process.env, ASTELLUM_HUB_URL: hubUrl, ASTELLUM_SUPERVISED: '1' },
   });
   return { name, port, proc };
 }
@@ -533,7 +533,7 @@ export async function runHub(args: HubArgs = {}): Promise<void> {
   app.use(express.json({ limit: '1mb' }));
 
   const state = async (): Promise<{
-    cfg: AstrolensConfig;
+    cfg: AstellumConfig;
     catalogs: { key: string; present: boolean }[];
     ready: boolean;
     snapshotFields: number;
@@ -676,7 +676,7 @@ export async function runHub(args: HubArgs = {}): Promise<void> {
   });
 
   await new Promise<void>((ok) => app.listen(port, () => ok()));
-  console.log(`astrolens: ${hubUrl}`);
+  console.log(`astellum: ${hubUrl}`);
   console.log(`  工作台 ${studioPort} · 标注库 ${atlasPort} · 现场 ${kioskPort}`);
 
   console.log('Ctrl+C 停止全部。');

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AstrolensConfig, DEFAULT_CONFIG, PartialConfig, fromLegacyProfiles, mergeConfig } from './index.js';
+import { AstellumConfig, DEFAULT_CONFIG, PartialConfig, fromLegacyProfiles, mergeConfig } from './index.js';
 
 describe('control file', () => {
   it('is usable with no file at all', () => {
@@ -62,7 +62,7 @@ describe('a config written before the profiles were flattened', () => {
 
   it('produces something the schema accepts', () => {
     const merged = mergeConfig(DEFAULT_CONFIG, fromLegacyProfiles(legacy)!);
-    expect(AstrolensConfig.safeParse(merged).success).toBe(true);
+    expect(AstellumConfig.safeParse(merged).success).toBe(true);
     expect(merged.catalog.sources).toEqual(['offline']);
   });
 });

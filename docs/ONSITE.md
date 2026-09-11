@@ -1,6 +1,6 @@
 # Running it onsite
 
-The kiosk is the show-it-to-people half of astrolens: an image goes in, a
+The kiosk is the show-it-to-people half of ASTELLUM: an image goes in, a
 fullscreen page comes out that visitors touch to find out what they are looking
 at. It is built to work with the network unplugged, and to be operable at arm's
 length in the dark by someone who is also answering questions.
@@ -15,10 +15,10 @@ Install first: [SETUP.md](SETUP.md). Content comes from
 Everything here needs a network. None of it does afterwards.
 
 ```bash
-./quickastrolens prefetch                 # star tables, ~4.5 MB
-./quickastrolens prefetch indexes 64      # plate-solve indexes — pick your field size
-./quickastrolens prefetch targets         # snapshot online answers for annotated targets
-./quickastrolens prefetch check           # confirm, and it says whether you can unplug
+./astellum prefetch                 # star tables, ~4.5 MB
+./astellum prefetch indexes 64      # plate-solve indexes — pick your field size
+./astellum prefetch targets         # snapshot online answers for annotated targets
+./astellum prefetch check           # confirm, and it says whether you can unplug
 ```
 
 `prefetch targets` is the optional one, and worth explaining. The star tables
@@ -31,7 +31,7 @@ Then actually pull the cable and run one frame. A dark field is a bad place to
 discover a missing table.
 
 ```bash
-./quickastrolens kiosk some-image.jpg "M 42"
+./astellum kiosk some-image.jpg "M 42"
 ```
 
 ## Three ways to run it
@@ -39,20 +39,20 @@ discover a missing table.
 **A front door** — the usual one. A page to pick a file from, nothing else:
 
 ```bash
-./quickastrolens kiosk            # → http://localhost:3200
+./astellum kiosk            # → http://localhost:3200
 ```
 
-**One shot** — for a script, or another program driving astrolens. It opens the
+**One shot** — for a script, or another program driving astellum. It opens the
 finished page in a browser when it is done (`--no-open` to suppress):
 
 ```bash
-./quickastrolens kiosk image.fit "NGC 3372"
+./astellum kiosk image.fit "NGC 3372"
 ```
 
 **Watching a folder** — for a stacker that writes its output to disk:
 
 ```bash
-./quickastrolens watch ~/stacks
+./astellum watch ~/stacks
 ```
 
 It waits for the file to stop growing before touching it, guesses the target

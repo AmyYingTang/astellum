@@ -1,9 +1,9 @@
 {
-  "name": "astrolens",
+  "name": "astellum",
   "version": "0.1.0",
   "type": "module",
   "bin": {
-    "astrolens": "./dist/index.js"
+    "astellum": "./dist/index.js"
   },
   "files": [
     "dist"
@@ -12,12 +12,12 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@astrolens/atlas": "workspace:*",
-    "@astrolens/editor": "workspace:*",
-    "@astrolens/identify": "workspace:*",
-    "@astrolens/reader": "workspace:*",
-    "@astrolens/renderer": "workspace:*",
-    "@astrolens/schema": "workspace:*",
+    "@astellum/atlas": "workspace:*",
+    "@astellum/editor": "workspace:*",
+    "@astellum/identify": "workspace:*",
+    "@astellum/reader": "workspace:*",
+    "@astellum/renderer": "workspace:*",
+    "@astellum/schema": "workspace:*",
     "cac": "^6.7.14",
     "sharp": "^0.33.5",
     "express": "^4.21.2"

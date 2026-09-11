@@ -1,6 +1,6 @@
 import type * as React from 'react';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
-import type { Reading, FactSheet } from '@astrolens/schema';
+import type { Reading, FactSheet } from '@astellum/schema';
 import type { ExportFormat } from '../shared.js';
 import {
   exportProject,
@@ -25,7 +25,7 @@ import { getConfig } from './api.js';
 const EXPORT_ORDER: ExportFormat[] = ['annotated', 'embed', 'poster', 'all'];
 
 type SaveMode = 'folder' | 'download';
-const SAVE_MODE_KEY = 'astrolens.saveMode';
+const SAVE_MODE_KEY = 'astellum.saveMode';
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -336,7 +336,7 @@ function Editor({
         return;
       }
       try {
-        dirHandle = await picker({ mode: 'readwrite', startIn: 'downloads', id: 'astrolens-export' });
+        dirHandle = await picker({ mode: 'readwrite', startIn: 'downloads', id: 'astellum-export' });
       } catch {
         return; // user cancelled the picker
       }

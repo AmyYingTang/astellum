@@ -1,11 +1,11 @@
-import { Reading, categoryColorKey, featureColorKey, otypeLabel } from '@astrolens/schema';
+import { Reading, categoryColorKey, featureColorKey, otypeLabel } from '@astellum/schema';
 import type {
   FactSheet,
   FactObject,
   LocalizedString,
   PredefinedLibrary,
   ReadingFallback,
-} from '@astrolens/schema';
+} from '@astellum/schema';
 import { resolvePredefinedText, type PredefinedResult } from './predefinedText.js';
 import { buildTailorPrompt } from './prompt.js';
 import { runClaude, type RunClaudeOptions } from './claudeCli.js';
@@ -409,7 +409,7 @@ function buildReading(
     features,
     extra_facts: opts.extraFacts ?? [],
     created_at: new Date().toISOString(),
-    generator: { tool: 'astrolens', tool_version: opts.toolVersion, llm: opts.llm },
+    generator: { tool: 'astellum', tool_version: opts.toolVersion, llm: opts.llm },
   });
 }
 

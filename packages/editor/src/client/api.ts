@@ -1,4 +1,4 @@
-import type { Reading } from '@astrolens/schema';
+import type { Reading } from '@astellum/schema';
 import type {
   CreateProjectRequest,
   CreateProjectResponse,

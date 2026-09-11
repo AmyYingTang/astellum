@@ -1,8 +1,8 @@
-import { otypeLabel } from '@astrolens/schema';
-import type { ObjectCategory, FeatureType } from '@astrolens/schema';
+import { otypeLabel } from '@astellum/schema';
+import type { ObjectCategory, FeatureType } from '@astellum/schema';
 
 /**
- * SIMBAD otype → astrolens taxonomy. MVP subset; extend as the corpus grows.
+ * SIMBAD otype → astellum taxonomy. MVP subset; extend as the corpus grows.
  * Source-of-truth for tiers is the Notion "可识别特征清单"; this is the machine
  * mapping the gate/select stage uses.
  */
@@ -94,7 +94,7 @@ export function categoryLabel(cat: ObjectCategory): { zh: string; en: string } {
  * Display label for an object's type. Stars get the specific otype gloss
  * (s*r → 红超巨星 / WR* → Wolf–Rayet star) because their category label is just
  * "Star"; everything else keeps its clean category label. Shared gloss table
- * lives in @astrolens/schema so the editor renders identical text.
+ * lives in @astellum/schema so the editor renders identical text.
  */
 export function objectTypeLabel(otype: string, cat: ObjectCategory): { zh: string; en: string } {
   if (cat === 'star') return otypeLabel(otype) ?? categoryLabel(cat);

@@ -10,9 +10,9 @@ const log = (m: string): void => console.error(`[cache] ${m}`);
  *  convention) so old cached solves are ignored instead of replaying stale WCS. */
 const CACHE_VERSION = 2;
 
-/** Default solve-cache dir: ~/.cache/astrolens/solve (content-addressed, repo-independent). */
+/** Default solve-cache dir: ~/.cache/astellum/solve (content-addressed, repo-independent). */
 export function defaultSolveCacheDir(): string {
-  return join(homedir(), '.cache', 'astrolens', 'solve');
+  return join(homedir(), '.cache', 'astellum', 'solve');
 }
 
 async function sha256File(path: string): Promise<string> {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FactSheet, PredefinedLibrary } from '@astrolens/schema';
+import { FactSheet, PredefinedLibrary } from '@astellum/schema';
 import { coverageSummary, resolvePredefinedText } from './predefinedText.js';
 import { readingFromPredefined } from './index.js';
 

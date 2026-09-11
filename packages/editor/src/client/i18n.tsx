@@ -1,6 +1,6 @@
 import type * as React from 'react';
 import { createContext, useCallback, useContext, useState } from 'react';
-import { preferredLang } from '@astrolens/schema';
+import { preferredLang } from '@astellum/schema';
 
 export type UiLang = 'zh' | 'en';
 
@@ -100,14 +100,14 @@ const STRINGS: Record<UiLang, Strings> = {
     solverLabel: '解算器',
     backToHub: '导航',
     readyOffline: '可离线运行',
-    notReadyOffline: '离线星表不全,先跑 astrolens prefetch',
+    notReadyOffline: '离线星表不全,先跑 astellum prefetch',
     readingsCovered: '已录解读',
     savePredefined: '存为预定义解读',
     saveAnnotations: '存入我的标注库',
     savedAnnotations: '已存入标注库',
     savingPredefined: '保存中…',
     savedPredefined: '已存入预定义库',
-    newReadingDesc: '选一张深空摄影图,astrolens 会识别天体并自动标注,然后进入微调页面。',
+    newReadingDesc: '选一张深空摄影图,ASTELLUM 会识别天体并自动标注,然后进入微调页面。',
     pickImage: '选择图片…',
     hintPlaceholder: '对象名提示(可选),如 "Sh2-308"',
     generate: '生成读图',
@@ -188,7 +188,7 @@ const STRINGS: Record<UiLang, Strings> = {
     solverLabel: 'Solver',
     backToHub: 'Home',
     readyOffline: 'Ready offline',
-    notReadyOffline: 'Catalog pack incomplete — run astrolens prefetch',
+    notReadyOffline: 'Catalog pack incomplete — run astellum prefetch',
     readingsCovered: 'Readings',
     savePredefined: 'Save as predefined reading',
     saveAnnotations: 'Save to my atlas overlay',
@@ -196,7 +196,7 @@ const STRINGS: Record<UiLang, Strings> = {
     savingPredefined: 'Saving…',
     savedPredefined: 'Saved to the predefined library',
     newReadingDesc:
-      'Pick a deep-sky photo — astrolens identifies the object, annotates it, then opens the editor.',
+      'Pick a deep-sky photo — ASTELLUM identifies the object, annotates it, then opens the editor.',
     pickImage: 'Choose image…',
     hintPlaceholder: 'Object hint (optional), e.g. "Sh2-308"',
     generate: 'Generate',
@@ -279,7 +279,7 @@ interface LangCtx {
 }
 
 const Ctx = createContext<LangCtx>({ lang: 'zh', setLang: () => {} });
-const STORAGE_KEY = 'astrolens.uiLang';
+const STORAGE_KEY = 'astellum.uiLang';
 
 export function LangProvider({ children }: { children: React.ReactNode }): React.JSX.Element {
   const [lang, setLangState] = useState<UiLang>(

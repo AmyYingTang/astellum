@@ -13,8 +13,8 @@ import {
   contentOverlay,
   Registry,
   pixelToWorld,
-} from '@astrolens/schema';
-import { loadConfig } from '@astrolens/schema/node';
+} from '@astellum/schema';
+import { loadConfig } from '@astellum/schema/node';
 import {
   identify,
   createConfiguredSolveClient,
@@ -31,7 +31,7 @@ import {
   mergeRegistries,
   userRegistryPath,
   defaultRegistryPaths,
-} from '@astrolens/identify';
+} from '@astellum/identify';
 import {
   readingFromFactsheet,
   readingFromPredefined,
@@ -42,8 +42,8 @@ import {
   userReadingsPath,
   tailorReading,
   ReaderError,
-} from '@astrolens/reader';
-import { renderAnnotatedBuffer, generateEmbedHtml, renderPosterBuffers } from '@astrolens/renderer';
+} from '@astellum/reader';
+import { renderAnnotatedBuffer, generateEmbedHtml, renderPosterBuffers } from '@astellum/renderer';
 import type {
   CreateProjectRequest,
   ExportFile,
@@ -177,7 +177,7 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
       config,
       offlineCatalog: isOfflineCatalog(config.catalog.sources),
       // Set when launched from the hub, so the UI can offer a way back.
-      hubUrl: process.env.ASTROLENS_HUB_URL || undefined,
+      hubUrl: process.env.ASTELLUM_HUB_URL || undefined,
       // Style presets are curator copy; the overlay wins over the built-ins.
       stylePresets: contentOverlay().stylePresets,
       readiness: await readiness().catch(() => undefined),
@@ -220,14 +220,14 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
   });
 
   // The nova key is only needed for the nova solver; the local astrometry.net
-  // solver (ASTROLENS_SOLVER=local) needs no key.
+  // solver (ASTELLUM_SOLVER=local) needs no key.
   const requireApiKey = (): string | undefined => {
     const apiKey = process.env.ASTROMETRY_API_KEY;
     // The local solver needs no key — and the active profile, not just the env
     // var, is what decides which solver runs.
     if (!apiKey && config.solve.mode !== 'local' && !isLocalSolver()) {
       throw new Error(
-        'Plate-solving needs a nova API key. Put ASTROMETRY_API_KEY in a .env file (where you run the studio) or export it, then restart — or set ASTROLENS_SOLVER=local for offline solving. Free key from nova.astrometry.net.',
+        'Plate-solving needs a nova API key. Put ASTROMETRY_API_KEY in a .env file (where you run the studio) or export it, then restart — or set ASTELLUM_SOLVER=local for offline solving. Free key from nova.astrometry.net.',
       );
     }
     return apiKey;
@@ -442,7 +442,7 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
   // RETIRED: the AI (VLM) Class-B feature pass. B-class features now come solely
   // from the approved feature atlas (Atlas Apply); the automatic detectors are
   // no longer wired to user-visible rendering. `runAiFeaturePass` stays in
-  // @astrolens/identify but is not exposed here. Kept as a 410 so any stale
+  // @astellum/identify but is not exposed here. Kept as a 410 so any stale
   // client gets a clear signal instead of a 404.
   app.post('/api/projects/:slug/identify-ai', (_req, res) => {
     res.status(410).json({ ok: false, error: 'The AI feature pass is retired — B-class features come from the atlas.' });

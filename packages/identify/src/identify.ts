@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { basename } from 'node:path';
-import { FactSheet, normalizeId, findRegistryEntry, type Registry } from '@astrolens/schema';
+import { FactSheet, normalizeId, findRegistryEntry, type Registry } from '@astellum/schema';
 import type { IdentifyInput, IdentifyDeps, CatalogCandidate } from './types.js';
 import { worldToPixel } from './wcs.js';
 import { objectCategory, isOptical } from './otype.js';

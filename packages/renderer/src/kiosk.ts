@@ -1,4 +1,4 @@
-import { COLOR_PALETTE, type Feature, type Reading } from '@astrolens/schema';
+import { COLOR_PALETTE, type Feature, type Reading } from '@astellum/schema';
 
 /**
  * The onsite display: one fullscreen frame an audience touches.
@@ -230,7 +230,7 @@ export function generateKioskHtml(report: Reading, opts: KioskOptions): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>${esc(report.object.name[lang])} — astrolens</title>
+<title>${esc(report.object.name[lang])} — ASTELLUM</title>
 <link rel="icon" type="image/svg+xml" href="${KIOSK_FAVICON_DATA_URI}">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}

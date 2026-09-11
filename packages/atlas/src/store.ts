@@ -1,6 +1,6 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
-import { PredefinedLibrary } from '@astrolens/schema';
+import { PredefinedLibrary } from '@astellum/schema';
 import { AtlasFile, EMPTY_ATLAS } from './atlas.js';
 
 // Storage adapter (TOOL_HANDOFF §3, §12). Two separable concerns:

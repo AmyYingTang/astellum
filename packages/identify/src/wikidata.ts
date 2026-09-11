@@ -1,5 +1,5 @@
 import { ofetch } from 'ofetch';
-import type { ObjectCategory } from '@astrolens/schema';
+import type { ObjectCategory } from '@astellum/schema';
 
 /**
  * Wikidata enrichment (Notion §11.1 Tier 1). For an object that already has a
@@ -52,7 +52,7 @@ export interface WikidataOptions {
 
 // Wikidata asks API clients to send a descriptive User-Agent (anonymous default
 // UAs get throttled / blocked). https://meta.wikimedia.org/wiki/User-Agent_policy
-const USER_AGENT = 'astrolens/0.1 (deep-sky outreach annotation tool)';
+const USER_AGENT = 'astellum/0.1 (deep-sky outreach annotation tool)';
 
 export function createWikidataClient(opts: WikidataOptions = {}) {
   const api = opts.baseUrl ?? 'https://www.wikidata.org/w/api.php';

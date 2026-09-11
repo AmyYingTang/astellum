@@ -1,8 +1,8 @@
 import { resolve, join } from 'node:path';
 import { homedir } from 'node:os';
 import { spawn } from 'node:child_process';
-import { startAtlasServer } from '@astrolens/atlas';
-import { solverName } from '@astrolens/identify';
+import { startAtlasServer } from '@astellum/atlas';
+import { solverName } from '@astellum/identify';
 
 export interface AtlasArgs {
   dataDir?: string;
@@ -13,11 +13,11 @@ export interface AtlasArgs {
 export async function atlas(args: AtlasArgs): Promise<void> {
   // Default to a per-user dir OUTSIDE the repo so a self-deployer's annotations
   // never clobber the shipped/curated seed (packages/atlas/data). Amy curates
-  // the seed by passing --data-dir packages/atlas/data (quickastrolens does).
-  const dataDir = resolve(args.dataDir ?? join(homedir(), '.astrolens', 'atlas'));
+  // the seed by passing --data-dir packages/atlas/data (astellum does).
+  const dataDir = resolve(args.dataDir ?? join(homedir(), '.astellum', 'atlas'));
   const handle = await startAtlasServer({ dataDir, port: args.port });
 
-  console.log(`astrolens feature-atlas tool running at ${handle.url}`);
+  console.log(`astellum feature-atlas tool running at ${handle.url}`);
   console.log(`Data dir: ${dataDir}`);
   console.log(`Plate-solver: ${solverName()}`);
   console.log('Press Ctrl+C to stop.');

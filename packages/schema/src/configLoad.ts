@@ -3,7 +3,7 @@ import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { ContentOverlay, setContentOverlay } from './content.js';
 import {
-  AstrolensConfig,
+  AstellumConfig,
   DEFAULT_CONFIG,
   PartialConfig,
   fromLegacyProfiles,
@@ -12,22 +12,22 @@ import {
 
 /**
  * Disk + env side of the control file. Server-only (`node:fs`), so it is NOT
- * exported from the package index — @astrolens/schema is bundled into the
- * browser clients. Import it via `@astrolens/schema/node`.
+ * exported from the package index — @astellum/schema is bundled into the
+ * browser clients. Import it via `@astellum/schema/node`.
  *
  * Precedence, lowest to highest:
- *   defaults → ~/.astrolens/config.json → ./astrolens.config.json → env
+ *   defaults → ~/.astellum/config.json → ./astellum.config.json → env
  *
  * Env stays on top so every existing `.env` / `export` recipe keeps working
  * unchanged — the config file adds a layer, it doesn't take one away.
  */
 
 export function userConfigPath(): string {
-  return process.env.ASTROLENS_CONFIG ?? join(homedir(), '.astrolens', 'config.json');
+  return process.env.ASTELLUM_CONFIG ?? join(homedir(), '.astellum', 'config.json');
 }
 
 export function workspaceConfigPath(cwd = process.cwd()): string {
-  return resolve(cwd, 'astrolens.config.json');
+  return resolve(cwd, 'astellum.config.json');
 }
 
 function readJson(path: string): unknown | null {
@@ -52,7 +52,7 @@ function parseConfig(raw: unknown, path: string): PartialConfig | undefined {
 }
 
 /** Read + merge the config files. Missing files are a valid "all defaults" state. */
-export function loadConfigFile(cwd = process.cwd()): AstrolensConfig {
+export function loadConfigFile(cwd = process.cwd()): AstellumConfig {
   const userPath = userConfigPath();
   const wsPath = workspaceConfigPath(cwd);
   let cfg = mergeConfig(DEFAULT_CONFIG, parseConfig(readJson(userPath), userPath));
@@ -63,24 +63,24 @@ export function loadConfigFile(cwd = process.cwd()): AstrolensConfig {
 /**
  * Apply the legacy environment variables on top. These predate the config file
  * and remain the highest-priority override, so an existing
- * `ASTROLENS_SOLVER=local` still wins over anything saved in the UI.
+ * `ASTELLUM_SOLVER=local` still wins over anything saved in the UI.
  */
-export function applyEnvOverrides(config: AstrolensConfig): AstrolensConfig {
-  const out = AstrolensConfig.parse(config);
-  const solver = (process.env.ASTROLENS_SOLVER ?? '').toLowerCase();
+export function applyEnvOverrides(config: AstellumConfig): AstellumConfig {
+  const out = AstellumConfig.parse(config);
+  const solver = (process.env.ASTELLUM_SOLVER ?? '').toLowerCase();
   if (solver === 'local' || solver === 'nova') out.solve.mode = solver;
-  const mode = (process.env.ASTROLENS_READING_MODE ?? '').toLowerCase();
+  const mode = (process.env.ASTELLUM_READING_MODE ?? '').toLowerCase();
   if (mode === 'ai' || mode === 'predefined') out.reading.mode = mode;
-  if (process.env.ASTROLENS_READING_STYLE) out.reading.style = process.env.ASTROLENS_READING_STYLE;
-  const lo = Number(process.env.ASTROLENS_FOV_LOW);
-  const hi = Number(process.env.ASTROLENS_FOV_HIGH);
+  if (process.env.ASTELLUM_READING_STYLE) out.reading.style = process.env.ASTELLUM_READING_STYLE;
+  const lo = Number(process.env.ASTELLUM_FOV_LOW);
+  const hi = Number(process.env.ASTELLUM_FOV_HIGH);
   if (Number.isFinite(lo) && lo > 0) out.solve.fovLowDeg = lo;
   if (Number.isFinite(hi) && hi > 0) out.solve.fovHighDeg = hi;
   return out;
 }
 
 /** The one call every entry point makes. */
-export function loadConfig(opts: { cwd?: string } = {}): AstrolensConfig {
+export function loadConfig(opts: { cwd?: string } = {}): AstellumConfig {
   return applyEnvOverrides(loadConfigFile(opts.cwd));
 }
 
@@ -88,12 +88,12 @@ export function loadConfig(opts: { cwd?: string } = {}): AstrolensConfig {
 
 /** The shipped overlay, edited by whoever curates this deployment. */
 export function contentPath(): string {
-  return process.env.ASTROLENS_CONTENT ?? resolve('packages/atlas/data/content.json');
+  return process.env.ASTELLUM_CONTENT ?? resolve('packages/atlas/data/content.json');
 }
 
 /** A self-deployer's own overrides, merged on top. */
 export function userContentPath(): string {
-  return process.env.ASTROLENS_USER_CONTENT ?? join(homedir(), '.astrolens', 'content.json');
+  return process.env.ASTELLUM_USER_CONTENT ?? join(homedir(), '.astellum', 'content.json');
 }
 
 /**

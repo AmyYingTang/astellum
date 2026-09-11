@@ -1,6 +1,6 @@
 import type * as React from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import type { LocalizedString, PredefinedReading } from '@astrolens/schema';
+import type { LocalizedString, PredefinedReading } from '@astellum/schema';
 
 /**
  * The predefined reading for the target currently open in the atlas.

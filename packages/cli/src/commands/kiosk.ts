@@ -11,16 +11,16 @@ import {
   isOfflineReady,
   isFitsPath,
   fitsToPng,
-} from '@astrolens/identify';
+} from '@astellum/identify';
 import {
   readingFromPredefined,
   loadReadingLibraries,
   defaultReadingsPaths,
   coverageSummary,
-} from '@astrolens/reader';
-import { generateKioskHtml, type KioskState } from '@astrolens/renderer';
-import { loadConfig } from '@astrolens/schema/node';
-import type { FactSheet, Reading } from '@astrolens/schema';
+} from '@astellum/reader';
+import { generateKioskHtml, type KioskState } from '@astellum/renderer';
+import { loadConfig } from '@astellum/schema/node';
+import type { FactSheet, Reading } from '@astellum/schema';
 import { TOOL_VERSION } from '../version.js';
 
 /**
@@ -105,7 +105,7 @@ export async function runKiosk(args: KioskArgs): Promise<KioskResult | null> {
     if (!isOfflineReady(status)) {
       const missing = status.filter((s) => !s.present).map((s) => s.key);
       console.log(`  ⚠ offline catalog pack incomplete (missing: ${missing.join(', ')}).`);
-      console.log('    Run `astrolens prefetch` while you still have a network.');
+      console.log('    Run `astellum prefetch` while you still have a network.');
     }
   }
 

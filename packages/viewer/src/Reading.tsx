@@ -1,6 +1,6 @@
 import type * as React from 'react';
 import { useState } from 'react';
-import { COLOR_PALETTE, type Feature, type Reading as ReadingData } from '@astrolens/schema';
+import { COLOR_PALETTE, type Feature, type Reading as ReadingData } from '@astellum/schema';
 
 function paragraphs(f: Feature, lang: 'zh' | 'en'): string[] {
   return [f.explanation[lang], f.physics?.[lang], f.interesting?.[lang]]
@@ -59,7 +59,7 @@ export function Reading(props: ReadingProps): React.JSX.Element {
   };
 
   return (
-    <div className={`astrolens-reading${className ? ` ${className}` : ''}`}>
+    <div className={`astellum-reading${className ? ` ${className}` : ''}`}>
       <div className="ar-stage">
         <img src={imageSrc} alt={o.name[lang]} onClick={() => setActive(null)} />
         <svg className="ar-svg" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">

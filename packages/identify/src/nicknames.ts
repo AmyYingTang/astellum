@@ -7,7 +7,7 @@
  * map. Keyed by a catalogue designation; extend it as new targets come up.
  */
 
-import { contentOverlay } from '@astrolens/schema';
+import { contentOverlay } from '@astellum/schema';
 
 export interface Nickname {
   en: string;

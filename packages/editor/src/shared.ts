@@ -1,4 +1,4 @@
-import type { Reading, FactSheet, AstrolensConfig, StylePreset } from '@astrolens/schema';
+import type { Reading, FactSheet, AstellumConfig, StylePreset } from '@astellum/schema';
 
 export interface ProjectSummary {
   slug: string;
@@ -91,7 +91,7 @@ export interface ExportResponse {
 export interface ConfigResponse {
   solver: string;
   localSolver: boolean;
-  config: AstrolensConfig;
+  config: AstellumConfig;
   offlineCatalog: boolean;
   /** Present when the hub launched this studio. */
   hubUrl?: string;

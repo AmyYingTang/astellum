@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# astrolens 便捷运行脚本
+# astellum 便捷运行脚本
 #
 set -euo pipefail
 
@@ -11,48 +11,48 @@ cd "$ROOT"
 
 usage() {
   cat <<'EOF'
-astrolens 便捷运行脚本
+astellum 便捷运行脚本
 
-  ./quickastrolens                              打开导航页(工作台 / 标注库 / 现场 / 设置)
-  ./quickastrolens settings                     直接打开设置页
-  ./quickastrolens studio [端口]                 只开工作台(做图:识别 → 微调 → AI 解读 → 海报)
-  ./quickastrolens setup                        安装依赖并构建所有包(首次使用)
-  ./quickastrolens build                        重新构建
-  ./quickastrolens identify <图片> [对象名]       只识别(plate-solve+查目录)→ factsheet.json
-  ./quickastrolens read <图片> [对象名] [语言]    识别 + AI 解读 + 渲染,一步到位
-  ./quickastrolens render <reading.json> [格式]  渲染 annotated|embed|poster|all
-  ./quickastrolens edit <reading.json> [端口]    打开本地编辑器,浏览器里微调圈和文字
-  ./quickastrolens atlas [端口]                  打开基准标注库工具(B 类形态标注,默认端口 3100)
-  ./quickastrolens help                         显示帮助
+  ./astellum                              打开导航页(工作台 / 标注库 / 现场 / 设置)
+  ./astellum settings                     直接打开设置页
+  ./astellum studio [端口]                 只开工作台(做图:识别 → 微调 → AI 解读 → 海报)
+  ./astellum setup                        安装依赖并构建所有包(首次使用)
+  ./astellum build                        重新构建
+  ./astellum identify <图片> [对象名]       只识别(plate-solve+查目录)→ factsheet.json
+  ./astellum read <图片> [对象名] [语言]    识别 + AI 解读 + 渲染,一步到位
+  ./astellum render <reading.json> [格式]  渲染 annotated|embed|poster|all
+  ./astellum edit <reading.json> [端口]    打开本地编辑器,浏览器里微调圈和文字
+  ./astellum atlas [端口]                  打开基准标注库工具(B 类形态标注,默认端口 3100)
+  ./astellum help                         显示帮助
 
 现场(onsite)相关 —— 离线、预定义解读、全屏展示:
 
-  ./quickastrolens prefetch [check|targets|indexes <角分>]
+  ./astellum prefetch [check|targets|indexes <角分>]
                                                 下载离线所需数据(出发前联网跑一次)
                                                   (无参数) = 星表包,约 4.5 MB
                                                   check    = 只报告磁盘上有什么,不下载
                                                   targets  = 预热在线答案快照(按标注库目标)
                                                   indexes  = 解析索引;参数是最小视场角分
                                                              90′≈220MB 60′≈530MB 30′≈2.4GB
-  ./quickastrolens kiosk                        打开现场入口页(选文件:FITS/JPG/PNG,自动出图)
-  ./quickastrolens kiosk <图片> [对象名]          一键:识别 → 预定义解读 → 全屏可点页面(自动开浏览器)
-  ./quickastrolens watch <目录> [对象名]          监听目录,每来一张新图自动出一张全屏页
-  ./quickastrolens readings                     预定义解读覆盖率:哪些目标还没录、缺哪几项
-  ./quickastrolens draft [目标|all]              用 AI 起草预定义解读(联网;写入随包解读库)
+  ./astellum kiosk                        打开现场入口页(选文件:FITS/JPG/PNG,自动出图)
+  ./astellum kiosk <图片> [对象名]          一键:识别 → 预定义解读 → 全屏可点页面(自动开浏览器)
+  ./astellum watch <目录> [对象名]          监听目录,每来一张新图自动出一张全屏页
+  ./astellum readings                     预定义解读覆盖率:哪些目标还没录、缺哪几项
+  ./astellum draft [目标|all]              用 AI 起草预定义解读(联网;写入随包解读库)
 
 可改的文字(不用重新构建,存盘即生效):
   packages/atlas/data/content.json              通用说明 / 民间俗名 / 风格预设 / 给 AI 的写作要求
                                                 (省略哪项就用内置的;文件里有说明)
 
 提示:把 ASTROMETRY_API_KEY 放进仓库根的 .env(identify / read / studio 都会自动读)。
-提示:现场模式请先 `./quickastrolens prefetch`,再用 `prefetch check` 确认可以断网。
+提示:现场模式请先 `./astellum prefetch`,再用 `prefetch check` 确认可以断网。
 
 示例:
-  ./quickastrolens setup
-  ./quickastrolens identify new/NGC3372_annotated.jpg "NGC 3372"
-  ./quickastrolens read new/NGC3372_annotated.jpg "NGC 3372"
-  ./quickastrolens edit out/NGC3372_annotated/reading.json
-  ./quickastrolens kiosk new/NGC3372_annotated.jpg "NGC 3372"
+  ./astellum setup
+  ./astellum identify new/NGC3372_annotated.jpg "NGC 3372"
+  ./astellum read new/NGC3372_annotated.jpg "NGC 3372"
+  ./astellum edit out/NGC3372_annotated/reading.json
+  ./astellum kiosk new/NGC3372_annotated.jpg "NGC 3372"
 EOF
 }
 
@@ -76,7 +76,7 @@ case "$cmd" in
   hub)
     ensure_built
     # One page in front of the three surfaces. Curator context throughout →
-    # the atlas edits the shipped seed, not ~/.astrolens.
+    # the atlas edits the shipped seed, not ~/.astellum.
     node "$CLI" hub --atlas-data-dir "$ROOT/packages/atlas/data"
     ;;
 
@@ -99,7 +99,7 @@ case "$cmd" in
     pnpm install
     echo "==> pnpm build"
     pnpm build
-    echo "==> 完成。把 key 放进 .env,然后试试: ./quickastrolens identify new/NGC3372_annotated.jpg"
+    echo "==> 完成。把 key 放进 .env,然后试试: ./astellum identify new/NGC3372_annotated.jpg"
     ;;
 
   build)
@@ -110,7 +110,7 @@ case "$cmd" in
   identify)
     shift
     if [ $# -lt 1 ]; then
-      echo "用法: ./quickastrolens identify <图片> [对象名]" >&2
+      echo "用法: ./astellum identify <图片> [对象名]" >&2
       exit 1
     fi
     ensure_built
@@ -130,7 +130,7 @@ case "$cmd" in
   read)
     shift
     if [ $# -lt 1 ]; then
-      echo "用法: ./quickastrolens read <图片> [对象名] [语言 zh|en]" >&2
+      echo "用法: ./astellum read <图片> [对象名] [语言 zh|en]" >&2
       exit 1
     fi
     ensure_built
@@ -160,7 +160,7 @@ case "$cmd" in
   render)
     shift
     if [ $# -lt 1 ]; then
-      echo "用法: ./quickastrolens render <reading.json> [格式 annotated|embed|poster|all]" >&2
+      echo "用法: ./astellum render <reading.json> [格式 annotated|embed|poster|all]" >&2
       exit 1
     fi
     ensure_built
@@ -172,7 +172,7 @@ case "$cmd" in
   edit)
     shift
     if [ $# -lt 1 ]; then
-      echo "用法: ./quickastrolens edit <reading.json> [端口]" >&2
+      echo "用法: ./astellum edit <reading.json> [端口]" >&2
       exit 1
     fi
     ensure_built
@@ -189,7 +189,7 @@ case "$cmd" in
     ensure_built
     # This wrapper is the seed-curation entry point → write the shipped seed
     # (packages/atlas/data). Self-deployers extending their own atlas use the
-    # bare CLI (`astrolens atlas`), which defaults to ~/.astrolens/atlas.
+    # CLI directly (node packages/cli/dist/index.js atlas), which defaults to ~/.astellum/atlas.
     args=(atlas --data-dir "$ROOT/packages/atlas/data")
     if [ $# -ge 1 ]; then args+=(--port "$1"); fi
     node "$CLI" "${args[@]}"
@@ -203,7 +203,7 @@ case "$cmd" in
       targets) node "$CLI" prefetch --targets ;;
       indexes)
         if [ $# -lt 2 ]; then
-          echo "用法: ./quickastrolens prefetch indexes <最小视场角分>" >&2
+          echo "用法: ./astellum prefetch indexes <最小视场角分>" >&2
           echo "  例如 60 = 支持 1 度以上的视场,约 530 MB" >&2
           exit 1
         fi
@@ -211,7 +211,7 @@ case "$cmd" in
         ;;
       "")      node "$CLI" prefetch ;;
       *)
-        echo "用法: ./quickastrolens prefetch [check|targets|indexes <角分>]" >&2
+        echo "用法: ./astellum prefetch [check|targets|indexes <角分>]" >&2
         exit 1
         ;;
     esac
@@ -239,7 +239,7 @@ case "$cmd" in
   watch)
     shift
     if [ $# -lt 1 ]; then
-      echo "用法: ./quickastrolens watch <目录> [对象名]" >&2
+      echo "用法: ./astellum watch <目录> [对象名]" >&2
       exit 1
     fi
     ensure_built
@@ -260,7 +260,7 @@ case "$cmd" in
     shift
     ensure_built
     # Curator context, same as `atlas` above: drafts belong in the shipped
-    # library (packages/atlas/data), not in one person's ~/.astrolens.
+    # library (packages/atlas/data), not in one person's ~/.astellum.
     lib="$ROOT/packages/atlas/data/readings.json"
     args=(readings-draft --out "$lib")
     case "${1:-}" in

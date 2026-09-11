@@ -26,7 +26,7 @@ import { createOpenNgcCatalogClient, OPENNGC_CSV_URL } from './openngc.js';
 const log = (m: string): void => console.error(`[offline] ${m}`);
 
 export function defaultOfflineDir(): string {
-  return process.env.ASTROLENS_CATALOG_DIR ?? join(homedir(), '.cache', 'astrolens', 'catalogs');
+  return process.env.ASTELLUM_CATALOG_DIR ?? join(homedir(), '.cache', 'astellum', 'catalogs');
 }
 
 const ASU_URL = 'https://vizier.cds.unistra.fr/viz-bin/asu-tsv';
@@ -114,7 +114,7 @@ export async function offlineCatalogStatus(dir = defaultOfflineDir()): Promise<C
     }
   }
   try {
-    const path = join(homedir(), '.cache', 'astrolens', 'openngc', 'NGC.csv');
+    const path = join(homedir(), '.cache', 'astellum', 'openngc', 'NGC.csv');
     const { size } = await stat(path);
     out.push({ key: 'openngc', present: true, bytes: size });
   } catch {
@@ -129,7 +129,7 @@ export function isOfflineReady(status: CatalogStatus[]): boolean {
 }
 
 export interface OfflineCatalogOptions {
-  /** Pack directory. Default `~/.cache/astrolens/catalogs`. */
+  /** Pack directory. Default `~/.cache/astellum/catalogs`. */
   dir?: string;
   /** Include OpenNGC (NGC/IC/M). Default true — it carries most targets. */
   openngc?: boolean;
@@ -176,7 +176,7 @@ export function createOfflineCatalogClient(opts: OfflineCatalogOptions = {}): Ca
         if (missing.length) {
           log(
             `missing tables: ${missing.join(', ')} — coverage is reduced. ` +
-              `Run \`astrolens prefetch\` while you still have a network.`,
+              `Run \`astellum prefetch\` while you still have a network.`,
           );
         }
         log(`loaded ${all.length} objects from ${loaded.length} tables (${loaded.join(' ')})`);

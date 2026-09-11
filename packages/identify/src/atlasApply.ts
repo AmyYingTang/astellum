@@ -13,7 +13,7 @@ import {
   type RegistryAnnotation,
   type FeatureTypeKey,
   type ObjectCategory,
-} from '@astrolens/schema';
+} from '@astellum/schema';
 
 // Atlas Apply — the B-class feature source. For each identified A-object, look it
 // up in the approved atlas registry; project the stored ICRS annotations onto the
@@ -65,11 +65,11 @@ export function defaultRegistryPath(): string {
 }
 
 /** A self-deployer's local overlay registry (their own approved annotations):
- *  `$ATLAS_USER_REGISTRY`, else `~/.astrolens/atlas/registry.json`. Merged on
+ *  `$ATLAS_USER_REGISTRY`, else `~/.astellum/atlas/registry.json`. Merged on
  *  top of the baseline so users extend coverage without touching the shipped
  *  data. */
 export function userRegistryPath(): string {
-  return process.env.ATLAS_USER_REGISTRY ?? join(homedir(), '.astrolens', 'atlas', 'registry.json');
+  return process.env.ATLAS_USER_REGISTRY ?? join(homedir(), '.astellum', 'atlas', 'registry.json');
 }
 
 /** The layered default: baseline first, then the user overlay. */

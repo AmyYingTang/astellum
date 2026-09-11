@@ -8,8 +8,8 @@ import {
   pickStyle,
   findPredefined,
   type RegistryEntry,
-} from '@astrolens/schema';
-import { loadRegistries, defaultRegistryPaths } from '@astrolens/identify';
+} from '@astellum/schema';
+import { loadRegistries, defaultRegistryPaths } from '@astellum/identify';
 import {
   draftPredefinedStyle,
   draftToEntry,
@@ -17,7 +17,7 @@ import {
   loadReadingLibrary,
   defaultReadingsPaths,
   userReadingsPath,
-} from '@astrolens/reader';
+} from '@astellum/reader';
 
 /**
  * Manage the predefined reading library: see what's covered, and draft what
@@ -83,7 +83,7 @@ export async function readingsStatus(args: ReadingsArgs = {}): Promise<void> {
   }
   console.log(`\n  已审核 ${done} · 待审草稿 ${draft} · 未录入 ${none}`);
   if (none) {
-    console.log('  批量起草: `astrolens readings-draft --all`  (或 `./quickastrolens draft all`)');
+    console.log('  批量起草: `astellum readings-draft --all`  (或 `./astellum draft all`)');
   }
 }
 

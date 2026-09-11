@@ -20,7 +20,7 @@ import {
   worldToPixel,
   type Reading,
   type Wcs,
-} from '@astrolens/schema';
+} from '@astellum/schema';
 import type { Action } from './state.js';
 import { useUi } from './i18n.js';
 

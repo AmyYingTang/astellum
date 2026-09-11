@@ -281,7 +281,7 @@ export function createLocalSolveClient(opts: LocalSolveOptions = {}): SolveClien
     // harder smooths the gas away and leaves the stars. Small frames can't
     // afford it, so scale with the image.
     const downsample = opts.downsample ?? (Math.max(input.width, input.height) >= 3000 ? 4 : 2);
-    const dir = await mkdtemp(join(tmpdir(), 'astrolens-solve-'));
+    const dir = await mkdtemp(join(tmpdir(), 'astellum-solve-'));
     const base = join(dir, 'solve');
     try {
       const args = [

@@ -1,7 +1,7 @@
 {
   "_readme": [
     "策展人可改的文字。任何一项省略就用代码里的内置版本 —— 空文件也是合法的。",
-    "改完存盘即生效,不需要 ./quickastrolens build。",
+    "改完存盘即生效,不需要 ./astellum build。",
     "Curator-editable text. Anything omitted falls back to the built-in value."
   ],
   "_featureNotes": [

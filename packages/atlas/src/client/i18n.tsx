@@ -1,11 +1,11 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
-import { preferredLang } from '@astrolens/schema';
+import { preferredLang } from '@astellum/schema';
 
 // Minimal bilingual layer. The starting language follows the browser's locale
 // and the choice is remembered; UI strings are keyed, while annotation labels
 // are stored bilingually in the data, not here.
 
-const LANG_KEY = 'astrolens.atlas.lang';
+const LANG_KEY = 'astellum.atlas.lang';
 
 export type Lang = 'zh' | 'en';
 

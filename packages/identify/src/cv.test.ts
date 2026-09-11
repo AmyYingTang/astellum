@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { Wcs } from '@astrolens/schema';
+import type { Wcs } from '@astellum/schema';
 import { detectCvFeatures } from './cv.js';
 import type { DerivableObject } from './features.js';
 import type { LuminanceSampler } from './luminance.js';

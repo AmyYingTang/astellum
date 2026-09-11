@@ -1,5 +1,5 @@
 import sharp from 'sharp';
-import { COLOR_PALETTE, type Reading } from '@astrolens/schema';
+import { COLOR_PALETTE, type Reading } from '@astellum/schema';
 
 function escapeXml(s: string): string {
   return s

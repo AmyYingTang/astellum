@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Registry } from '@astrolens/schema';
+import { Registry } from '@astellum/schema';
 import { buildDraftPrompt, draftPredefinedStyle, draftToEntry, draftWordCount } from './draft.js';
 
 const registry = Registry.parse({

@@ -11,8 +11,8 @@ import {
   bandsForField,
   indexUrls,
   isComplete,
-} from '@astrolens/identify';
-import { loadConfig } from '@astrolens/schema/node';
+} from '@astellum/identify';
+import { loadConfig } from '@astellum/schema/node';
 import { mkdir, writeFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
@@ -56,7 +56,7 @@ export async function prefetchCatalogs(args: PrefetchArgs = {}): Promise<void> {
     const snap = await catalogCacheStatus();
     console.log(
       `\nOnline-answer snapshot: ${snap.entries} field(s), ${(snap.bytes / 1024).toFixed(0)} KB` +
-        `${snap.entries ? '' : ' — none yet (astrolens prefetch --targets)'}`,
+        `${snap.entries ? '' : ' — none yet (astellum prefetch --targets)'}`,
     );
 
     const cfg = loadConfig();
@@ -68,7 +68,7 @@ export async function prefetchCatalogs(args: PrefetchArgs = {}): Promise<void> {
     if (isOfflineReady(status)) {
       console.log('Ready to run with the network unplugged.');
     } else {
-      console.log('NOT ready — run `astrolens prefetch` while you still have a network.');
+      console.log('NOT ready — run `astellum prefetch` while you still have a network.');
       if (offline) process.exitCode = 1; // the active profile depends on it
     }
     return;
@@ -164,6 +164,6 @@ export async function prefetchCatalogs(args: PrefetchArgs = {}): Promise<void> {
     console.log('\nRe-run to retry the failed ones; the rest are already cached.');
     process.exitCode = 1;
   } else {
-    console.log('Run `astrolens prefetch --check` any time to confirm.');
+    console.log('Run `astellum prefetch --check` any time to confirm.');
   }
 }

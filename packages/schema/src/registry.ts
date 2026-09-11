@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 // The atlas registry: the read-optimized, approved-only artifact the annotation
-// tool (@astrolens/atlas) exports and the identification pipeline (@astrolens/
-// identify) consumes at apply time. It lives in @astrolens/schema so both sides
+// tool (@astellum/atlas) exports and the identification pipeline (@astellum/
+// identify) consumes at apply time. It lives in @astellum/schema so both sides
 // share one contract without a package dependency cycle (atlas → identify).
 //
 // Geometry vertices are ICRS [RA_deg, Dec_deg], degrees. This is a SUBSET of the
