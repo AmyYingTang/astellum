@@ -125,6 +125,28 @@ body {
   color: #0d1017;
   font-weight: 600;
 }
+/* Delete sits quiet next to Adjust until it is armed — it is the one control
+   in this list that destroys work, and the atlas has no undo. */
+.del-btn {
+  flex: none;
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--muted);
+  width: auto;
+}
+.del-btn:hover {
+  color: #f7768e;
+  border-color: #f7768e;
+}
+.del-btn.armed {
+  background: #f7768e;
+  border-color: #f7768e;
+  color: #1a1016;
+  font-weight: 600;
+}
 /* The name (flex:1) grows to fill, pushing the controls to the right — so no
    auto margins here (an auto margin would eat the free space and collapse the
    name to zero width). */

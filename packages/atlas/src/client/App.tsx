@@ -119,6 +119,9 @@ export function App(): JSX.Element {
   // Which committed annotation is open for geometry editing (drag vertices /
   // whole shape). Only honoured in edit mode when not drawing.
   const [editShapeId, setEditShapeId] = useState<string | null>(null);
+  /** Which row's Delete is armed. Deleting is one careless click away from
+   *  losing hand-drawn work that has no undo, so the button asks once. */
+  const [confirmDel, setConfirmDel] = useState<string | null>(null);
   // In the existing-entry flow the draw controls start collapsed — reviewing is
   // the common case there, adding another feature is the exception.
   const [addOpen, setAddOpen] = useState(false);
@@ -331,6 +334,18 @@ export function App(): JSX.Element {
   const finishSave = (): void => {
     finishShape(); // commits if enough points; clears the draft + name inputs
     setDrawing(false);
+  };
+
+  /**
+   * Drop an annotation. Shared by the × on the shape and the list's Delete, so
+   * both do exactly the same thing: remove it from the working set. Nothing
+   * leaves disk until the entry is saved, and the save replaces the whole
+   * annotation list — which is also why there is no undo once it is saved.
+   */
+  const removeAnnotation = (id: string): void => {
+    setAnnotations((xs) => xs.filter((y) => y.id !== id));
+    setEditShapeId((cur) => (cur === id ? null : cur));
+    setConfirmDel((cur) => (cur === id ? null : cur));
   };
 
   const setAnnoStatus = (id: string, status: AnnoStatus): void => {
@@ -567,6 +582,16 @@ export function App(): JSX.Element {
               {editShapeId === a.id ? t('adjustDone') : t('adjust')}
             </button>
           )}
+          {canEdit && (
+            <button
+              className={confirmDel === a.id ? 'del-btn armed' : 'del-btn'}
+              title={t('delTitle')}
+              onClick={() => (confirmDel === a.id ? removeAnnotation(a.id) : setConfirmDel(a.id))}
+              onBlur={() => setConfirmDel((cur) => (cur === a.id ? null : cur))}
+            >
+              {confirmDel === a.id ? t('delConfirm') : t('del')}
+            </button>
+          )}
           {canEdit ? (
             <select
               className={`st st-${a.status}`}
@@ -792,10 +817,7 @@ export function App(): JSX.Element {
               draft={draft}
               editShapeId={editable && !drawing ? editShapeId : null}
               onAddPoint={onAddPoint}
-              onDeleteShape={(id) => {
-                setAnnotations((xs) => xs.filter((y) => y.id !== id));
-                setEditShapeId((cur) => (cur === id ? null : cur));
-              }}
+              onDeleteShape={removeAnnotation}
               onEditShape={onEditShape}
               onMoveLabel={onMoveLabel}
             />
