@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { badgeAnchor, maxBadgeDrift } from './badge.js';
+import { badgeAnchor, maxBadgeDrift, pinWithinReach } from './badge.js';
 
 /** Distance from a point to the nearest point of a polyline. */
 function distToPath(p: [number, number], pts: [number, number][]): number {
@@ -63,5 +63,41 @@ describe('badgeAnchor', () => {
   it('caps drift relative to the badge size', () => {
     expect(maxBadgeDrift(10)).toBeGreaterThan(10);
     expect(maxBadgeDrift(20)).toBe(maxBadgeDrift(10) * 2);
+  });
+});
+
+/**
+ * A curator drags a label into place on the atlas reference image, and it is
+ * stored in sky coordinates — so it follows the feature onto frames shot at
+ * other scales and rotations, where the spot that read well can land on
+ * nothing. Their placement still wins; it just stops winning once it has come
+ * loose from the mark it names.
+ */
+describe('pinWithinReach', () => {
+  const line: [number, number][] = [
+    [100, 100],
+    [200, 200],
+  ];
+  const f = { shape: 'polyline', polygon: line, circle: { cx: 150, cy: 150, r: 70 } };
+
+  it('honours a placement that sits by its mark', () => {
+    expect(pinWithinReach(f, [160, 140], 30)).toBe(true);
+  });
+
+  it('gives up on one that has come adrift', () => {
+    expect(pinWithinReach(f, [600, 100], 30)).toBe(false);
+  });
+
+  it('allows exactly what the spread allows, so one number cannot outreach the other', () => {
+    const bubbleR = 30;
+    const justInside: [number, number] = [150 + maxBadgeDrift(bubbleR) * 0.9, 150];
+    const justOutside: [number, number] = [150 + maxBadgeDrift(bubbleR) * 1.6, 150];
+    expect(pinWithinReach(f, justInside, bubbleR)).toBe(true);
+    expect(pinWithinReach(f, justOutside, bubbleR)).toBe(false);
+  });
+
+  it('measures from the stroke of a long shape, not from its middle', () => {
+    // Far from the centre but right on the line: the eye reads it as attached.
+    expect(pinWithinReach(f, [198, 196], 30)).toBe(true);
   });
 });

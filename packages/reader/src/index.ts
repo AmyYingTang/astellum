@@ -5,6 +5,7 @@ import {
   featureColorKey,
   maxBadgeDrift,
   otypeLabel,
+  pinWithinReach,
 } from '@astellum/schema';
 import type {
   FactSheet,
@@ -141,7 +142,10 @@ interface Spreadable {
 function spreadBadges(features: Spreadable[], width: number, height: number): void {
   const pts = features.map((f) => {
     const [ax, ay] = badgeAnchor(f, f.badge.bubble_r);
-    const pinned = !!f.label_pixel;
+    // A curator's placement wins — unless it has drifted off the mark it names,
+    // which a sky-coordinate anchor does as soon as the framing changes. Then
+    // it stops being a placement and the automatic anchor takes over.
+    const pinned = !!f.label_pixel && pinWithinReach(f, f.label_pixel, f.badge.bubble_r);
     return {
       x: pinned ? f.label_pixel![0] : ax,
       y: pinned ? f.label_pixel![1] : ay,

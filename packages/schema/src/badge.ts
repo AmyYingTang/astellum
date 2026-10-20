@@ -108,6 +108,48 @@ export function badgeAnchor(f: BadgeAnchorFeature, bubbleR: number): [number, nu
   ];
 }
 
+/** Distance from a point to the drawn mark itself — the stroke, not its centre. */
+function distanceToMark(f: BadgeAnchorFeature, p: [number, number]): number {
+  const poly = f.polygon ?? undefined;
+  if (poly && poly.length >= 2) {
+    let best = Infinity;
+    const n = f.shape === 'polygon' ? poly.length : poly.length - 1;
+    for (let i = 0; i < n; i++) {
+      const a = poly[i]!;
+      const b = poly[(i + 1) % poly.length]!;
+      const vx = b[0] - a[0];
+      const vy = b[1] - a[1];
+      const len2 = vx * vx + vy * vy || 1;
+      const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * vx + (p[1] - a[1]) * vy) / len2));
+      best = Math.min(best, Math.hypot(p[0] - (a[0] + vx * t), p[1] - (a[1] + vy * t)));
+    }
+    return best;
+  }
+  return Math.abs(Math.hypot(p[0] - f.circle.cx, p[1] - f.circle.cy) - f.circle.r);
+}
+
+/**
+ * Whether a curator's own label placement can still be honoured.
+ *
+ * A label dragged into place in the atlas is stored in sky coordinates, so it
+ * follows the feature onto every other image of the same target — including
+ * ones framed and rotated differently, where a spot that read well on the
+ * reference image can land somewhere meaningless. Past this distance the
+ * placement is no longer saying "put it here", it is just a number adrift, and
+ * the automatic anchor serves the viewer better.
+ *
+ * The allowance is the same one the spread gets, because the viewer cannot
+ * tell which of the two put a number where it is — only whether it reads as
+ * belonging to the mark beside it.
+ */
+export function pinWithinReach(
+  f: BadgeAnchorFeature,
+  pin: [number, number],
+  bubbleR: number,
+): boolean {
+  return distanceToMark(f, pin) <= maxBadgeDrift(bubbleR);
+}
+
 /**
  * How far the overlap spread may drag a badge away from its anchor.
  *
