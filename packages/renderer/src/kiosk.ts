@@ -600,6 +600,11 @@ html,body{height:100%;overflow:hidden;background:#05070c;
 .k-feat.active .k-badge,.k-feat.active .k-num{opacity:1;}
 .k-feat.active .k-badge{transform:scale(1.18);}
 #k-svg.has-active .k-feat:not(.active) .k-label{opacity:.3;}
+/* The slab has to fade harder than the word on it. Opacity multiplies down the
+   tree, so a plate dimmed on its own account all but disappears while its text
+   merely recedes — otherwise a faded label reads as a grey smear laid over the
+   photograph, which is what a reader noticed on the dust lane. */
+#k-svg.has-active .k-feat:not(.active) .k-plate{opacity:.18;}
 /* Dropped because its plate had nowhere to go. Coming near brings it back —
    the rule below outranks this one, which is the whole reason it may go. */
 .k-label.crowded{opacity:0;}

@@ -192,6 +192,19 @@ describe('the invitation', () => {
   });
 });
 
+// A reader saw "a shadow" over the dust lane: it was a neighbour's plate,
+// faded as a whole and still reading as a grey slab on the photograph.
+describe('faded names', () => {
+  it('fades the slab harder than the word standing on it', () => {
+    const html = generateKioskHtml(report, { imageDataUri: 'data:...' });
+    const group = /#k-svg\.has-active \.k-feat:not\(\.active\) \.k-label\{opacity:([\d.]+)/.exec(html)?.[1];
+    const plate = /#k-svg\.has-active \.k-feat:not\(\.active\) \.k-plate\{opacity:([\d.]+)/.exec(html)?.[1];
+    expect(Number(plate)).toBeLessThan(Number(group));
+    // Opacity multiplies down the tree, so what lands on the picture is tiny.
+    expect(Number(plate) * Number(group)).toBeLessThan(0.1);
+  });
+});
+
 describe('the magnified crop', () => {
   it('dims around the region instead of outlining it', () => {
     const html = generateKioskHtml(report, { imageDataUri: 'data:...' });
