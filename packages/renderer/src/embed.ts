@@ -1,4 +1,4 @@
-import { COLOR_PALETTE, type Feature, type Reading } from '@astellum/schema';
+import { COLOR_PALETTE, badgeAnchor, type Feature, type Reading } from '@astellum/schema';
 
 function paragraphs(f: Feature, lang: 'zh' | 'en'): string[] {
   return [f.explanation[lang], f.physics?.[lang], f.interesting?.[lang]]
@@ -32,8 +32,9 @@ export function generateEmbedHtml(report: Reading, opts: EmbedOptions): string {
     .map((f) => {
       const c = COLOR_PALETTE[f.color_key];
       const { cx, cy, r } = f.circle;
-      const bx = cx + (r + f.badge.bubble_r) * 0.7071 + f.badge.offset_x;
-      const by = cy - (r + f.badge.bubble_r) * 0.7071 + f.badge.offset_y;
+      const [ax, ay] = badgeAnchor(f, f.badge.bubble_r);
+      const bx = ax + f.badge.offset_x;
+      const by = ay + f.badge.offset_y;
       const fs = f.badge.bubble_r * 1.1;
       // A comet nucleus is a small filled dot; everything else a ring at circle.r.
       const mark =

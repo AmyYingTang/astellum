@@ -79,6 +79,22 @@ describe('kiosk chrome', () => {
   });
 });
 
+// A frame is a file: the language it was built in is frozen into it, while the
+// operator may have switched theirs on another surface since. Both languages
+// ship in the page, so it starts in whichever they chose last.
+describe('frame language', () => {
+  it('reads the shared cookie on load and flips to it', () => {
+    const html = generateKioskHtml(report, { imageDataUri: 'data:...' });
+    expect(html).toContain('astellum_lang=(zh|en)');
+    expect(html).toContain('applyLang(want)');
+  });
+
+  it('still bakes in the reading\u2019s own language, for a page with no cookie jar', () => {
+    const html = generateKioskHtml(report, { imageDataUri: 'data:...' });
+    expect(html).toContain('<html lang="zh">');
+  });
+});
+
 describe('kiosk shell', () => {
   it('carries the same chrome as a frame', () => {
     const html = generateKioskShellHtml({ hubUrl: 'http://localhost:3000/', picker });

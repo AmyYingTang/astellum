@@ -1,4 +1,11 @@
-import { Reading, categoryColorKey, featureColorKey, otypeLabel } from '@astellum/schema';
+import {
+  Reading,
+  badgeAnchor,
+  categoryColorKey,
+  featureColorKey,
+  maxBadgeDrift,
+  otypeLabel,
+} from '@astellum/schema';
 import type {
   FactSheet,
   FactObject,
@@ -118,9 +125,9 @@ interface BuildOptions {
   extraFacts?: LocalizedString[];
 }
 
-const BADGE_ANCHOR = 0.7071;
-
 interface Spreadable {
+  shape?: string;
+  polygon?: [number, number][] | null;
   circle: { cx: number; cy: number; r: number };
   badge: { offset_x: number; offset_y: number; bubble_r: number };
   /** Curator-placed label position (display px), from an atlas label_anchor.
@@ -133,8 +140,7 @@ interface Spreadable {
  * A badge with an explicit label_pixel is pinned — a human put it there. */
 function spreadBadges(features: Spreadable[], width: number, height: number): void {
   const pts = features.map((f) => {
-    const ax = f.circle.cx + (f.circle.r + f.badge.bubble_r) * BADGE_ANCHOR;
-    const ay = f.circle.cy - (f.circle.r + f.badge.bubble_r) * BADGE_ANCHOR;
+    const [ax, ay] = badgeAnchor(f, f.badge.bubble_r);
     const pinned = !!f.label_pixel;
     return {
       x: pinned ? f.label_pixel![0] : ax,
@@ -186,8 +192,22 @@ function spreadBadges(features: Spreadable[], width: number, height: number): vo
   }
   features.forEach((f, i) => {
     const p = pts[i]!;
-    f.badge.offset_x = Math.round(p.x - p.ax);
-    f.badge.offset_y = Math.round(p.y - p.ay);
+    let dx = p.x - p.ax;
+    let dy = p.y - p.ay;
+    // A human-placed label goes exactly where they put it. Everything else
+    // stays within reach of its own mark: a badge the spread has shoved across
+    // the frame is a number in empty sky, which costs the viewer more than the
+    // overlap it was avoiding.
+    if (!p.pinned) {
+      const drift = Math.hypot(dx, dy);
+      const cap = maxBadgeDrift(f.badge.bubble_r);
+      if (drift > cap) {
+        dx = (dx / drift) * cap;
+        dy = (dy / drift) * cap;
+      }
+    }
+    f.badge.offset_x = Math.round(dx);
+    f.badge.offset_y = Math.round(dy);
   });
 }
 

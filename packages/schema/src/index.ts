@@ -5,6 +5,8 @@ export type { PaletteEntry } from './colorKeys.js';
 
 // Presentation layer (Stage 2) — annotations / explanations / poster.
 export * from './reading.js';
+// One definition of where a badge sits; every renderer and the spread share it.
+export { badgeAnchor, maxBadgeDrift, type BadgeAnchorFeature } from './badge.js';
 
 // Identification stage (Stage 1) — grounded fact sheet + taxonomy + WCS.
 export * from './i18n.js';

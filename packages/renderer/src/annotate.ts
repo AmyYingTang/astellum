@@ -1,5 +1,5 @@
 import sharp from 'sharp';
-import { COLOR_PALETTE, type Reading } from '@astellum/schema';
+import { COLOR_PALETTE, badgeAnchor, type Reading } from '@astellum/schema';
 
 function escapeXml(s: string): string {
   return s
@@ -85,8 +85,9 @@ export function buildOverlaySvg(report: Reading): string {
     const br = f.badge.bubble_r;
     const clamp = (v: number, lo: number, hi: number): number =>
       hi < lo ? (lo + hi) / 2 : Math.max(lo, Math.min(hi, v));
-    const bx = clamp(cx + (r + br) * 0.7071 + f.badge.offset_x, br, width - br);
-    const by = clamp(cy - (r + br) * 0.7071 + f.badge.offset_y, br, height - br);
+    const [ax, ay] = badgeAnchor(f, br);
+    const bx = clamp(ax + f.badge.offset_x, br, width - br);
+    const by = clamp(ay + f.badge.offset_y, br, height - br);
     const fontSize = Math.round(br * 1.1);
     parts.push(
       `<circle cx="${bx}" cy="${by}" r="${br}" fill="${color.badge}" stroke="#0b0e14" stroke-width="${Math.max(1, Math.round(strokeW / 2))}"/>`,

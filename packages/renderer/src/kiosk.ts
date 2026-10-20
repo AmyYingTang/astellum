@@ -1,4 +1,4 @@
-import { COLOR_PALETTE, type Feature, type Reading } from '@astellum/schema';
+import { COLOR_PALETTE, badgeAnchor, type Feature, type Reading } from '@astellum/schema';
 
 /**
  * The onsite display: one fullscreen frame an audience touches.
@@ -383,8 +383,9 @@ export function generateKioskHtml(report: Reading, opts: KioskOptions): string {
       // that work (badges start covering each other). Reach is added below with
       // an invisible hit circle instead, which costs the layout nothing.
       const bR = f.badge.bubble_r;
-      const bx = cx + (r + bR) * 0.7071 + f.badge.offset_x;
-      const by = cy - (r + bR) * 0.7071 + f.badge.offset_y;
+      const [ax, ay] = badgeAnchor(f, bR);
+      const bx = ax + f.badge.offset_x;
+      const by = ay + f.badge.offset_y;
       const shape =
         f.shape === 'polygon' && f.polygon?.length
           ? `<polygon class="k-mark" points="${f.polygon.map((p) => p.join(',')).join(' ')}" fill="none" stroke="${c.stroke}" stroke-width="${strokeW}"/>`
@@ -394,7 +395,7 @@ export function generateKioskHtml(report: Reading, opts: KioskOptions): string {
       return `<g class="k-feat" data-f="${esc(f.id)}" tabindex="0" role="button">
   ${shape}
   <circle class="k-badge" cx="${bx}" cy="${by}" r="${bR}" fill="${c.badge}" stroke="#0b0e14" stroke-width="${Math.max(1, strokeW / 2)}"/>
-  <text x="${bx}" y="${by}" font-size="${bR * 1.15}" font-weight="700" fill="#0b0e14" text-anchor="middle" dominant-baseline="central">${esc(f.badge.num)}</text>
+  <text class="k-num" x="${bx}" y="${by}" font-size="${bR * 1.15}" font-weight="700" fill="#0b0e14" text-anchor="middle" dominant-baseline="central">${esc(f.badge.num)}</text>
   <circle class="k-hit" cx="${bx}" cy="${by}" r="${Math.max(hitR, bR * 2)}" fill="transparent"/>
 </g>`;
     })
@@ -504,10 +505,18 @@ html,body{height:100%;overflow:hidden;background:#05070c;
 #k-stage img{width:100%;height:100%;display:block;object-fit:contain;}
 #k-svg{position:absolute;inset:0;width:100%;height:100%;}
 .k-feat{cursor:pointer;}
-.k-feat .k-mark{opacity:.75;transition:opacity .2s;}
-.k-feat .k-badge{transition:transform .2s;transform-origin:center;transform-box:fill-box;}
+/* Three levels, because eight marks at one strength is eight things shouting.
+   Idle the outlines sit back and the numbers carry the invitation to touch;
+   once something is chosen everything else gets out of its way — but not so
+   far that the audience loses track of what else is on offer. */
+.k-feat .k-mark{opacity:.5;transition:opacity .2s;}
+.k-feat .k-badge,.k-feat .k-num{transition:opacity .2s,transform .2s;}
+.k-feat .k-badge{transform-origin:center;transform-box:fill-box;}
 .k-feat.active .k-mark,.k-feat:focus .k-mark{opacity:1;}
 .k-feat.active .k-badge{transform:scale(1.18);}
+#k-svg.has-active .k-feat:not(.active) .k-mark{opacity:.14;}
+#k-svg.has-active .k-feat:not(.active) .k-badge,
+#k-svg.has-active .k-feat:not(.active) .k-num{opacity:.4;}
 .k-feat:focus{outline:none;}
 /* The first touch has to be invited — a ring on a dark photo reads as decoration. */
 #k-hint{position:absolute;left:50%;bottom:3%;transform:translateX(-50%);
@@ -611,6 +620,7 @@ ${chromeScript(opts.picker)}
 (function(){
   var LANG=${JSON.stringify(lang)};
   var TEXT=${JSON.stringify(i18nData)};
+  var NAME=${JSON.stringify({ zh: report.object.name.zh, en: report.object.name.en })};
   var IDLE=${idle};
   var hint=document.getElementById('k-hint');
   var panelEl=document.getElementById('k-panel');
@@ -625,6 +635,7 @@ ${chromeScript(opts.picker)}
 
   function show(id){
     active=id;
+    document.getElementById('k-svg').classList.toggle('has-active', !!id);
     document.querySelectorAll('.k-feat').forEach(function(g){
       g.classList.toggle('active', g.getAttribute('data-f')===id);
     });
@@ -693,9 +704,12 @@ ${chromeScript(opts.picker)}
   }
 
   // Both languages are already in the page, so this never needs the network.
-  document.getElementById('k-lang').addEventListener('click', function(){
-    LANG = LANG==='zh' ? 'en' : 'zh';
+  function applyLang(next){
+    LANG = next;
     document.documentElement.lang=LANG;
+    // The tab is part of the page. Leaving it in the language the file was
+    // built in makes the browser contradict what is on screen.
+    document.title = NAME[LANG] + ' \u2014 ASTELLUM';
     document.querySelectorAll('[data-zh]').forEach(function(el){
       el.textContent = el.getAttribute('data-'+LANG) || el.textContent;
     });
@@ -714,8 +728,22 @@ ${chromeScript(opts.picker)}
         var p=document.createElement('p'); p.textContent=s; bodyEl.appendChild(p);
       });
     });
+  }
+
+  document.getElementById('k-lang').addEventListener('click', function(){
+    applyLang(LANG==='zh' ? 'en' : 'zh');
     idleReset();
   });
+
+  // This page is a file: the language it was built in is frozen into it, while
+  // the operator may have changed theirs on another surface since. Both
+  // languages ship here, so honour the newer statement — their current choice —
+  // and start in it. A file:// page has no cookie jar; it keeps what it was
+  // built with, which is the only thing it can know.
+  try {
+    var want=(document.cookie.match(/astellum_lang=(zh|en)/)||[])[1];
+    if(want && want!==LANG) applyLang(want);
+  } catch(e){}
 
   var sel=document.getElementById('k-style-sel');
   if(sel) sel.addEventListener('change', function(){
