@@ -32,6 +32,12 @@ export interface OverlayLabelOptions {
   /** Frame width, to decide which side of the badge the name goes on. */
   frameWidth: number;
   className?: string;
+  /** Put the text on a solid plate instead of giving it a halo, and let the
+   *  caller size that plate at runtime. A halo keeps the feature's colour,
+   *  which is unreadable when the colour is grey and the background is a white
+   *  core — the case that forced this. The plate is one dark slab for every
+   *  label, so nothing depends on the colour behind it. */
+  plate?: boolean;
 }
 
 function esc(s: string): string {
@@ -52,15 +58,29 @@ export function overlayLabel(o: OverlayLabelOptions): string {
   // outside it is worse than no name.
   const onLeft = o.x > o.frameWidth * 0.66;
   const x = onLeft ? o.x - gap : o.x + gap;
-  const cls = o.className ? ` class="${o.className}"` : '';
   const i18n = o.bilingual
     ? ` data-zh="${esc(o.bilingual.zh)}" data-en="${esc(o.bilingual.en)}"`
     : '';
+  const cls = o.className ? ` class="${o.className}"` : '';
+  const anchor = onLeft ? 'end' : 'start';
+
+  if (o.plate) {
+    // The plate is left unsized: only the browser knows how wide this string
+    // renders, and guessing from character counts goes wrong the moment the
+    // two scripts mix. Whoever draws this measures the text and fits the rect.
+    return (
+      `<g${cls}><rect class="k-plate" rx="${Math.round(fontSize * 0.3)}"/>` +
+      `<text class="k-label-t"${i18n} x="${Math.round(x)}" y="${Math.round(o.y)}" ` +
+      `font-family="sans-serif" font-size="${fontSize}" font-weight="700" ` +
+      `fill="#f2f5fb" text-anchor="${anchor}" dominant-baseline="central">${esc(text)}</text></g>`
+    );
+  }
+
   return (
     `<text${cls}${i18n} x="${Math.round(x)}" y="${Math.round(o.y)}" ` +
     `font-family="sans-serif" font-size="${fontSize}" font-weight="700" ` +
     `fill="${o.color}" stroke="#0b0e14" stroke-width="${Math.max(1, Math.round(fontSize * 0.05))}" ` +
-    `paint-order="stroke" text-anchor="${onLeft ? 'end' : 'start'}" ` +
+    `paint-order="stroke" text-anchor="${anchor}" ` +
     `dominant-baseline="central">${esc(text)}</text>`
   );
 }

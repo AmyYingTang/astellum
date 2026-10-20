@@ -105,7 +105,7 @@ export interface KioskPicker {
 
 const UI = {
   zh: {
-    tapHint: '点一下圆圈，看看那是什么',
+    nearHint: '把手指或鼠标靠近任何一个标注，看看那是什么',
     back: '返回',
     generic: '通用说明:这段讲的是这类结构，不是专门写这个天体的',
     statusTitle: '这一屏的状态(仅工作人员可见)',
@@ -130,7 +130,7 @@ const UI = {
     unsolved: '这张图没能解析出天区，所以下面不做任何身份判断。',
   },
   en: {
-    tapHint: 'Tap a circle to find out what it is',
+    nearHint: 'Come near any mark to find out what it is',
     back: 'Back',
     generic: 'General note: about this kind of structure, not written for this object',
     statusTitle: 'Status of this screen (for staff)',
@@ -378,8 +378,47 @@ export function generateKioskHtml(report: Reading, opts: KioskOptions): string {
   const strokeW = Math.max(3, Math.round(Math.min(width, height) / 260));
   const hitR = Math.round(Math.min(width, height) / 22); // minimum touch target
 
-  const overlay = report.features
+  /**
+   * The feature's extent in image pixels. Only a polygon or a polyline carries
+   * its real one; for every other shape `circle` is a fixed-size marker, so
+   * this is a floor as much as a measurement.
+   */
+  const bboxOf = (f: Feature): { cx: number; cy: number; half: number } => {
+    let x0: number;
+    let y0: number;
+    let x1: number;
+    let y1: number;
+    if (f.polygon?.length && (f.shape === 'polygon' || f.shape === 'polyline')) {
+      const xs = f.polygon.map((q) => q[0]);
+      const ys = f.polygon.map((q) => q[1]);
+      x0 = Math.min(...xs);
+      x1 = Math.max(...xs);
+      y0 = Math.min(...ys);
+      y1 = Math.max(...ys);
+    } else {
+      x0 = f.circle.cx - f.circle.r;
+      x1 = f.circle.cx + f.circle.r;
+      y0 = f.circle.cy - f.circle.r;
+      y1 = f.circle.cy + f.circle.r;
+    }
+    return {
+      cx: Math.round((x0 + x1) / 2),
+      cy: Math.round((y0 + y1) / 2),
+      half: Math.round(Math.max((x1 - x0) / 2, (y1 - y0) / 2, Math.min(width, height) / 50)),
+    };
+  };
+
+  // Biggest first, so the smallest marks end up on top. Whatever is topmost
+  // wins the pointer, and a pillar a few dozen pixels across is the one that
+  // needs the help — a ring around the whole nebula can be met almost anywhere
+  // along its rim. This is paint order only; the numbers were assigned long ago.
+  const drawn = report.features
     .filter((f) => f.draw !== false)
+    .map((f, i) => ({ f, i, size: bboxOf(f).half }))
+    .sort((a, b) => b.size - a.size || a.i - b.i)
+    .map((e) => e.f);
+
+  const overlay = drawn
     .map((f) => {
       const c = COLOR_PALETTE[f.color_key];
       const { cx, cy, r } = f.circle;
@@ -413,12 +452,29 @@ export function generateKioskHtml(report: Reading, opts: KioskOptions): string {
         color: c.stroke,
         frameWidth: width,
         className: 'k-label',
+        plate: true,
       });
+      // The shape is kept for its geometry — the crop masks with it — but it is
+      // not a target. Making the structures sensitive sounded right and was
+      // not: the ring around the whole nebula runs past half the other marks,
+      // and standing anywhere near its rim beat them all. What the viewer aims
+      // at is the number and the name, so those are what answer.
+      const pts = f.polygon?.length ? f.polygon.map((q) => q.join(',')).join(' ') : '';
+      const reach = `stroke="transparent" stroke-width="${hitR}" stroke-linejoin="round"`;
+      const hit =
+        f.shape === 'polygon' && pts
+          ? `<polygon class="k-geo" points="${pts}" fill="transparent" ${reach}/>`
+          : f.shape === 'polyline' && pts
+            ? `<polyline class="k-geo" points="${pts}" fill="none" ${reach}/>`
+            : `<circle class="k-geo" cx="${cx}" cy="${cy}" r="${r}" ${reach} fill="${
+                r <= Math.min(width, height) * 0.12 ? 'transparent' : 'none'
+              }"/>`;
       return `<g class="k-feat" data-f="${esc(f.id)}" tabindex="0" role="button">
   ${shape}
   <circle class="k-badge" cx="${bx}" cy="${by}" r="${drawnR}" fill="${c.badge}" stroke="#0b0e14" stroke-width="${Math.max(1, strokeW / 2)}"/>
   <text class="k-num" x="${bx}" y="${by}" font-size="${drawnR * 1.15}" font-weight="700" fill="#0b0e14" text-anchor="middle" dominant-baseline="central">${esc(f.badge.num)}</text>
   ${name}
+  ${hit}
   <circle class="k-hit" cx="${bx}" cy="${by}" r="${Math.max(hitR, bR * 2)}" fill="transparent"/>
 </g>`;
     })
@@ -489,6 +545,9 @@ export function generateKioskHtml(report: Reading, opts: KioskOptions): string {
     .join('')}</select></label>`
       : '';
 
+  /** Where the magnified view crops, per feature, in image pixels. */
+  const crops = drawn.map((f) => ({ id: f.id, ...bboxOf(f) }));
+
   // Both languages ship in the page, so the switch is instant and works offline.
   const i18nData = report.features
     .map((f) => ({
@@ -528,29 +587,51 @@ html,body{height:100%;overflow:hidden;background:#05070c;
 #k-stage img{width:100%;height:100%;display:block;object-fit:contain;}
 #k-svg{position:absolute;inset:0;width:100%;height:100%;}
 .k-feat{cursor:pointer;}
-/* Three levels, because eight marks at one strength is eight things shouting.
-   Idle the outlines sit back and the numbers carry the invitation to touch;
-   once something is chosen everything else gets out of its way — but not so
-   far that the audience loses track of what else is on offer. */
-.k-feat .k-mark,.k-feat .k-label{opacity:.5;transition:opacity .2s;}
+/* At rest the picture is a picture: numbers and names, and nothing drawn over
+   the nebula itself. The outline belongs to whichever one is being read — it
+   is the only thing that says which part of the frame the name is about, since
+   the magnified view beside it is a plain crop. */
+.k-feat .k-mark{opacity:0;transition:opacity .2s;}
+.k-feat .k-label{opacity:.82;transition:opacity .2s;}
 .k-feat .k-badge,.k-feat .k-num{opacity:.72;transition:opacity .2s,transform .2s;}
 .k-feat .k-badge{transform-origin:center;transform-box:fill-box;}
 .k-feat.active .k-mark,.k-feat:focus .k-mark,
 .k-feat.active .k-label,.k-feat:focus .k-label,
 .k-feat.active .k-badge,.k-feat.active .k-num{opacity:1;}
 .k-feat.active .k-badge{transform:scale(1.18);}
-#k-svg.has-active .k-feat:not(.active) .k-mark{opacity:.14;}
-#k-svg.has-active .k-feat:not(.active) .k-label{opacity:.12;}
+#k-svg.has-active .k-feat:not(.active) .k-label{opacity:.3;}
+/* Dropped because its plate had nowhere to go. Coming near brings it back —
+   the rule below outranks this one, which is the whole reason it may go. */
+.k-label.crowded{opacity:0;}
+.k-feat.active .k-label.crowded{opacity:1;}
 #k-svg.has-active .k-feat:not(.active) .k-badge,
 #k-svg.has-active .k-feat:not(.active) .k-num{opacity:.4;}
 .k-feat:focus{outline:none;}
-/* The first touch has to be invited — a ring on a dark photo reads as decoration. */
+/* One dark slab under every name. The halo it replaces kept the feature's own
+   colour, which disappears when that colour is grey and the background is a
+   white core — which is what a reader ran into. Nothing here depends on what
+   is behind it. */
+.k-plate{fill:rgba(8,11,18,.9);}
+/* Geometry for the crop's mask, nothing more — it must not answer the pointer,
+   or clicking a structure would do what coming near it no longer does. */
+.k-geo{pointer-events:none;}
+/* The crop, floating over the photo beside whatever is being read. It takes no
+   pointer events: it sits exactly where the hit-testing looks, and swallowing
+   the pointer would make the thing underneath flicker in and out. */
+#k-loupe{position:absolute;display:none;border-radius:14px;
+  border:1px solid rgba(214,224,242,.5);box-shadow:0 10px 34px rgba(0,0,0,.6);
+  background-repeat:no-repeat;pointer-events:none;opacity:0;transition:opacity .18s;}
+#k-loupe.show{display:block;opacity:1;}
+/* The invitation has to stay. A visitor arrives mid-session, after someone
+   else has already touched something — if the line had gone for good they
+   would face a picture with no way in. It stops pulsing once the screen has
+   been used, since by then it is a reminder rather than a summons. */
 #k-hint{position:absolute;left:50%;bottom:3%;transform:translateX(-50%);
   padding:12px 24px;border-radius:999px;background:rgba(10,14,22,.82);
   border:1px solid #2a3346;color:#e6e9f0;font-size:clamp(14px,1.8vw,20px);
   line-height:1;white-space:nowrap;animation:k-pulse 2.6s ease-in-out infinite;}
 @keyframes k-pulse{0%,100%{opacity:.55;}50%{opacity:1;}}
-#k-hint.gone{display:none;}
+#k-hint.quiet{animation:none;opacity:.5;}
 
 /* The reading pane. Always there, always the same width. */
 /* Drag the divider to rebalance picture vs words — a wide widefield wants more
@@ -616,7 +697,8 @@ ${CHROME_CSS}
       <svg id="k-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
 ${overlay}
       </svg>
-      <div id="k-hint" data-zh="${esc(UI.zh.tapHint)}" data-en="${esc(UI.en.tapHint)}">${esc(UI[lang].tapHint)}</div>
+      <div id="k-hint" data-zh="${esc(UI.zh.nearHint)}" data-en="${esc(UI.en.nearHint)}">${esc(UI[lang].nearHint)}</div>
+      <div id="k-loupe"></div>
     </div>
     ${info}
   </div>
@@ -646,11 +728,16 @@ ${chromeScript(opts.picker)}
 (function(){
   var LANG=${JSON.stringify(lang)};
   var TEXT=${JSON.stringify(i18nData)};
+  var CROPS=${JSON.stringify(crops)};
+  var IMG_W=${width}, IMG_H=${height};
   var NAME=${JSON.stringify({ zh: report.object.name.zh, en: report.object.name.en })};
   var IDLE=${idle};
   var hint=document.getElementById('k-hint');
   var panelEl=document.getElementById('k-panel');
   var body=document.getElementById('k-body');
+  var stage=document.getElementById('k-stage');
+  var loupe=document.getElementById('k-loupe');
+  var photo=stage.querySelector('img');
   var timer=null, active=null;
 
   function idleReset(){
@@ -663,7 +750,11 @@ ${chromeScript(opts.picker)}
     active=id;
     document.getElementById('k-svg').classList.toggle('has-active', !!id);
     document.querySelectorAll('.k-feat').forEach(function(g){
-      g.classList.toggle('active', g.getAttribute('data-f')===id);
+      var on = g.getAttribute('data-f')===id;
+      g.classList.toggle('active', on);
+      // SVG has no z-index: the only way to put the one being read above its
+      // neighbours' plates is to make it the last thing drawn.
+      if(on && g.parentNode && g.nextSibling) g.parentNode.appendChild(g);
     });
     document.querySelectorAll('.k-card').forEach(function(c){
       var on = c.getAttribute('data-f')===id;
@@ -672,16 +763,259 @@ ${chromeScript(opts.picker)}
       // the picture can easily be below the fold.
       if(on) c.scrollIntoView({block:'nearest',behavior:'smooth'});
     });
-    if(id) hint.classList.add('gone');
+    if(id) hint.classList.add('quiet'); // used now — stop summoning
+    showLoupe(id);
     idleReset();
+  }
+
+  /**
+   * The magnified crop. Everything is measured from the photo's own box at the
+   * moment it is shown, not from the aspect ratio the stage is supposed to
+   * have — the ratio normally holds, but a dragged divider can clamp the box
+   * and the two would quietly disagree.
+   */
+  function showLoupe(id){
+    if(!id){ loupe.classList.remove('show'); return; }
+    var crop=null, geo=null, i;
+    for(i=0;i<CROPS.length;i++){ if(CROPS[i].id===id){ crop=CROPS[i]; break; } }
+    for(i=0;i<GEO.length;i++){ if(GEO[i].id===id){ geo=GEO[i]; break; } }
+    var box=photo.getBoundingClientRect();
+    if(!crop || !box.width){ loupe.classList.remove('show'); return; }
+    var disp=box.width/IMG_W;                       // image px -> CSS px on screen
+    var side=Math.round(Math.min(box.width, box.height)*0.33);
+    // Fill most of the loupe with the feature, but stay inside a sane range:
+    // below 1.5x there is no point magnifying, above 8x it is just interpolation.
+    var k=side*0.7/(crop.half*2);
+    k=Math.max(disp*1.5, Math.min(disp*8, k));
+
+    /*
+     * Light and shade mark the region instead of a drawn outline: the part
+     * being talked about keeps the photograph, everything around it is pushed
+     * down. A line has no inside, so it gets one — a band a few image pixels
+     * either side of it, which is what the eye reads as "this ridge" anyway.
+     * One mask covers all three cases: fill a closed shape, stroke an open one,
+     * stroke a ring that was never meant to be filled.
+     */
+    var band=Math.max(6, Math.round(Math.min(IMG_W, IMG_H)/100));
+    var hole='';
+    if(geo && geo.pts){
+      var pts=geo.pts.map(function(q){ return q[0]+','+q[1]; }).join(' ');
+      // Black in a mask hides what it covers, so the region keeps the picture.
+      hole = geo.closed
+        ? '<polygon points="'+pts+'" fill="#000"/>'
+        : '<polyline points="'+pts+'" fill="none" stroke="#000" stroke-width="'+(band*2)+
+          '" stroke-linejoin="round" stroke-linecap="round"/>';
+    } else if(geo && geo.r!==undefined){
+      hole = geo.hollow
+        ? '<circle cx="'+geo.cx+'" cy="'+geo.cy+'" r="'+geo.r+'" fill="none" stroke="#000" stroke-width="'+(band*2)+'"/>'
+        : '<circle cx="'+geo.cx+'" cy="'+geo.cy+'" r="'+geo.r+'" fill="#000"/>';
+    }
+    var mid='k-lm';
+    loupe.innerHTML=
+      '<svg width="'+side+'" height="'+side+'" viewBox="0 0 '+side+' '+side+'">'+
+        '<defs><mask id="'+mid+'" maskUnits="userSpaceOnUse" x="0" y="0" width="'+side+'" height="'+side+'">'+
+          '<rect x="0" y="0" width="'+side+'" height="'+side+'" fill="#fff"/>'+
+          '<g transform="translate('+(side/2)+','+(side/2)+') scale('+k+') translate('+(-crop.cx)+','+(-crop.cy)+')">'+
+            hole+
+          '</g>'+
+        '</mask></defs>'+
+        '<image href="'+photo.getAttribute('src')+'" x="'+(side/2-crop.cx*k)+'" y="'+(side/2-crop.cy*k)+
+          '" width="'+(IMG_W*k)+'" height="'+(IMG_H*k)+'" preserveAspectRatio="none"/>'+
+        '<rect x="0" y="0" width="'+side+'" height="'+side+'" fill="rgba(3,5,10,.66)" mask="url(#'+mid+')"/>'+
+      '</svg>';
+    loupe.style.width=side+'px';
+    loupe.style.height=side+'px';
+
+    // One of the four corners — the one across the picture from whatever is
+    // being read, so the crop never sits on top of its own subject.
+    var fx=crop.cx*disp, fy=crop.cy*disp;
+    var m=14;
+    var x = fx < box.width/2 ? box.width-side-m : m;
+    var y = fy < box.height/2 ? box.height-side-m : m;
+    var stageBox=stage.getBoundingClientRect();
+    loupe.style.left=Math.round(box.left-stageBox.left+x)+'px';
+    loupe.style.top=Math.round(box.top-stageBox.top+y)+'px';
+    loupe.classList.add('show');
+  }
+
+  /**
+   * Fit each name's plate to the name. Only the browser knows how wide a
+   * string renders, and a guess from character counts is wrong as soon as the
+   * two scripts mix — so measure, here and again after a language switch.
+   */
+  /**
+   * Keep the name plates off each other.
+   *
+   * They are opaque now, so where two overlap the lower one is not merely
+   * crowded, it is gone — and so is the picture underneath. First nudge them
+   * apart vertically, which reads as a stack and keeps each one near its own
+   * number. Where that is not enough, drop the name belonging to the larger
+   * structure: a nebula-wide ring is recognisable without a caption, a pillar
+   * forty pixels across is not. Nothing is lost either way — coming near still
+   * brings the name back, and the list has every one of them.
+   */
+  function layoutLabels(){
+    var items=[];
+    GEO.forEach(function(e){
+      if(!e.label) return;
+      e.label.removeAttribute('transform');
+      e.label.classList.remove('crowded');
+      var r=e.label.querySelector('rect');
+      if(!r || !r.getAttribute('width')) return;
+      items.push({ el:e.label, size:e.size===undefined?Infinity:e.size, dy:0,
+                   x:+r.getAttribute('x'), y:+r.getAttribute('y'),
+                   w:+r.getAttribute('width'), h:+r.getAttribute('height') });
+    });
+    var overlap=function(a,b){
+      return a.x < b.x+b.w && b.x < a.x+a.w &&
+             a.y+a.dy < b.y+b.dy+b.h && b.y+b.dy < a.y+a.dy+a.h;
+    };
+    for(var pass=0; pass<24; pass++){
+      var moved=false;
+      for(var i=0;i<items.length;i++){
+        for(var j=i+1;j<items.length;j++){
+          var a=items[i], b=items[j];
+          if(!overlap(a,b)) continue;
+          // Push the bigger feature's plate out of the smaller one's way.
+          var lower = a.size>=b.size ? a : b, other = lower===a ? b : a;
+          var need = (other.y+other.dy+other.h) - (lower.y+lower.dy) + a.h*0.25;
+          var up = (lower.y+lower.dy) - (other.y+other.dy+other.h) - a.h*0.25;
+          lower.dy += Math.abs(need) < Math.abs(up) ? need : up;
+          moved=true;
+        }
+      }
+      if(!moved) break;
+    }
+    items.forEach(function(it){
+      // A plate dragged far from its own number stops belonging to it.
+      if(Math.abs(it.dy) > it.h*2.5) it.dy=0;
+      if(it.dy) it.el.setAttribute('transform','translate(0,'+Math.round(it.dy)+')');
+    });
+    // Whatever still collides after that: the larger one gives up its name.
+    for(var i2=0;i2<items.length;i2++){
+      for(var j2=i2+1;j2<items.length;j2++){
+        if(!overlap(items[i2],items[j2])) continue;
+        (items[i2].size>=items[j2].size ? items[i2] : items[j2]).el.classList.add('crowded');
+      }
+    }
+  }
+
+  function fitPlates(){
+    document.querySelectorAll('.k-label').forEach(function(g){
+      var txt=g.querySelector('text');
+      var rect=g.querySelector('rect');
+      if(!txt||!rect) return;
+      var b;
+      try { b=txt.getBBox(); } catch(e) { return; }
+      if(!b.width) return;
+      var padX=b.height*0.38, padY=b.height*0.22;
+      rect.setAttribute('x', b.x-padX);
+      rect.setAttribute('y', b.y-padY);
+      rect.setAttribute('width', b.width+padX*2);
+      rect.setAttribute('height', b.height+padY*2);
+    });
   }
 
   document.querySelectorAll('.k-feat').forEach(function(g){
     var id=g.getAttribute('data-f');
-    function pick(e){ e.preventDefault(); e.stopPropagation(); show(active===id?null:id); }
+    function pick(e){ e.preventDefault(); e.stopPropagation(); show(id); }
     g.addEventListener('click', pick);
     g.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' ') pick(e); });
   });
+
+  // Coming near is the interaction. Hit-testing is done here rather than with
+  // pointerenter on each shape because a touch drag captures its pointer to
+  // whatever was under the finger when it went down — the events never reach
+  // the shapes it slides over, so a finger sweeping the picture would stay
+  // stuck on the first thing it touched.
+  var leaveTimer=null;
+  // Long enough to look away and back, short enough that the crop does not
+  // camp on the picture once you have moved on.
+  var LINGER=3000;
+
+  /**
+   * Proximity, measured.
+   *
+   * The first try asked the browser what was under the pointer, which cannot
+   * answer this: reach areas overlap, and a line's band is equally wide along
+   * its whole length, so whichever one happened to be on top blanketed its
+   * neighbours — on a 15-mark frame a pillar could not be hit on a single one
+   * of its own 167 vertices. Distance to the actual geometry is the thing the
+   * interaction is named after, so measure that and take the nearest.
+   *
+   * The geometry is read back out of the DOM rather than shipped again: it is
+   * already in the page as the shapes themselves.
+   */
+  var GEO=[];
+  document.querySelectorAll('.k-feat').forEach(function(g){
+    var h=g.querySelector('.k-geo');
+    var b=g.querySelector('.k-badge');
+    var e={ id:g.getAttribute('data-f'), badge:b };
+    if(h && h.points && h.points.length){
+      e.pts=[]; for(var i=0;i<h.points.length;i++) e.pts.push([h.points[i].x, h.points[i].y]);
+      e.closed = h.tagName.toLowerCase()==='polygon';
+      var xs=e.pts.map(function(q){return q[0];}), ys=e.pts.map(function(q){return q[1];});
+      e.size=Math.max(Math.max.apply(null,xs)-Math.min.apply(null,xs),
+                      Math.max.apply(null,ys)-Math.min.apply(null,ys))/2;
+    } else if(h){
+      e.cx=+h.getAttribute('cx'); e.cy=+h.getAttribute('cy'); e.r=+h.getAttribute('r');
+      e.hollow = h.getAttribute('fill')==='none';
+      e.size=e.r;
+    }
+    e.label=g.querySelector('.k-label');
+    GEO.push(e);
+  });
+
+  /**
+   * Distance from the pointer to a rectangle, in screen pixels. Boxes come
+   * straight from the DOM at the moment of asking rather than from anything
+   * cached: the names move when they are laid out, change width with the
+   * language, and shift again whenever the picture is resized, and a stale
+   * copy of where they used to be is a pointer that answers the wrong mark.
+   */
+  function rectDist(r, x, y){
+    var dx=Math.max(r.left-x, 0, x-r.right);
+    var dy=Math.max(r.top-y, 0, y-r.bottom);
+    return Math.sqrt(dx*dx+dy*dy);
+  }
+
+  /**
+   * How much slack counts as "near", in screen pixels rather than image ones.
+   * The picture may be four thousand pixels wide or eight hundred; what has to
+   * stay constant is the gap under somebody's finger.
+   */
+  var REACH=44;
+
+  function at(x, y){
+    var best=null, bestD=REACH;
+    for(var i=0;i<GEO.length;i++){
+      var e=GEO[i];
+      var d=rectDist(e.badge.getBoundingClientRect(), x, y);
+      // A dropped name is not on the screen, so it cannot be aimed at.
+      if(e.label && !e.label.classList.contains('crowded')){
+        d=Math.min(d, rectDist(e.label.getBoundingClientRect(), x, y));
+      }
+      if(d<bestD){ bestD=d; best=e.id; }
+    }
+    return best;
+  }
+
+  function near(x, y){
+    var id=at(x, y);
+    clearTimeout(leaveTimer);
+    if(id){ if(id!==active) show(id); return; }
+    // Don't drop it the instant the pointer crosses a gap: moving between two
+    // neighbouring marks would flicker the whole screen.
+    leaveTimer=setTimeout(function(){ if(!active) return; show(null); }, LINGER);
+  }
+  stage.addEventListener('pointermove', function(e){ near(e.clientX, e.clientY); }, {passive:true});
+  stage.addEventListener('pointerdown', function(e){ near(e.clientX, e.clientY); }, {passive:true});
+  // Leaving the picture sends no more moves, so without this the crop would
+  // stay up until the idle reset — minutes later.
+  stage.addEventListener('pointerleave', function(){
+    clearTimeout(leaveTimer);
+    leaveTimer=setTimeout(function(){ if(active) show(null); }, LINGER);
+  }, {passive:true});
   // Tapping a title toggles it, so the list works on its own without the picture.
   document.querySelectorAll('.k-card-head').forEach(function(h){
     h.addEventListener('click', function(){
@@ -689,7 +1023,7 @@ ${chromeScript(opts.picker)}
       show(active===id ? null : id);
     });
   });
-  document.getElementById('k-stage').addEventListener('click', function(){ show(null); });
+
 
   // Draggable divider. Pointer events cover mouse and touch in one path.
   var split=document.getElementById('k-split');
@@ -707,6 +1041,7 @@ ${chromeScript(opts.picker)}
         var h=Math.min(r.height-160, Math.max(160, r.bottom-ev.clientY));
         panelEl.style.flex='0 0 '+Math.round(h)+'px';
       }
+      if(active) showLoupe(active); // the photo just changed size under it
       idleReset();
     }
     function up(){
@@ -758,6 +1093,7 @@ ${chromeScript(opts.picker)}
 
   document.getElementById('k-lang').addEventListener('click', function(){
     applyLang(LANG==='zh' ? 'en' : 'zh');
+    fitPlates(); layoutLabels();
     idleReset();
   });
 
@@ -780,6 +1116,14 @@ ${chromeScript(opts.picker)}
   ['pointerdown','keydown'].forEach(function(ev){
     document.addEventListener(ev, idleReset, {passive:true});
   });
+
+  // Plates are measured, so they wait for the fonts the measurement depends on.
+  fitPlates(); layoutLabels();
+  if(document.fonts && document.fonts.ready)
+    document.fonts.ready.then(function(){ fitPlates(); layoutLabels(); });
+  // The crop is sized from the photo's box, which a resize or a dragged
+  // divider changes underneath it.
+  window.addEventListener('resize', function(){ if(active) showLoupe(active); });
   idleReset();
 })();
 </script>
