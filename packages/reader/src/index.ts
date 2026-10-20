@@ -252,15 +252,15 @@ function buildReading(
         ? 'circle'
         : obj.feature_type === 'comet_nucleus' // a point marker; badge clears the coma
           ? 'dot'
-          : obj.feature_type === 'pillar' // a morphology outline → soft closed polygon
-            ? 'polygon'
+          : obj.feature_type === 'pillar' || obj.feature_type === 'elephant_trunk'
+            ? 'polygon' // a morphology outline → soft closed polygon
             : obj.feature_type === 'ionization_front' && obj.polygon // a pillar's rim → thin line
               ? 'polyline'
               : obj.arrow_to // a directional feature (comet tail) → arrow
                 ? 'arrow'
                 : obj.feature_type === 'ionization_front' && isCv
                   ? 'arc'
-                  : obj.feature_type === 'bubble_shell'
+                  : obj.feature_type === 'bubble_shell' || obj.feature_type === 'bipolar_lobe'
                     ? 'shell'
                     : isCv
                       ? 'shell'

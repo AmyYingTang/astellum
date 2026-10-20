@@ -61,7 +61,11 @@ export const FEATURE_TAXONOMY = {
   ionization_layering: { zh: '电离分层', en: 'Ionization stratification', default_class: 'B-visual', default_color_key: 'front', catalogs: ['color region'], applies_to: ['planetary_nebula', 'emission_nebula'] },
 
   // — Pillars / globules —
-  pillar: { zh: '柱状/象鼻', en: 'Pillar', default_class: 'B-visual', default_color_key: 'pillar', catalogs: ['CV', 'anchor'], applies_to: ['emission_nebula'] },
+  pillar: { zh: '柱状', en: 'Pillar', default_class: 'B-visual', default_color_key: 'pillar', catalogs: ['CV', 'anchor'], applies_to: ['emission_nebula'] },
+  // Same colour as a pillar on purpose: it is the same physics seen at a
+  // different stage, and an audience reads the two as one family. The split is
+  // so a careful annotator can say which one they drew.
+  elephant_trunk: { zh: '象鼻', en: 'Elephant trunk', default_class: 'B-visual', default_color_key: 'pillar', catalogs: ['CV', 'anchor'], applies_to: ['emission_nebula'] },
   cometary_globule: { zh: '彗状球状体', en: 'Cometary globule', default_class: 'B-anchor', default_color_key: 'pillar', catalogs: ['CG cat', 'anchor'], applies_to: ['emission_nebula'] },
   bok_globule: { zh: 'Bok 球状体', en: 'Bok globule', default_class: 'A+', default_color_key: 'dark', catalogs: ['Barnard', 'LDN', 'CB'], applies_to: ['emission_nebula', 'dark_nebula'] },
 
@@ -73,6 +77,8 @@ export const FEATURE_TAXONOMY = {
   // — Shells / cavities —
   pn_shell: { zh: '行星状外壳/halo', en: 'PN shell', default_class: 'A+', default_color_key: 'shell', catalogs: ['named extent', 'morphology'], applies_to: ['planetary_nebula'] },
   bubble_shell: { zh: '气泡壳/星风壳', en: 'Wind-blown shell', default_class: 'B-visual', default_color_key: 'shell', catalogs: ['morphology', 'anchor'], applies_to: ['emission_nebula'] },
+  // A lobe is a shell that a waist has pinched in two; same colour family.
+  bipolar_lobe: { zh: '双极叶', en: 'Bipolar lobe', default_class: 'B-visual', default_color_key: 'shell', catalogs: ['morphology'], applies_to: ['planetary_nebula', 'emission_nebula'] },
   central_cavity: { zh: '中央空腔/星风腔', en: 'Central cavity', default_class: 'B-visual', default_color_key: 'cavity', catalogs: ['morphology'], applies_to: ['emission_nebula', 'planetary_nebula'] },
   ansae_flier: { zh: 'ansae/FLIER', en: 'Ansae · FLIER', default_class: 'B-visual', default_color_key: 'shock', catalogs: ['morphology'], applies_to: ['planetary_nebula'] },
 

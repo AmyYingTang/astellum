@@ -11,7 +11,7 @@ import { normalizeId } from './registry.js';
  *
  *   1. **this file** — a specific target, in a chosen style;
  *   2. the annotation's own `note` in the atlas registry;
- *   3. the type-level generic note (`featureNotes.ts`, 11 types);
+ *   3. the type-level generic note (`featureNotes.ts`, by feature type);
  *   4. a template built from grounded facts.
  *
  * Never blank, never invented — a target with nothing written still gets the

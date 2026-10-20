@@ -88,6 +88,8 @@ export { runAiFeaturePass, type RunClaudeFn } from './aiFeatures.js';
 export {
   applyAtlas,
   atlasTypeFor,
+  ATLAS_TO_PIPELINE,
+  LEGACY_ATLAS_TO_PIPELINE,
   loadRegistry,
   loadRegistries,
   mergeRegistries,

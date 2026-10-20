@@ -71,7 +71,11 @@ describe('predefined readings', () => {
 });
 
 describe('generic feature notes', () => {
-  it('covers exactly the 11 atlas drawing types', () => {
+  // The four types the 2026-10 split added (elephant_trunk, bok_globule,
+  // ansae_flier, bipolar_lobe) deliberately have no note yet — they fall
+  // through to the fact template and are marked ※ onsite. Add them here when
+  // the words exist; this list is what stops one going missing by accident.
+  it('covers the drawing types that have a note written', () => {
     expect(Object.keys(FEATURE_NOTES).sort()).toEqual(
       [
         'bubble_shell',

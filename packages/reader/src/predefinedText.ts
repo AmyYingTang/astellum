@@ -25,7 +25,7 @@ import type {
  *
  *   1. `target`           — this exact target, in the chosen style
  *   2. `annotation_note`  — the curator's note on this annotation
- *   3. `feature_generic`  — the type-level note (11 types, plain language)
+ *   3. `feature_generic`  — the type-level note (by type, plain language)
  *   4. `facts`            — a template built from grounded facts
  *
  * Never blank and never invented: a target nobody has written up still gets the

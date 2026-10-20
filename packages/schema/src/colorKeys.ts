@@ -33,7 +33,7 @@ export interface PaletteEntry {
 }
 
 /**
- * The 9 color keys map to a consistent palette across all renderings.
+ * The color keys map to a consistent palette across all renderings.
  * Defined here once, consumed by renderer (and later viewer).
  */
 export const COLOR_PALETTE: Record<ColorKey, PaletteEntry> = {

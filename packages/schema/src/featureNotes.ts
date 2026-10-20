@@ -4,16 +4,22 @@ import type { FeatureTypeKey } from './taxonomy.js';
 /**
  * Generic, per-feature-type explanations — the no-LLM fallback for onsite mode.
  *
- * The split (Amy, 2026-08-01): the atlas drawing vocabulary is 11 types, and
- * those are the ONLY B-class features a kiosk frame can show, so 11 notes cover
- * it. The full 39-entry taxonomy is instead handed to the LLM offsite, where
- * precision is what's wanted. Onsite is mass outreach — a visitor says "I see a
- * shell, I see threads", so these are written at that level and deliberately
- * avoid jargon (no "blue horizontal branch"). Reading level: school year 8–12.
+ * The split (Amy, 2026-08-01): the atlas drawing vocabulary is the ONLY source of
+ * B-class features a kiosk frame can show, so a note per drawable type covers
+ * it. The full taxonomy is instead handed to the LLM offsite, where precision is
+ * what's wanted. Onsite is mass outreach — a visitor says "I see a shell, I see
+ * threads", so these are written at that level and deliberately avoid jargon
+ * (no "blue horizontal branch"). Reading level: school year 8–12.
+ *
+ * Partial on purpose. The drawing vocabulary was split finer in 2026-10 (pillar
+ * vs elephant trunk, Bok vs cometary globule, HH jet vs ansae/FLIER, shell vs
+ * bipolar lobe) without writing notes for the new types: a type with no note
+ * falls through to the fact template and is marked ※ onsite, which is honest.
+ * Writing one is a pure addition whenever the words are ready.
  *
  * Keyed by the *pipeline* FeatureTypeKey (taxonomy.ts), which is what a
  * FactObject carries by the time the reader sees it — atlasApply.ts has already
- * mapped the atlas's 11 keys into this space, one-to-one.
+ * mapped the atlas's drawing keys into this space.
  *
  * These are the type-level layer. A specific target's own wording (the Horsehead
  * being horse-shaped vs the Dark Doodad being a streak) belongs in the

@@ -187,11 +187,12 @@ there is nothing to migrate.
 and the studio's AI pass are held to, so changing it changes everything written
 afterwards.
 
-`featureNotes` covers the eleven drawable types — the keys are listed inside the
-file. They are written for the level a visitor actually follows; a test fails if
+`featureNotes` covers most of the drawable types — the keys are listed inside the
+file. A type with no note falls through to the fact template and is marked ※
+onsite, which is a fine place to leave one until you have the words. They are written for the level a visitor actually follows; a test fails if
 jargon creeps in.
 
-Deliberately **not** editable this way: the taxonomies (39 feature types, 11
+Deliberately **not** editable this way: the taxonomies (41 feature types, 15
 drawing types, 64 otype labels), the palette, and UI strings. Those are coupled
 to enums and colour mappings, and turning them into data would trade a compile
 error for a runtime one.

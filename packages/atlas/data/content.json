@@ -5,11 +5,15 @@
     "Curator-editable text. Anything omitted falls back to the built-in value."
   ],
   "_featureNotes": [
-    "11 类形态特征的通用说明 —— 现场没有专属解读时用这段。写给 8–12 年级,避开专业术语。",
-    "键: pillar 象鼻/柱 · ionization_front 电离锋面 · snr_filament 丝状结构 ·",
-    "     silhouette_shape 剪影暗形 · cometary_globule 暗球 · dust_lane 尘埃暗带 ·",
-    "     bubble_shell 壳/泡 · spiral_arm 旋臂 · tidal_tail 潮汐尾 ·",
-    "     emission_color_region 区域标注 · hh_jet 喷流",
+    "各类形态特征的通用说明 —— 现场没有专属解读时用这段。写给 8–12 年级,避开专业术语。",
+    "键是管线类型名(不是标注界面里的键)。已内置说明的 11 个:",
+    "  pillar 柱 · ionization_front 电离锋面 · snr_filament 丝状结构 ·",
+    "  silhouette_shape 剪影暗形 · cometary_globule 彗状球 · dust_lane 尘埃暗带 ·",
+    "  bubble_shell 壳/泡 · spiral_arm 旋臂 · tidal_tail 潮汐尾 ·",
+    "  emission_color_region 区域标注 · hh_jet HH 喷流",
+    "2026-10 拆细后新增、尚无内置说明的 4 个(写了就生效):",
+    "  elephant_trunk 象鼻 · bok_globule Bok 球 · ansae_flier ansae/FLIER · bipolar_lobe 双极叶",
+    "没有说明不会报错:会落到事实模板,并在现场标 ※ 表示这是通用说明。",
     "格式: \"pillar\": { \"zh\": \"…\", \"en\": \"…\" } —— 中英都必须给。"
   ],
   "featureNotes": {},

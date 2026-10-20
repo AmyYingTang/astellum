@@ -608,11 +608,15 @@ export function App(): JSX.Element {
       <p className="hint substeps">{t('drawSteps')}</p>
       <label className="field-label">{t('featureType')}</label>
       <select value={typeKey} disabled={drawing} onChange={(e) => setTypeKey(e.target.value)}>
-        {types.map((ft) => (
-          <option key={ft.key} value={ft.key}>
-            {ft.zh} · {ft.en} ({ft.geometry})
-          </option>
-        ))}
+        {/* Retired types stay in `types` so old annotations still resolve to a
+            name, but nothing new should be drawn with one. */}
+        {types
+          .filter((ft) => !ft.legacy)
+          .map((ft) => (
+            <option key={ft.key} value={ft.key}>
+              {ft.zh} · {ft.en} ({ft.geometry})
+            </option>
+          ))}
       </select>
       <label className="field-label">
         {t('labelName')}

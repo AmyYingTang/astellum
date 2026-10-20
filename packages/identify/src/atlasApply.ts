@@ -25,22 +25,41 @@ import {
 /** The atlas tool's feature vocabulary → the pipeline's FeatureType taxonomy
  *  (for enum validity + colour + label). Shape is carried separately via
  *  `geometry_kind`, so a type's canonical shape here doesn't constrain drawing. */
-const ATLAS_TO_PIPELINE: Record<string, FeatureTypeKey> = {
+export const ATLAS_TO_PIPELINE: Record<string, FeatureTypeKey> = {
   pillar: 'pillar',
+  elephant_trunk: 'elephant_trunk',
   bright_rim: 'ionization_front',
   filament: 'snr_filament',
   silhouette: 'silhouette_shape',
-  globule: 'cometary_globule',
+  bok_globule: 'bok_globule',
+  cometary_globule: 'cometary_globule',
   dust_lane: 'dust_lane',
   shell: 'bubble_shell',
+  bipolar_lobe: 'bipolar_lobe',
   spiral_arm: 'spiral_arm',
   tidal_tail: 'tidal_tail',
   region: 'emission_color_region',
+  hh_jet: 'hh_jet',
+  ansae_flier: 'ansae_flier',
+};
+
+/**
+ * Atlas keys that finer ones replaced. Annotations drawn before the split still
+ * carry them — a deployment's own overlay is not ours to rewrite — so they must
+ * keep resolving. Kept out of ATLAS_TO_PIPELINE because the inverse below is
+ * derived from it: two keys landing on one pipeline type would make the
+ * inversion last-write-wins, and `atlasTypeFor` would start handing the atlas
+ * back a retired key.
+ */
+export const LEGACY_ATLAS_TO_PIPELINE: Record<string, FeatureTypeKey> = {
+  globule: 'cometary_globule',
   jet: 'hh_jet',
 };
 
 function pipelineType(atlasType: string): FeatureTypeKey {
-  return ATLAS_TO_PIPELINE[atlasType] ?? 'emission_color_region';
+  return (
+    ATLAS_TO_PIPELINE[atlasType] ?? LEGACY_ATLAS_TO_PIPELINE[atlasType] ?? 'emission_color_region'
+  );
 }
 
 const PIPELINE_TO_ATLAS = Object.fromEntries(
