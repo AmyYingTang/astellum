@@ -1,5 +1,6 @@
 import sharp from 'sharp';
 import { COLOR_PALETTE, badgeAnchor, type Reading } from '@astellum/schema';
+import { overlayLabel } from './overlayLabel.js';
 
 function escapeXml(s: string): string {
   return s
@@ -12,6 +13,7 @@ function escapeXml(s: string): string {
 /** Build the SVG overlay (circles + numbered badges) for a report. */
 export function buildOverlaySvg(report: Reading): string {
   const { width, height } = report.image;
+  const lang = report.display_language;
   const strokeW = Math.max(2, Math.round(Math.min(width, height) / 300));
   const parts: string[] = [];
 
@@ -94,6 +96,19 @@ export function buildOverlaySvg(report: Reading): string {
     );
     parts.push(
       `<text x="${bx}" y="${by}" font-family="sans-serif" font-size="${fontSize}" font-weight="700" fill="#0b0e14" text-anchor="middle" dominant-baseline="central">${escapeXml(f.badge.num)}</text>`,
+    );
+    // The name, beside the number. A printed frame has no list to look the
+    // number up in, so without this the badge is a riddle. Full strength: there
+    // is no selection here to fade anything against.
+    parts.push(
+      overlayLabel({
+        text: f.label[lang],
+        x: bx,
+        y: by,
+        bubbleR: br,
+        color: color.stroke,
+        frameWidth: width,
+      }),
     );
   }
 

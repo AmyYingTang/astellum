@@ -1,4 +1,5 @@
 import { COLOR_PALETTE, badgeAnchor, type Feature, type Reading } from '@astellum/schema';
+import { overlayLabel } from './overlayLabel.js';
 
 /**
  * The onsite display: one fullscreen frame an audience touches.
@@ -155,6 +156,10 @@ const UI = {
     unsolved: 'This image could not be plate-solved, so no identity is claimed below.',
   },
 } as const;
+
+/** How much of its authored radius the number is drawn at — see the overlay
+ *  for why the drawn size and the layout size differ. */
+const BADGE_SCALE = 0.7;
 
 /** What the picker will take. Same set the kiosk itself can read. */
 const PICK_ACCEPT = '.fits,.fit,.fts,.jpg,.jpeg,.png,.tif,.tiff';
@@ -378,11 +383,17 @@ export function generateKioskHtml(report: Reading, opts: KioskOptions): string {
     .map((f) => {
       const c = COLOR_PALETTE[f.color_key];
       const { cx, cy, r } = f.circle;
-      // Keep the badge at its authored radius: spreadBadges() already solved the
+      // The authored radius stays the layout number: spreadBadges() solved the
       // overlaps for exactly this size, and inflating it here silently undoes
-      // that work (badges start covering each other). Reach is added below with
-      // an invisible hit circle instead, which costs the layout nothing.
+      // that work. Reach is added below with an invisible hit circle instead,
+      // which costs the layout nothing.
       const bR = f.badge.bubble_r;
+      // Only the paint shrinks. The number's job is to say "something is here,
+      // and it is the fourth one" — at full size it was louder than the
+      // structure it points at, and with the name beside it the pair would be
+      // louder still. The anchor still uses the authored radius, so the
+      // standoff opens up a little, which is where the name goes.
+      const drawnR = bR * BADGE_SCALE;
       const [ax, ay] = badgeAnchor(f, bR);
       const bx = ax + f.badge.offset_x;
       const by = ay + f.badge.offset_y;
@@ -392,10 +403,22 @@ export function generateKioskHtml(report: Reading, opts: KioskOptions): string {
           : f.shape === 'polyline' && f.polygon?.length
             ? `<polyline class="k-mark" points="${f.polygon.map((p) => p.join(',')).join(' ')}" fill="none" stroke="${c.stroke}" stroke-width="${strokeW}"/>`
             : `<circle class="k-mark" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${c.stroke}" stroke-width="${strokeW}"/>`;
+      const name = overlayLabel({
+        text: f.label[lang],
+        bilingual: { zh: f.label.zh, en: f.label.en },
+        x: bx,
+        y: by,
+        bubbleR: bR,
+        drawnR,
+        color: c.stroke,
+        frameWidth: width,
+        className: 'k-label',
+      });
       return `<g class="k-feat" data-f="${esc(f.id)}" tabindex="0" role="button">
   ${shape}
-  <circle class="k-badge" cx="${bx}" cy="${by}" r="${bR}" fill="${c.badge}" stroke="#0b0e14" stroke-width="${Math.max(1, strokeW / 2)}"/>
-  <text class="k-num" x="${bx}" y="${by}" font-size="${bR * 1.15}" font-weight="700" fill="#0b0e14" text-anchor="middle" dominant-baseline="central">${esc(f.badge.num)}</text>
+  <circle class="k-badge" cx="${bx}" cy="${by}" r="${drawnR}" fill="${c.badge}" stroke="#0b0e14" stroke-width="${Math.max(1, strokeW / 2)}"/>
+  <text class="k-num" x="${bx}" y="${by}" font-size="${drawnR * 1.15}" font-weight="700" fill="#0b0e14" text-anchor="middle" dominant-baseline="central">${esc(f.badge.num)}</text>
+  ${name}
   <circle class="k-hit" cx="${bx}" cy="${by}" r="${Math.max(hitR, bR * 2)}" fill="transparent"/>
 </g>`;
     })
@@ -509,12 +532,15 @@ html,body{height:100%;overflow:hidden;background:#05070c;
    Idle the outlines sit back and the numbers carry the invitation to touch;
    once something is chosen everything else gets out of its way — but not so
    far that the audience loses track of what else is on offer. */
-.k-feat .k-mark{opacity:.5;transition:opacity .2s;}
-.k-feat .k-badge,.k-feat .k-num{transition:opacity .2s,transform .2s;}
+.k-feat .k-mark,.k-feat .k-label{opacity:.5;transition:opacity .2s;}
+.k-feat .k-badge,.k-feat .k-num{opacity:.72;transition:opacity .2s,transform .2s;}
 .k-feat .k-badge{transform-origin:center;transform-box:fill-box;}
-.k-feat.active .k-mark,.k-feat:focus .k-mark{opacity:1;}
+.k-feat.active .k-mark,.k-feat:focus .k-mark,
+.k-feat.active .k-label,.k-feat:focus .k-label,
+.k-feat.active .k-badge,.k-feat.active .k-num{opacity:1;}
 .k-feat.active .k-badge{transform:scale(1.18);}
 #k-svg.has-active .k-feat:not(.active) .k-mark{opacity:.14;}
+#k-svg.has-active .k-feat:not(.active) .k-label{opacity:.12;}
 #k-svg.has-active .k-feat:not(.active) .k-badge,
 #k-svg.has-active .k-feat:not(.active) .k-num{opacity:.4;}
 .k-feat:focus{outline:none;}

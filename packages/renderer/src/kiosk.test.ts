@@ -82,6 +82,21 @@ describe('kiosk chrome', () => {
 // A frame is a file: the language it was built in is frozen into it, while the
 // operator may have switched theirs on another surface since. Both languages
 // ship in the page, so it starts in whichever they chose last.
+// The number alone makes the viewer carry "4" over to the list and hunt for it.
+describe('overlay names', () => {
+  it('writes each feature\u2019s name beside its number, in both languages', () => {
+    const html = generateKioskHtml(report, { imageDataUri: 'data:...' });
+    expect(html).toContain('class="k-label"');
+    expect(html).toContain('data-zh="a" data-en="a"');
+  });
+
+  it('draws the number smaller than the radius the layout was solved for', () => {
+    const html = generateKioskHtml(report, { imageDataUri: 'data:...' });
+    const drawn = /class="k-badge"[^>]*r="([\d.]+)"/.exec(html)?.[1];
+    expect(Number(drawn)).toBeLessThan(report.features[0]!.badge.bubble_r);
+  });
+});
+
 describe('frame language', () => {
   it('reads the shared cookie on load and flips to it', () => {
     const html = generateKioskHtml(report, { imageDataUri: 'data:...' });

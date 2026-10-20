@@ -42,13 +42,24 @@ describe('buildOverlaySvg', () => {
     expect(svg).toContain('viewBox="0 0 1000 800"');
   });
 
-  it('draws an outline circle + badge bubble + number per feature', () => {
+  it('draws an outline circle + badge bubble + number + name per feature', () => {
     const svg = buildOverlaySvg(report);
-    // 2 outline circles + 2 badge bubbles = 4 <circle>, 2 <text>
+    // 2 outline circles + 2 badge bubbles = 4 <circle>; each feature gets a
+    // number and a name = 4 <text>.
     expect(svg.match(/<circle/g)).toHaveLength(4);
-    expect(svg.match(/<text/g)).toHaveLength(2);
+    expect(svg.match(/<text/g)).toHaveLength(4);
     expect(svg).toContain('>1</text>');
     expect(svg).toContain('>2</text>');
+    expect(svg).toContain('>a</text>');
+    expect(svg).toContain('>b</text>');
+  });
+
+  // A printed frame has no list to look a number up in, so the name has to
+  // survive whatever is under it — hence the dark halo rather than a plate.
+  it('gives the name a halo in the feature\u2019s own colour', () => {
+    const svg = buildOverlaySvg(report);
+    expect(svg).toContain('fill="#ffd84a" stroke="#0b0e14"');
+    expect(svg).toContain('paint-order="stroke"');
   });
 
   it('colors strokes from the palette', () => {
