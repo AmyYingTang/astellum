@@ -83,6 +83,23 @@ export interface KioskOptions {
   currentStyle?: string;
   /** Close the panel after this many idle seconds. 0 disables. Default 120. */
   idleResetSec?: number;
+  /** Where "← ASTELLUM" goes. Absolute, because the one-shot page is opened as
+   *  a file:// URL where a relative one would point at the filesystem. Omitted
+   *  when nothing launched this, exactly as the atlas and studio do. */
+  hubUrl?: string;
+  /** Picking a new image needs somewhere to POST it, so this is only set when a
+   *  server is serving the page — never on the portable file:// one. */
+  picker?: KioskPicker;
+}
+
+export interface KioskPicker {
+  /** Endpoint that takes {filename, dataUrl, target, lang, style} and answers
+   *  {ok, url} — the kiosk server's /api/run. */
+  endpoint: string;
+  /** Offered in the form when the library has more than one. */
+  styles?: string[];
+  /** Offline-catalogue state, already phrased; shown under the form. */
+  offlineNote?: { zh: string; en: string };
 }
 
 const UI = {
@@ -94,6 +111,19 @@ const UI = {
     genericHelp: '带 ※ 的条目用的是该类结构的通用说明，还没有专门为这个天体写的文字。',
     langBtn: 'EN',
     styleLabel: '讲解风格',
+    pick: '选择图片',
+    pickTitle: '现场识别',
+    pickSub: '选一张图,几秒后出一张可点的全屏页。支持 FITS(自动拉伸)、JPG、PNG、TIFF。',
+    fileHint: '点这里选择图片…',
+    targetLabel: '目标名(可选,填了识别更稳)',
+    langLabel: '语言',
+    start: '开始',
+    reading: '读取文件…',
+    solving: '解析中…(plate solve 可能要几十秒)',
+    opening: '完成,正在打开…',
+    failed: '识别失败',
+    close: '关闭',
+    emptyHint: '点右上角「选择图片」开始',
     no_annotations: '这张图已经认出目标，但标注库里还没有它的标注。',
     generic_only: '下面是这类结构的通用说明，还没有针对这个目标写的解读。',
     unsolved: '这张图没能解析出天区，所以下面不做任何身份判断。',
@@ -106,11 +136,230 @@ const UI = {
     genericHelp: 'Items marked ※ use the general note for that kind of structure — nothing specific to this object has been written yet.',
     langBtn: '中文',
     styleLabel: 'Style',
+    pick: 'Pick image',
+    pickTitle: 'Onsite reading',
+    pickSub:
+      'Choose an image and a fullscreen, touchable page appears in seconds. FITS (auto-stretched), JPG, PNG, TIFF.',
+    fileHint: 'Choose an image…',
+    targetLabel: 'Target name (optional — makes identification surer)',
+    langLabel: 'Language',
+    start: 'Start',
+    reading: 'Reading the file…',
+    solving: 'Working… (a plate solve can take a minute)',
+    opening: 'Done — opening…',
+    failed: 'Could not read this image',
+    close: 'Close',
+    emptyHint: 'Pick an image, top right, to begin',
     no_annotations: 'The target is identified, but nothing has been annotated for it yet.',
     generic_only: 'These are general notes for this kind of structure — nothing specific to this object yet.',
     unsolved: 'This image could not be plate-solved, so no identity is claimed below.',
   },
 } as const;
+
+/** What the picker will take. Same set the kiosk itself can read. */
+const PICK_ACCEPT = '.fits,.fit,.fts,.jpg,.jpeg,.png,.tif,.tiff';
+
+/**
+ * The page's own chrome: the way back to the hub, and the way to the next
+ * frame. Shared by the reading page and the empty shell so there is one
+ * definition of each.
+ *
+ * It is deliberately faint. The audience is looking at this screen, and a
+ * visitor who taps "← ASTELLUM" out of curiosity has ended the session — so
+ * the controls sit at a third opacity until you reach for them. Hover and
+ * keyboard focus bring them up on a desk; on a touchscreen there is no hover,
+ * so a touch anywhere in the head lights them for a few seconds instead.
+ */
+const CHROME_CSS = `
+#k-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:14px 22px;border-bottom:1px solid #1b2231;}
+#k-head button,.k-style{background:#141925;border:1px solid #2a3346;color:#cfd6e4;
+  border-radius:9px;padding:8px 14px;font-size:14px;cursor:pointer;}
+#k-head button:hover{background:#1c2333;}
+.k-style{display:flex;gap:8px;align-items:center;font-size:13px;color:#8a93a8;padding:6px 10px;}
+.k-style select{background:transparent;border:0;color:#cfd6e4;font-size:14px;}
+.k-chrome{opacity:.32;transition:opacity .15s;}
+.k-chrome:hover,.k-chrome:focus-visible,#k-head.lit .k-chrome{opacity:1;}
+a.k-chrome{display:inline-block;color:#8a93a8;text-decoration:none;font-size:13px;
+  padding:8px 12px;border:1px solid #2a3346;border-radius:9px;}
+a.k-chrome:hover{color:#cfd6e4;border-color:#3a4a6b;}
+
+/* The picker, as an overlay rather than a screen of its own: choosing the next
+   image is a detour from the frame that is up, not a place you go. */
+#k-pick-wrap{position:fixed;inset:0;z-index:20;display:none;padding:24px;
+  align-items:center;justify-content:center;background:rgba(3,5,9,.74);}
+#k-pick-wrap.show{display:flex;}
+#k-pick{width:min(560px,100%);max-height:90vh;overflow-y:auto;background:#0b0f18;
+  border:1px solid #1e2637;border-radius:16px;padding:30px;color:#e6e9f0;user-select:text;}
+#k-pick h2{font-size:22px;font-weight:700;}
+#k-pick .k-sub{margin-top:6px;color:#8a93a8;font-size:14px;line-height:1.6;}
+#k-pick label{display:block;margin-top:20px;font-size:13px;color:#8a93a8;}
+#k-pick input[type=text],#k-pick select{width:100%;margin-top:7px;background:#141925;
+  border:1px solid #2a3346;color:#e6e9f0;border-radius:10px;padding:12px 14px;font-size:16px;}
+#k-pick .k-file{margin-top:8px;display:block;border:1px dashed #2f3a52;border-radius:12px;
+  padding:22px;text-align:center;color:#9aa4bb;cursor:pointer;font-size:15px;}
+#k-pick .k-file:hover{border-color:#3f4d6b;color:#cfd6e4;}
+#k-pick .k-file input{display:none;}
+#k-pick .k-row{display:flex;gap:12px;}
+#k-pick .k-row>*{flex:1 1 0;}
+#k-pick .k-go{margin-top:24px;width:100%;background:#2b6cb0;border:0;color:#fff;
+  border-radius:12px;padding:15px;font-size:17px;font-weight:600;cursor:pointer;}
+#k-pick .k-go:disabled{background:#243447;color:#6b768f;cursor:default;}
+#k-pick .k-status{margin-top:16px;font-size:13px;line-height:1.6;color:#8a93a8;min-height:20px;}
+#k-pick .k-status.err{color:#f7768e;}
+#k-pick .k-foot{margin-top:22px;padding-top:16px;border-top:1px solid #1b2231;
+  color:#5d6780;font-size:12px;line-height:1.6;}
+#k-pick .k-close{margin-top:14px;width:100%;background:none;border:0;color:#5d6780;
+  font-size:13px;cursor:pointer;padding:6px;}
+#k-pick .k-close:hover{color:#8a93a8;}
+`;
+
+/** The buttons themselves, for `#k-head`. Each appears only if it can work. */
+function chromeButtons(opts: { hubUrl?: string; picker?: KioskPicker }, lang: 'zh' | 'en'): string {
+  const back = opts.hubUrl
+    ? `<a class="k-chrome" href="${esc(opts.hubUrl)}" title="${esc(UI[lang].back)}">← ASTELLUM</a>`
+    : '';
+  const pick = opts.picker
+    ? `<button class="k-chrome" id="k-pick-btn" data-zh="${esc(UI.zh.pick)}" data-en="${esc(UI.en.pick)}">${esc(UI[lang].pick)}</button>`
+    : '';
+  return back + pick;
+}
+
+/** The overlay form. Lifted from the kiosk's old front door, which this replaces. */
+function pickerOverlay(picker: KioskPicker | undefined, lang: 'zh' | 'en'): string {
+  if (!picker) return '';
+  const styles =
+    picker.styles && picker.styles.length > 1
+      ? `<label><span data-zh="${esc(UI.zh.styleLabel)}" data-en="${esc(UI.en.styleLabel)}">${esc(UI[lang].styleLabel)}</span>
+      <select id="k-pick-style">${picker.styles
+        .map((s) => `<option>${esc(s)}</option>`)
+        .join('')}</select></label>`
+      : '';
+  const foot = picker.offlineNote
+    ? `<p class="k-foot" data-zh="${esc(picker.offlineNote.zh)}" data-en="${esc(picker.offlineNote.en)}">${esc(picker.offlineNote[lang])}</p>`
+    : '';
+  return `
+<div id="k-pick-wrap">
+  <form id="k-pick">
+    <h2 data-zh="${esc(UI.zh.pickTitle)}" data-en="${esc(UI.en.pickTitle)}">${esc(UI[lang].pickTitle)}</h2>
+    <p class="k-sub" data-zh="${esc(UI.zh.pickSub)}" data-en="${esc(UI.en.pickSub)}">${esc(UI[lang].pickSub)}</p>
+
+    <label class="k-file">
+      <input type="file" id="k-pick-file" accept="${PICK_ACCEPT}">
+      <span id="k-pick-name" data-zh="${esc(UI.zh.fileHint)}" data-en="${esc(UI.en.fileHint)}">${esc(UI[lang].fileHint)}</span>
+    </label>
+
+    <label><span data-zh="${esc(UI.zh.targetLabel)}" data-en="${esc(UI.en.targetLabel)}">${esc(UI[lang].targetLabel)}</span>
+      <input type="text" id="k-pick-target" placeholder="M42 / NGC 3372 / Sh2-308">
+    </label>
+
+    <div class="k-row">
+      <label><span data-zh="${esc(UI.zh.langLabel)}" data-en="${esc(UI.en.langLabel)}">${esc(UI[lang].langLabel)}</span>
+        <select id="k-pick-lang">
+          <option value="zh"${lang === 'zh' ? ' selected' : ''}>中文</option>
+          <option value="en"${lang === 'en' ? ' selected' : ''}>English</option>
+        </select>
+      </label>
+      ${styles}
+    </div>
+
+    <button class="k-go" id="k-pick-go" type="submit" disabled
+      data-zh="${esc(UI.zh.start)}" data-en="${esc(UI.en.start)}">${esc(UI[lang].start)}</button>
+    <p class="k-status" id="k-pick-status"></p>
+    ${foot}
+    <button class="k-close" id="k-pick-close" type="button"
+      data-zh="${esc(UI.zh.close)}" data-en="${esc(UI.en.close)}">${esc(UI[lang].close)}</button>
+  </form>
+</div>`;
+}
+
+/**
+ * Behaviour for both of the above. Self-contained on purpose: it does not call
+ * the reading page's idleReset, because the global pointerdown listener there
+ * already rearms the timer for anything the page does.
+ */
+function chromeScript(picker?: KioskPicker): string {
+  return `
+(function(){
+  // Remember the language the way the hub does — same cookie, same path, and
+  // cookies ignore the port, so the dashboard and the kiosk stay in step in
+  // both directions. Each page flips its own labels; this only records it.
+  // (A file:// page has no cookie jar, hence the try.)
+  var langBtn=document.getElementById('k-lang');
+  if(langBtn) langBtn.addEventListener('click', function(){
+    var next=document.documentElement.lang==='zh'?'en':'zh';
+    try{ document.cookie='astellum_lang='+next+';path=/;max-age=31536000'; }catch(e){}
+  });
+
+  var head=document.getElementById('k-head');
+  // No hover on a touchscreen, so a touch in the head stands in for one.
+  if(head) head.addEventListener('pointerdown', function(){
+    head.classList.add('lit');
+    clearTimeout(head._dim);
+    head._dim=setTimeout(function(){ head.classList.remove('lit'); }, 4000);
+  }, {passive:true});
+${
+  picker
+    ? `
+  var wrap=document.getElementById('k-pick-wrap'),
+      form=document.getElementById('k-pick'),
+      file=document.getElementById('k-pick-file'),
+      fname=document.getElementById('k-pick-name'),
+      go=document.getElementById('k-pick-go'),
+      st=document.getElementById('k-pick-status');
+  function openPick(e){ if(e) e.stopPropagation(); wrap.classList.add('show'); }
+  function closePick(){ wrap.classList.remove('show'); }
+  document.getElementById('k-pick-btn').addEventListener('click', openPick);
+  document.getElementById('k-pick-close').addEventListener('click', closePick);
+  // The backdrop closes; the card itself must not.
+  wrap.addEventListener('click', function(e){ if(e.target===wrap) closePick(); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closePick(); });
+
+  file.addEventListener('change', function(){
+    var f=file.files[0];
+    if(f){ fname.textContent=f.name; fname.removeAttribute('data-zh'); fname.removeAttribute('data-en'); }
+    go.disabled=!f;
+  });
+  form.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var f=file.files[0]; if(!f) return;
+    go.disabled=true;
+    st.className='k-status';
+    st.textContent=T('reading');
+    var b64=await new Promise(function(res,rej){
+      var r=new FileReader(); r.onload=function(){res(r.result);}; r.onerror=rej; r.readAsDataURL(f);
+    });
+    st.textContent=T('solving');
+    try{
+      var styleSel=document.getElementById('k-pick-style');
+      var r=await fetch(${JSON.stringify(picker.endpoint)},{method:'POST',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify({filename:f.name, dataUrl:b64,
+          target:document.getElementById('k-pick-target').value.trim()||undefined,
+          lang:document.getElementById('k-pick-lang').value,
+          style:styleSel?styleSel.value:undefined})});
+      var j=await r.json();
+      if(!j.ok) throw new Error(j.error||T('failed'));
+      st.textContent=T('opening');
+      location.href=j.url;
+    }catch(err){
+      st.className='k-status err';
+      st.textContent=String(err.message||err);
+      go.disabled=false;
+    }
+  });`
+    : ''
+}
+})();`;
+}
+
+/** The handful of strings the picker's script needs at runtime, in both languages. */
+function chromeStrings(): string {
+  const keys = ['reading', 'solving', 'opening', 'failed'] as const;
+  const table = Object.fromEntries(keys.map((k) => [k, { zh: UI.zh[k], en: UI.en[k] }]));
+  return `var CHROME_T=${JSON.stringify(table)};
+function T(k){ return CHROME_T[k][document.documentElement.lang==='en'?'en':'zh']; }`;
+}
 
 /** Build the fullscreen, touch-first kiosk page for a reading. */
 export function generateKioskHtml(report: Reading, opts: KioskOptions): string {
@@ -277,13 +526,7 @@ html,body{height:100%;overflow:hidden;background:#05070c;
 #k-split:hover{background:#28324a;}
 #k-panel{flex:0 0 min(460px,38vw);min-width:220px;display:flex;flex-direction:column;
   background:#090c13;color:#e6e9f0;}
-#k-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-  padding:14px 22px;border-bottom:1px solid #1b2231;}
-#k-head button,.k-style{background:#141925;border:1px solid #2a3346;color:#cfd6e4;
-  border-radius:9px;padding:8px 14px;font-size:14px;cursor:pointer;}
-#k-head button:hover{background:#1c2333;}
-.k-style{display:flex;gap:8px;align-items:center;font-size:13px;color:#8a93a8;padding:6px 10px;}
-.k-style select{background:transparent;border:0;color:#cfd6e4;font-size:14px;}
+${CHROME_CSS}
 #k-body{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:22px 22px 40px;}
 #k-title{font-size:clamp(20px,2.4vw,30px);font-weight:700;line-height:1.25;}
 #k-narr{margin-top:10px;color:#c3cbdb;font-size:clamp(14px,1.5vw,18px);line-height:1.75;}
@@ -345,6 +588,7 @@ ${overlay}
   <div id="k-split" role="separator" aria-orientation="vertical"></div>
   <aside id="k-panel">
     <div id="k-head">
+      ${chromeButtons(opts, lang)}
       <button id="k-lang" data-zh="${esc(UI.zh.langBtn)}" data-en="${esc(UI.en.langBtn)}">${esc(UI[lang].langBtn)}</button>
       ${styleSwitch}
     </div>
@@ -358,6 +602,11 @@ ${cards}
     </div>
   </aside>
 </div>
+${pickerOverlay(opts.picker, lang)}
+<script>
+${chromeStrings()}
+${chromeScript(opts.picker)}
+</script>
 <script>
 (function(){
   var LANG=${JSON.stringify(lang)};
@@ -478,6 +727,79 @@ ${cards}
     document.addEventListener(ev, idleReset, {passive:true});
   });
   idleReset();
+})();
+</script>
+</body>
+</html>`;
+}
+
+export interface KioskShellOptions {
+  /** Where "← ASTELLUM" goes; omitted when nothing launched this. */
+  hubUrl?: string;
+  /** The picker. Without it this page can only sit there, so pass one. */
+  picker?: KioskPicker;
+  /** Which language to open in. Default 'zh'. */
+  lang?: 'zh' | 'en';
+}
+
+/**
+ * The kiosk with nothing on it yet.
+ *
+ * The front door used to be a screen of its own between the hub and the frame,
+ * which meant the kiosk's address showed you a form rather than the kiosk. This
+ * is what that address answers with now: the same dark fullscreen surface, the
+ * same chrome in the same corner, and one line telling you where to start. Pick
+ * an image and the frame replaces it.
+ */
+export function generateKioskShellHtml(opts: KioskShellOptions = {}): string {
+  const lang = opts.lang ?? 'zh';
+  return `<!doctype html>
+<html lang="${esc(lang)}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ASTELLUM</title>
+<link rel="icon" type="image/svg+xml" href="${KIOSK_FAVICON_DATA_URI}">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:#05070c;color:#e6e9f0;
+  font-family:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  -webkit-tap-highlight-color:transparent;user-select:none;}
+${CHROME_CSS}
+/* No panel to sit on, so the head becomes a bar in the same corner it occupies
+   on a frame — muscle memory carries over from one to the other. */
+#k-bar{position:fixed;top:0;right:0;z-index:10;display:flex;justify-content:flex-end;}
+#k-bar #k-head{border-bottom:0;}
+/* Covers the whole screen to centre one line, so it has to let clicks through —
+   otherwise it sits on top of the bar and swallows every press on it. */
+#k-empty{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  padding:24px;text-align:center;color:#5d6780;font-size:clamp(15px,1.8vw,19px);
+  pointer-events:none;}
+</style>
+</head>
+<body>
+<div id="k-bar">
+  <div id="k-head">
+    ${chromeButtons(opts, lang)}
+    <button id="k-lang" data-zh="${esc(UI.zh.langBtn)}" data-en="${esc(UI.en.langBtn)}">${esc(UI[lang].langBtn)}</button>
+  </div>
+</div>
+<p id="k-empty" data-zh="${esc(UI.zh.emptyHint)}" data-en="${esc(UI.en.emptyHint)}">${esc(UI[lang].emptyHint)}</p>
+${pickerOverlay(opts.picker, lang)}
+<script>
+${chromeStrings()}
+${chromeScript(opts.picker)}
+// This page carries no reading, so the language switch is just the generic
+// textContent swap the rest of the page already relies on.
+(function(){
+  var LANG=${JSON.stringify(lang)};
+  document.getElementById('k-lang').addEventListener('click', function(){
+    LANG = LANG==='zh' ? 'en' : 'zh';
+    document.documentElement.lang=LANG;
+    document.querySelectorAll('[data-zh]').forEach(function(el){
+      el.textContent = el.getAttribute('data-'+LANG) || el.textContent;
+    });
+  });
 })();
 </script>
 </body>

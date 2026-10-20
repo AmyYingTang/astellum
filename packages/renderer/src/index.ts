@@ -16,8 +16,11 @@ export {
 export { generateEmbedHtml, type EmbedOptions } from './embed.js';
 export {
   generateKioskHtml,
+  generateKioskShellHtml,
   KIOSK_FAVICON,
   KIOSK_FAVICON_DATA_URI,
   type KioskOptions,
+  type KioskPicker,
+  type KioskShellOptions,
   type KioskState,
 } from './kiosk.js';

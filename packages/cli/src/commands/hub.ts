@@ -2,7 +2,8 @@ import express from 'express';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { AstellumConfig, PartialConfig, mergeConfig, preferredLang } from '@astellum/schema';
+import { AstellumConfig, PartialConfig, mergeConfig } from '@astellum/schema';
+import { langFor, type Lang } from '../lang.js';
 import { loadConfig, userConfigPath } from '@astellum/schema/node';
 import {
   offlineCatalogStatus,
@@ -71,15 +72,6 @@ interface IndexJob {
  * on a static page, and it keeps every label, placeholder and option in one
  * language without threading a second copy through the markup.
  */
-type Lang = 'zh' | 'en';
-
-function langFor(req: { headers: Record<string, unknown> }): Lang {
-  const cookie = String(req.headers['cookie'] ?? '');
-  const saved = /(?:^|;\s*)astellum_lang=(zh|en)/.exec(cookie)?.[1];
-  if (saved === 'zh' || saved === 'en') return saved;
-  const accept = String(req.headers['accept-language'] ?? '');
-  return preferredLang(accept.split(',').map((p) => p.split(';')[0]!.trim()).filter(Boolean));
-}
 
 /** Pick one of a bilingual pair. */
 const T = (lang: Lang) => (zh: string, en: string): string => (lang === 'zh' ? zh : en);

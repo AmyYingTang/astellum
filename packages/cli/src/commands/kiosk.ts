@@ -18,7 +18,7 @@ import {
   defaultReadingsPaths,
   coverageSummary,
 } from '@astellum/reader';
-import { generateKioskHtml, type KioskState } from '@astellum/renderer';
+import { generateKioskHtml, type KioskPicker, type KioskState } from '@astellum/renderer';
 import { loadConfig } from '@astellum/schema/node';
 import type { FactSheet, Reading } from '@astellum/schema';
 import { TOOL_VERSION } from '../version.js';
@@ -46,6 +46,11 @@ export interface KioskArgs {
    *  put something on a screen, and another tool invoking it shouldn't have to
    *  know how. */
   open?: boolean;
+  /** Back link and picker for the generated page. Only the server passes this:
+   *  the page this command writes is opened as a file:// URL with nothing
+   *  serving it, so a picker would have nowhere to POST and a relative back
+   *  link would point into the filesystem. */
+  chrome?: { hubUrl?: string; picker?: KioskPicker };
 }
 
 /** Open a file in the platform browser, best-effort. */
@@ -210,6 +215,8 @@ export async function runKiosk(args: KioskArgs): Promise<KioskResult | null> {
     styles: p.kiosk.switchableStyle && library ? styleNames(library) : undefined,
     currentStyle: coverage.style ?? style,
     idleResetSec: p.kiosk.idleResetSec,
+    hubUrl: args.chrome?.hubUrl,
+    picker: args.chrome?.picker,
   });
   const htmlPath = join(outDir, 'kiosk.html');
   await writeFile(htmlPath, html, 'utf8');

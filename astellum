@@ -34,7 +34,7 @@ astellum 便捷运行脚本
                                                   targets  = 预热在线答案快照(按标注库目标)
                                                   indexes  = 解析索引;参数是最小视场角分
                                                              90′≈220MB 60′≈530MB 30′≈2.4GB
-  ./astellum kiosk                        打开现场入口页(选文件:FITS/JPG/PNG,自动出图)
+  ./astellum kiosk                        打开现场主界面(右上角选图:FITS/JPG/PNG,自动出图)
   ./astellum kiosk <图片> [对象名]          一键:识别 → 预定义解读 → 全屏可点页面(自动开浏览器)
   ./astellum watch <目录> [对象名]          监听目录,每来一张新图自动出一张全屏页
   ./astellum readings                     预定义解读覆盖率:哪些目标还没录、缺哪几项
@@ -220,7 +220,7 @@ case "$cmd" in
   kiosk)
     shift
     ensure_built
-    # No file named → the operator wants the front door, not a one-shot run.
+    # No file named → the operator wants the kiosk open, not a one-shot run.
     if [ $# -lt 1 ]; then
       node "$CLI" kiosk-serve
       exit 0

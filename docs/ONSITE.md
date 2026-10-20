@@ -36,11 +36,18 @@ discover a missing table.
 
 ## Three ways to run it
 
-**A front door** — the usual one. A page to pick a file from, nothing else:
+**The kiosk itself** — the usual one. It opens empty, and you pick an image
+from the button in the top right:
 
 ```bash
 ./astellum kiosk            # → http://localhost:3200
 ```
+
+That button stays on the frame once one is up, next to a faint "← ASTELLUM"
+that goes back to the hub — so you can put the next image on screen, or leave,
+without finding a terminal. Both sit at a third opacity until you reach for
+them: the audience is looking at this screen, and a stray tap on either one
+ends what they were reading.
 
 **One shot** — for a script, or another program driving astellum. It opens the
 finished page in a browser when it is done (`--no-open` to suppress):
