@@ -782,7 +782,11 @@ html,body{height:100%;overflow:hidden;background:#05070c;
    together and both go when the pointer moves on. */
 #k-read{display:none;}
 #k-read.show{display:block;}
-#k-crop{width:40%;min-width:130px;aspect-ratio:1/1;border-radius:12px;overflow:hidden;
+/* Two fifths of the screen's height, square, and never wider than the panel
+   it sits in: big enough to be looked at, small enough that the words beside
+   it are still the point. Sized from the height because that is what runs out
+   first — the panel's width is a user's drag away from anything. */
+#k-crop{width:min(100%,40vh);aspect-ratio:1/1;border-radius:12px;overflow:hidden;
   border:1px solid #243049;background:#05070c;}
 #k-crop svg{display:block;width:100%;height:100%;}
 #k-read-title{margin-top:16px;font-size:clamp(18px,2.1vw,26px);font-weight:700;line-height:1.3;}
