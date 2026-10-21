@@ -371,3 +371,35 @@ describe('picker: library styles vs an audience to write for', () => {
     expect(html).toContain('the model only changes the wording');
   });
 });
+
+describe('the poster control', () => {
+  // It was offered on the empty shell too, where there is no frame to print,
+  // and its menu — styled only by the frame page — sat open in the head.
+  it('is not offered on a shell that has no frame yet', () => {
+    const html = generateKioskShellHtml({ picker });
+    expect(html).not.toContain('id="k-poster"');
+    expect(html).not.toContain('data-layout="portrait"');
+  });
+
+  it('is offered on a frame, with its menu closed until asked', () => {
+    const html = generateKioskHtml(report, { imageDataUri: 'data:...', picker });
+    expect(html).toContain('id="k-poster"');
+    expect(html).toContain('#k-poster-menu{display:none;');
+  });
+
+  /*
+   * A template literal eats `\/`, so the source's `/\/$/` reached the browser
+   * as `//$/` — a comment, and a syntax error that took the whole inline
+   * script with it, including the picker's own listeners.
+   */
+  it('emits script the browser can parse', () => {
+    const html = generateKioskShellHtml({ picker });
+    const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+    expect(scripts.length).toBeGreaterThan(0);
+    for (const s of scripts) expect(() => new Function(s)).not.toThrow();
+    for (const s of [...generateKioskHtml(report, { imageDataUri: 'data:...', picker })
+      .matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1])) {
+      expect(() => new Function(s)).not.toThrow();
+    }
+  });
+});

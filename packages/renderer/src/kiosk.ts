@@ -249,6 +249,17 @@ a.k-chrome:hover{color:#cfd6e4;border-color:#3a4a6b;}
 #k-pick .k-go:disabled{background:#243447;color:#6b768f;cursor:default;}
 #k-pick .k-status{margin-top:16px;font-size:13px;line-height:1.6;color:#8a93a8;min-height:20px;}
 #k-pick .k-status.err{color:#f7768e;}
+/* Two layouts, one click away. The menu is a sibling so it can sit under the
+   button without the head growing a row. */
+#k-poster-wrap{position:relative;display:inline-block;}
+#k-poster-menu{display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:5;
+  background:#0b0f18;border:1px solid #2a3346;border-radius:10px;padding:6px;
+  flex-direction:column;gap:4px;min-width:110px;}
+#k-poster-wrap.open #k-poster-menu{display:flex;}
+#k-poster-menu button{background:none;border:0;color:#cfd6e4;font:inherit;font-size:13px;
+  text-align:left;padding:7px 10px;border-radius:7px;cursor:pointer;width:100%;}
+#k-poster-menu button:hover{background:#1c2333;}
+#k-poster[disabled]{opacity:1;cursor:progress;}
 #k-pick .k-chips{margin-top:20px;font-size:13px;color:#8a93a8;}
 #k-pick .k-chips>div{margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;}
 #k-pick .k-chip{background:#141925;border:1px solid #2a3344;color:#cfd6e4;
@@ -264,16 +275,19 @@ a.k-chrome:hover{color:#cfd6e4;border-color:#3a4a6b;}
 `;
 
 /** The buttons themselves, for `#k-head`. Each appears only if it can work. */
-function chromeButtons(opts: { hubUrl?: string; picker?: KioskPicker }, lang: 'zh' | 'en'): string {
+function chromeButtons(
+  opts: { hubUrl?: string; picker?: KioskPicker; poster?: boolean },
+  lang: 'zh' | 'en',
+): string {
   const back = opts.hubUrl
     ? `<a class="k-chrome" href="${esc(opts.hubUrl)}" title="${esc(UI[lang].back)}">← ASTELLUM</a>`
     : '';
   const pick = opts.picker
     ? `<button class="k-chrome" id="k-pick-btn" data-zh="${esc(UI.zh.pick)}" data-en="${esc(UI.en.pick)}">${esc(UI[lang].pick)}</button>`
     : '';
-  // Printing needs the server that rendered the frame, so the portable
-  // file:// page does not offer it.
-  const poster = opts.picker
+  // Printing needs both a frame to print and the server that rendered it, so
+  // neither the portable file:// page nor the empty shell offers it.
+  const poster = opts.poster && opts.picker
     ? `<span id="k-poster-wrap"><button class="k-chrome" id="k-poster" data-zh="${esc(UI.zh.poster)}" data-en="${esc(UI.en.poster)}">${esc(UI[lang].poster)}</button>` +
       `<span id="k-poster-menu">` +
       `<button data-layout="portrait" data-zh="${esc(UI.zh.posterPortrait)}" data-en="${esc(UI.en.posterPortrait)}">${esc(UI[lang].posterPortrait)}</button>` +
@@ -393,7 +407,7 @@ function chromeScript(picker?: KioskPicker): string {
         posterBtn.disabled=true;
         posterBtn.textContent=T('posterWait');
         try{
-          var url=location.pathname.replace(/\/$/,'')+'/poster?layout='+b.getAttribute('data-layout')+
+          var url=location.pathname.replace(/\\/$/,'')+'/poster?layout='+b.getAttribute('data-layout')+
                   '&lang='+(document.documentElement.lang==='en'?'en':'zh');
           var r=await fetch(url);
           if(!r.ok) throw new Error(await r.text());
@@ -764,17 +778,6 @@ html,body{height:100%;overflow:hidden;background:#05070c;
 /* The zoom controls sit with the rest of the chrome and fade like it: a
    touchscreen cannot be relied on for pinch, so these are the floor. */
 #k-zoomers{display:flex;gap:4px;}
-/* Two layouts, one click away. The menu is a sibling so it can sit under the
-   button without the head growing a row. */
-#k-poster-wrap{position:relative;display:inline-block;}
-#k-poster-menu{display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:5;
-  background:#0b0f18;border:1px solid #2a3346;border-radius:10px;padding:6px;
-  flex-direction:column;gap:4px;min-width:110px;}
-#k-poster-wrap.open #k-poster-menu{display:flex;}
-#k-poster-menu button{background:none;border:0;color:#cfd6e4;font:inherit;font-size:13px;
-  text-align:left;padding:7px 10px;border-radius:7px;cursor:pointer;width:100%;}
-#k-poster-menu button:hover{background:#1c2333;}
-#k-poster[disabled]{opacity:1;cursor:progress;}
 #k-zoomers button{min-width:34px;font-size:16px;line-height:1;}
 /* Geometry for the crop's mask, nothing more — it must not answer the pointer,
    or clicking a structure would do what coming near it no longer does. */
@@ -889,7 +892,7 @@ ${overlay}
         <button id="k-zo" class="k-chrome" title="${esc(UI[lang].zoomOut)}" aria-label="${esc(UI[lang].zoomOut)}">−</button>
         <button id="k-zr" class="k-chrome" title="${esc(UI[lang].zoomReset)}" aria-label="${esc(UI[lang].zoomReset)}">⟲</button>
       </span>
-      ${chromeButtons(opts, lang)}
+      ${chromeButtons({ ...opts, poster: true }, lang)}
       <button id="k-lang" data-zh="${esc(UI.zh.langBtn)}" data-en="${esc(UI.en.langBtn)}">${esc(UI[lang].langBtn)}</button>
       ${styleSwitch}
     </div>
