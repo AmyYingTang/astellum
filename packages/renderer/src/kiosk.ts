@@ -1039,8 +1039,11 @@ ${chromeScript(opts.picker)}
     // zooming in reveals the picture instead of the labels.
     for(var i=0;i<pins.length;i++){
       var g=pins[i], px=g.getAttribute('data-px'), py=g.getAttribute('data-py');
-      g.setAttribute('transform', zoom===1 ? '' :
-        'translate('+px+','+py+') scale('+(1/zoom)+') translate('+(-px)+','+(-py)+')');
+      // The step-off rides inside the counter-scale, so it too is a constant
+      // distance on screen rather than one that grows with the zoom.
+      var off=(g.dx||g.dy) ? ' translate('+g.dx+','+g.dy+')' : '';
+      g.setAttribute('transform', zoom===1 && !off ? '' :
+        'translate('+px+','+py+') scale('+(1/zoom)+') translate('+(-px)+','+(-py)+')'+off);
     }
     document.getElementById('k-zr').disabled = zoom<=ZMIN+0.001;
   }
@@ -1252,6 +1255,80 @@ ${chromeScript(opts.picker)}
     }
   }
 
+  /**
+   * Take the mark off the thing it names.
+   *
+   * A number is placed on its feature's rim, which is right for a structure
+   * bigger than the badge and wrong for one smaller: a pillar a few dozen
+   * pixels across ends up underneath the very circle pointing at it, and
+   * zooming does not help — the mark is held at its screen size, so it covers
+   * the same piece of sky however far in you go.
+   *
+   * Two small moves, in this order, because a mark that has wandered off stops
+   * belonging to anything: the number steps just outside the shape along the
+   * line it was already placed on, and if the name's plate still lies across
+   * the shape, the name changes sides. Both are bounded. A subject several
+   * times the size of its mark is left alone — nothing is being hidden, and a
+   * ring around half the frame would send its number into the next county.
+   */
+  function stepOffShapes(){
+    var flipped=false;
+    pins.forEach(function(g){
+      g.dx=0; g.dy=0;
+      g.setAttribute('transform','');
+      var feat=g.parentNode;
+      var geo=feat.querySelector('.k-mark');
+      var badge=g.querySelector('.k-badge');
+      if(!geo||!badge) return;
+      var sb;
+      try { sb=geo.getBBox(); } catch(e) { return; }
+      if(!sb.width && !sb.height) return;
+      var bx=+badge.getAttribute('cx'), by=+badge.getAttribute('cy'), br=+badge.getAttribute('r');
+      // No size test: the move is capped below, so a big subject simply gets a
+      // number just outside its rim instead of one sitting on it.
+
+      var sx=sb.x+sb.width/2, sy=sb.y+sb.height/2;
+      var vx=bx-sx, vy=by-sy, len=Math.sqrt(vx*vx+vy*vy);
+      // A badge sitting dead centre has no direction of its own; up and to the
+      // right is where badgeAnchor would have put it.
+      if(len<1e-3){ vx=0.7071; vy=-0.7071; len=1; }
+      vx/=len; vy/=len;
+
+      // Out along that line until the circle clears the shape, and no further
+      // than a couple of badges — past that it is a mark adrift.
+      var gap=br*0.35, cap=br*2.5, step=br*0.2, need=0;
+      for(var d=0; d<=cap; d+=step){
+        var cx2=bx+vx*d, cy2=by+vy*d;
+        var hit = cx2-br < sb.x+sb.width+gap && sb.x-gap < cx2+br &&
+                  cy2-br < sb.y+sb.height+gap && sb.y-gap < cy2+br;
+        need=d;
+        if(!hit) break;
+      }
+      g.dx=Math.round(vx*need); g.dy=Math.round(vy*need);
+
+      // The name reaches sideways from the number. If that is the side the
+      // shape is on, it reaches across it — so send it the other way.
+      var txt=g.querySelector('.k-label-t');
+      if(txt){
+        var rect=g.querySelector('.k-plate');
+        var rx=rect?+rect.getAttribute('x'):0, rw=rect?+rect.getAttribute('width'):0;
+        var ry=rect?+rect.getAttribute('y'):0, rh=rect?+rect.getAttribute('height'):0;
+        var across = rx+g.dx < sb.x+sb.width && sb.x < rx+rw+g.dx &&
+                     ry+g.dy < sb.y+sb.height && sb.y < ry+rh+g.dy;
+        if(across){
+          var tx=+txt.getAttribute('x');
+          var onLeft = txt.getAttribute('text-anchor')==='end';
+          var reach=Math.abs(tx-bx);
+          txt.setAttribute('x', onLeft ? bx+reach : bx-reach);
+          txt.setAttribute('text-anchor', onLeft ? 'start' : 'end');
+          flipped=true;
+        }
+      }
+    });
+    if(flipped) fitPlates(); // the plate is measured from the text it sits under
+    applyZoom();
+  }
+
   function fitPlates(){
     document.querySelectorAll('.k-label').forEach(function(g){
       var txt=g.querySelector('text');
@@ -1446,7 +1523,7 @@ ${chromeScript(opts.picker)}
 
   document.getElementById('k-lang').addEventListener('click', function(){
     applyLang(LANG==='zh' ? 'en' : 'zh');
-    fitPlates(); layoutLabels();
+    fitPlates(); layoutLabels(); stepOffShapes();
     idleReset();
   });
 
@@ -1473,9 +1550,9 @@ ${chromeScript(opts.picker)}
   showRead(null); // the subject, until somebody asks about something else
 
   // Plates are measured, so they wait for the fonts the measurement depends on.
-  fitPlates(); layoutLabels();
+  fitPlates(); layoutLabels(); stepOffShapes();
   if(document.fonts && document.fonts.ready)
-    document.fonts.ready.then(function(){ fitPlates(); layoutLabels(); });
+    document.fonts.ready.then(function(){ fitPlates(); layoutLabels(); stepOffShapes(); });
   // The crop is sized from the photo's box, which a resize or a dragged
   // divider changes underneath it.
   window.addEventListener('resize', function(){ showRead(active); });

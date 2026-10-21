@@ -428,3 +428,22 @@ describe('marks under zoom', () => {
     expect(pin.slice(0, pin.indexOf('</g>'))).not.toContain('k-mark');
   });
 });
+
+describe('a mark that would cover what it names', () => {
+  const html = generateKioskHtml(report, { imageDataUri: 'data:...' });
+
+  it('steps the number off its own shape, within a bounded distance', () => {
+    expect(html).toContain('function stepOffShapes()');
+    expect(html).toMatch(/cap=br\*2\.5/); // never adrift from what it points at
+  });
+
+  it('sends the name to the other side rather than across the shape', () => {
+    expect(html).toContain("text-anchor', onLeft ? 'start' : 'end'");
+  });
+
+  it('runs it after the plates are measured, and again when the words change', () => {
+    expect(html).toContain('fitPlates(); layoutLabels(); stepOffShapes();');
+    const sw = html.slice(html.lastIndexOf("getElementById('k-lang')"));
+    expect(sw.slice(0, 200)).toContain('stepOffShapes()');
+  });
+});
