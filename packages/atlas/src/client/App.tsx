@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { worldToPixel, pixelToWorld, type Wcs } from '@astellum/schema';
 import { Canvas, type Shape } from './Canvas.js';
+import { Icon, type IconName } from './Icons.js';
 import { ReadingEditor } from './Readings.js';
 import { useLang } from './i18n.js';
 import {
@@ -801,22 +802,37 @@ export function App(): JSX.Element {
                     </button>
                     {/* An imported target has an image but no annotations yet,
                         so "ready to draw on" needs its own marker. */}
-                    <span className={x.has_image ? 'img-dot on' : 'img-dot'} title={t('hasImage')}>
-                      ▣
+                    <span className={x.has_image ? 'img-dot on' : 'img-dot'}>
+                      <Icon name="image" title={t('hasImage')} />
                     </span>
                     {x.primary_id && stale.includes(x.primary_id) && (
-                      <span className="stale-dot" title={t('staleOne')}>
-                        ●
+                      <span className="stale-dot">
+                        <Icon name="stale" title={t('staleOne')} />
                       </span>
                     )}
                     <span className="target-counts">
                       {x.annotations === 0 ? (
-                        '0'
+                        <span className="none-yet">—</span>
                       ) : (
                         <>
-                          {x.status.approved > 0 && <b className="ok">{x.status.approved}✓</b>}
-                          {x.status.in_review > 0 && <b className="rev">{x.status.in_review}⏳</b>}
-                          {x.status.draft > 0 && <b className="dft">{x.status.draft}</b>}
+                          {x.status.approved > 0 && (
+                            <b className="ok">
+                              {x.status.approved}
+                              <Icon name="approved" title={t('legApproved')} />
+                            </b>
+                          )}
+                          {x.status.in_review > 0 && (
+                            <b className="rev">
+                              {x.status.in_review}
+                              <Icon name="review" title={t('legReview')} />
+                            </b>
+                          )}
+                          {x.status.draft > 0 && (
+                            <b className="dft">
+                              {x.status.draft}
+                              <Icon name="draft" title={t('legDraft')} />
+                            </b>
+                          )}
                         </>
                       )}
                     </span>
@@ -824,6 +840,27 @@ export function App(): JSX.Element {
                 );
               })}
             </ul>
+            {/* Nothing in the list above explains itself, and a curator who
+                comes back after a week should not have to guess what an amber
+                arrow was. */}
+            <dl className="legend">
+              {(
+                [
+                  ['image', 'legImage'],
+                  ['approved', 'legApproved'],
+                  ['review', 'legReview'],
+                  ['draft', 'legDraft'],
+                  ['stale', 'legStale'],
+                ] as [IconName, 'legImage' | 'legApproved' | 'legReview' | 'legDraft' | 'legStale'][]
+              ).map(([icon, key]) => (
+                <div key={icon} className={`leg leg-${icon}`}>
+                  <dt>
+                    <Icon name={icon} />
+                  </dt>
+                  <dd>{t(key)}</dd>
+                </div>
+              ))}
+            </dl>
           </section>
 
           {/* Exporting everything is still here, for a batch of targets or to
@@ -833,7 +870,8 @@ export function App(): JSX.Element {
             <button onClick={() => void doExport()}>{t('exportRegistry')}</button>
             {stale.length > 0 && (
               <p className="stale" title={t('staleWhy')}>
-                ● {stale.length} {t('staleSome')}
+                <Icon name="stale" />
+                {stale.length} {t('staleSome')}
               </p>
             )}
             {exportMsg && <p className="status">{exportMsg}</p>}
