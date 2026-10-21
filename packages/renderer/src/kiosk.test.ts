@@ -447,3 +447,36 @@ describe('a mark that would cover what it names', () => {
     expect(sw.slice(0, 200)).toContain('stepOffShapes()');
   });
 });
+
+/*
+ * A phone is not a small desk. There is no hovering, the marks are close
+ * together at that size, and a head full of controls has to wrap rather than
+ * scroll — a scroll container up there put a scrollbar across the top of the
+ * picture and clipped the poster menu into one as well.
+ */
+describe('a narrow screen', () => {
+  const html = generateKioskHtml(report, { imageDataUri: 'data:...' });
+
+  it('lets the head wrap instead of scrolling', () => {
+    expect(html).toContain('flex-wrap:wrap;background:#070a10;');
+    expect(html).not.toMatch(/#k>#k-head\{[^}]*overflow-x:auto/);
+  });
+
+  it('measures the head, since wrapping makes its height unknowable', () => {
+    expect(html).toContain("setProperty('--k-head'");
+    expect(html).toContain('window.addEventListener(\'resize\', measureHead)');
+  });
+
+  it('selects by tap, and says so', () => {
+    expect(html).toContain("matchMedia('(hover:hover) and (pointer:fine)')");
+    expect(html).toContain('innerWidth > 820');
+    expect(html).toContain('点一下任何一个标注');
+    expect(html).toContain('Tap any mark to find out what it is');
+  });
+
+  it('gives the crop less room, and the menu a side it fits on', () => {
+    const mq = html.slice(html.indexOf('@media (max-width:820px)'));
+    expect(mq.slice(0, 600)).toContain('#k-crop{width:min(100%,22vh);}');
+    expect(mq.slice(0, 600)).toContain('#k-poster-menu{right:auto;left:0;}');
+  });
+});

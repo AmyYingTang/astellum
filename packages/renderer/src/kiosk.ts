@@ -119,6 +119,7 @@ export interface KioskPicker {
 const UI = {
   zh: {
     nearHint: '把手指或鼠标靠近任何一个标注，看看那是什么',
+    tapHint: '点一下任何一个标注，看看那是什么',
     back: '返回',
     generic: '通用说明:这段讲的是这类结构，不是专门写这个天体的',
     statusTitle: '这一屏的状态(仅工作人员可见)',
@@ -155,6 +156,7 @@ const UI = {
   },
   en: {
     nearHint: 'Come near any mark to find out what it is',
+    tapHint: 'Tap any mark to find out what it is',
     back: 'Back',
     generic: 'General note: about this kind of structure, not written for this object',
     statusTitle: 'Status of this screen (for staff)',
@@ -736,6 +738,7 @@ html,body{height:100%;overflow:hidden;background:#05070c;
    floating off the picture. */
 #k-stage{position:relative;aspect-ratio:${width}/${height};width:100%;
   max-width:calc((100vh - var(--k-head,64px) - 24px) * ${width} / ${height});
+  min-width:0;
   max-height:100%;line-height:0;
   overflow:hidden;touch-action:none;}
 #k-zoomwrap{position:absolute;inset:0;transform-origin:0 0;
@@ -824,8 +827,12 @@ html,body{height:100%;overflow:hidden;background:#05070c;
 #k-panel{flex:0 0 min(460px,38vw);min-width:220px;display:flex;flex-direction:column;
   background:#090c13;color:#e6e9f0;}
 ${CHROME_CSS}
-#k>#k-head{flex:0 0 auto;height:var(--k-head,64px);box-sizing:border-box;
-  padding:0 22px;flex-wrap:nowrap;overflow-x:auto;background:#070a10;}
+/* It wraps rather than scrolling: a scroll container here put a scrollbar
+   across the top of the picture on a narrow window, and clipped the poster
+   menu — which hangs out of the head by design — into one as well. Its height
+   is measured into --k-head, since wrapping makes it unknowable from here. */
+#k>#k-head{flex:0 0 auto;box-sizing:border-box;padding:10px 16px;
+  flex-wrap:wrap;background:#070a10;}
 #k-body{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:22px 22px 40px;}
 #k-title{font-size:clamp(20px,2.4vw,30px);font-weight:700;line-height:1.25;}
 #k-narr{margin-top:10px;color:#c3cbdb;font-size:clamp(14px,1.5vw,18px);line-height:1.75;}
@@ -864,11 +871,17 @@ ${CHROME_CSS}
 
 @media (max-width:820px){
   #k-main{flex-direction:column;}
-  #k-view{flex:0 0 52vh;padding:8px;}
+  #k-view{flex:0 0 46vh;padding:8px;}
   #k-stage{max-width:100%;max-height:100%;
-    width:min(100%, calc((52vh - 16px) * ${width} / ${height}));}
+    width:min(100%, calc((46vh - 16px) * ${width} / ${height}));}
   #k-panel{flex:1 1 auto;}
   #k-split{flex:0 0 6px;cursor:row-resize;}
+  /* The crop shares the height with the picture above it here, instead of
+     sitting beside it. */
+  #k-crop{width:min(100%,22vh);}
+  #k-head button,#k-head a.k-chrome,.k-style{padding:7px 10px;font-size:13px;}
+  /* Hung from the right, the menu reached off the left edge of a phone. */
+  #k-poster-menu{right:auto;left:0;}
 }
 </style>
 </head>
@@ -1022,6 +1035,27 @@ ${chromeScript(opts.picker)}
   var zoomWrap=document.getElementById('k-zoomwrap');
   var zoom=1, panX=0, panY=0;
   var ZMIN=1, ZMAX=6;
+
+  // The head wraps, so only the browser knows how tall it is — and the stage
+  // is sized from what is left.
+  var headEl=document.getElementById('k-head');
+  function measureHead(){
+    if(headEl) document.documentElement.style.setProperty('--k-head', headEl.offsetHeight+'px');
+  }
+  measureHead();
+  window.addEventListener('resize', measureHead);
+
+  // Say the thing that is actually true of this screen.
+  var hintEl=document.getElementById('k-hint');
+  var HINTS={near:${JSON.stringify({ zh: UI.zh.nearHint, en: UI.en.nearHint })},
+             tap:${JSON.stringify({ zh: UI.zh.tapHint, en: UI.en.tapHint })}};
+  function fitHint(){
+    if(!hintEl) return;
+    var h=hoverable()?HINTS.near:HINTS.tap;
+    hintEl.setAttribute('data-zh',h.zh); hintEl.setAttribute('data-en',h.en);
+    hintEl.textContent=h[document.documentElement.lang==='en'?'en':'zh'];
+  }
+  window.addEventListener('resize', fitHint);
 
   var pins=[].slice.call(document.querySelectorAll('.k-pin'));
   function applyZoom(){
@@ -1433,7 +1467,19 @@ ${chromeScript(opts.picker)}
     // neighbouring marks would flicker the whole screen.
     leaveTimer=setTimeout(function(){ if(!active) return; show(null); }, LINGER);
   }
-  stage.addEventListener('pointermove', function(e){ near(e.clientX, e.clientY); }, {passive:true});
+  /*
+   * Coming near a mark is a mouse idea. A finger has no "near": every move is
+   * a drag, and on a phone-sized screen the marks are close enough together
+   * that sliding across the picture would flicker through all of them. So a
+   * touch — or a narrow window, which is the same situation — selects by tap
+   * and nothing else.
+   */
+  function hoverable(){
+    return window.matchMedia('(hover:hover) and (pointer:fine)').matches && window.innerWidth > 820;
+  }
+  stage.addEventListener('pointermove', function(e){
+    if(hoverable()) near(e.clientX, e.clientY);
+  }, {passive:true});
   stage.addEventListener('pointerdown', function(e){ near(e.clientX, e.clientY); }, {passive:true});
   // Leaving the picture sends no more moves, so without this the crop would
   // stay up until the idle reset — minutes later.
@@ -1546,6 +1592,7 @@ ${chromeScript(opts.picker)}
   showRead(null); // the subject, until somebody asks about something else
 
   // Plates are measured, so they wait for the fonts the measurement depends on.
+  fitHint();
   fitPlates(); layoutLabels(); stepOffShapes();
   if(document.fonts && document.fonts.ready)
     document.fonts.ready.then(function(){ fitPlates(); layoutLabels(); stepOffShapes(); });
