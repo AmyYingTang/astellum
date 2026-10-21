@@ -129,6 +129,10 @@ const UI = {
     zoomOut: '缩小',
     zoomReset: '复位',
     allItems: '全部',
+    poster: '海报',
+    posterPortrait: '竖版',
+    posterLandscape: '横版',
+    posterWait: '生成中…',
     no_annotations: '这张图已经认出目标，但标注库里还没有它的标注。',
     generic_only: '下面是这类结构的通用说明，还没有针对这个目标写的解读。',
     unsolved: '这张图没能解析出天区，所以下面不做任何身份判断。',
@@ -159,6 +163,10 @@ const UI = {
     zoomOut: 'Zoom out',
     zoomReset: 'Fit',
     allItems: 'All',
+    poster: 'Poster',
+    posterPortrait: 'Portrait',
+    posterLandscape: 'Landscape',
+    posterWait: 'Rendering…',
     no_annotations: 'The target is identified, but nothing has been annotated for it yet.',
     generic_only: 'These are general notes for this kind of structure — nothing specific to this object yet.',
     unsolved: 'This image could not be plate-solved, so no identity is claimed below.',
@@ -235,7 +243,16 @@ function chromeButtons(opts: { hubUrl?: string; picker?: KioskPicker }, lang: 'z
   const pick = opts.picker
     ? `<button class="k-chrome" id="k-pick-btn" data-zh="${esc(UI.zh.pick)}" data-en="${esc(UI.en.pick)}">${esc(UI[lang].pick)}</button>`
     : '';
-  return back + pick;
+  // Printing needs the server that rendered the frame, so the portable
+  // file:// page does not offer it.
+  const poster = opts.picker
+    ? `<span id="k-poster-wrap"><button class="k-chrome" id="k-poster" data-zh="${esc(UI.zh.poster)}" data-en="${esc(UI.en.poster)}">${esc(UI[lang].poster)}</button>` +
+      `<span id="k-poster-menu">` +
+      `<button data-layout="portrait" data-zh="${esc(UI.zh.posterPortrait)}" data-en="${esc(UI.en.posterPortrait)}">${esc(UI[lang].posterPortrait)}</button>` +
+      `<button data-layout="landscape" data-zh="${esc(UI.zh.posterLandscape)}" data-en="${esc(UI.en.posterLandscape)}">${esc(UI[lang].posterLandscape)}</button>` +
+      `</span></span>`
+    : '';
+  return back + pick + poster;
 }
 
 /** The overlay form. Lifted from the kiosk's old front door, which this replaces. */
@@ -304,6 +321,49 @@ function chromeScript(picker?: KioskPicker): string {
     try{ document.cookie='astellum_lang='+next+';path=/;max-age=31536000'; }catch(e){}
   });
 
+  /*
+   * The poster. The frame knows its own id from the address it was served
+   * from, and the server re-renders from the files it wrote — so this is a
+   * link, not an upload. It takes seconds (a headless browser starts), hence
+   * the waiting state: without it the operator clicks again and gets two.
+   */
+  var posterBtn=document.getElementById('k-poster');
+  if(posterBtn){
+    var posterWrap=document.getElementById('k-poster-wrap');
+    posterBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      posterWrap.classList.toggle('open');
+    });
+    document.addEventListener('click', function(){ posterWrap.classList.remove('open'); });
+    document.querySelectorAll('#k-poster-menu button').forEach(function(b){
+      b.addEventListener('click', async function(e){
+        e.stopPropagation();
+        posterWrap.classList.remove('open');
+        var was=posterBtn.textContent;
+        posterBtn.disabled=true;
+        posterBtn.textContent=T('posterWait');
+        try{
+          var url=location.pathname.replace(/\/$/,'')+'/poster?layout='+b.getAttribute('data-layout')+
+                  '&lang='+(document.documentElement.lang==='en'?'en':'zh');
+          var r=await fetch(url);
+          if(!r.ok) throw new Error(await r.text());
+          var blob=await r.blob();
+          var name=(r.headers.get('content-disposition')||'').match(/filename="([^"]+)"/);
+          var a=document.createElement('a');
+          a.href=URL.createObjectURL(blob);
+          a.download=name?name[1]:'poster.png';
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(function(){ URL.revokeObjectURL(a.href); }, 10000);
+        }catch(err){
+          posterBtn.title=String(err.message||err);
+        }finally{
+          posterBtn.disabled=false;
+          posterBtn.textContent=was;
+        }
+      });
+    });
+  }
+
   var head=document.getElementById('k-head');
   // No hover on a touchscreen, so a touch in the head stands in for one.
   if(head) head.addEventListener('pointerdown', function(){
@@ -368,7 +428,7 @@ ${
 
 /** The handful of strings the picker's script needs at runtime, in both languages. */
 function chromeStrings(): string {
-  const keys = ['reading', 'solving', 'opening', 'failed'] as const;
+  const keys = ['reading', 'solving', 'opening', 'failed', 'posterWait'] as const;
   const table = Object.fromEntries(keys.map((k) => [k, { zh: UI.zh[k], en: UI.en[k] }]));
   return `var CHROME_T=${JSON.stringify(table)};
 function T(k){ return CHROME_T[k][document.documentElement.lang==='en'?'en':'zh']; }`;
@@ -636,6 +696,17 @@ html,body{height:100%;overflow:hidden;background:#05070c;
 /* The zoom controls sit with the rest of the chrome and fade like it: a
    touchscreen cannot be relied on for pinch, so these are the floor. */
 #k-zoomers{display:flex;gap:4px;}
+/* Two layouts, one click away. The menu is a sibling so it can sit under the
+   button without the head growing a row. */
+#k-poster-wrap{position:relative;display:inline-block;}
+#k-poster-menu{display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:5;
+  background:#0b0f18;border:1px solid #2a3346;border-radius:10px;padding:6px;
+  flex-direction:column;gap:4px;min-width:110px;}
+#k-poster-wrap.open #k-poster-menu{display:flex;}
+#k-poster-menu button{background:none;border:0;color:#cfd6e4;font:inherit;font-size:13px;
+  text-align:left;padding:7px 10px;border-radius:7px;cursor:pointer;width:100%;}
+#k-poster-menu button:hover{background:#1c2333;}
+#k-poster[disabled]{opacity:1;cursor:progress;}
 #k-zoomers button{min-width:34px;font-size:16px;line-height:1;}
 /* Geometry for the crop's mask, nothing more — it must not answer the pointer,
    or clicking a structure would do what coming near it no longer does. */

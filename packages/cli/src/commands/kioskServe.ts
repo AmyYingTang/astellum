@@ -2,9 +2,15 @@ import express from 'express';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { join, resolve, extname } from 'node:path';
 import { tmpdir } from 'node:os';
+import { Reading } from '@astellum/schema';
 import { loadConfig } from '@astellum/schema/node';
 import { offlineCatalogStatus, isOfflineReady } from '@astellum/identify';
-import { KIOSK_FAVICON, generateKioskShellHtml, type KioskPicker } from '@astellum/renderer';
+import {
+  KIOSK_FAVICON,
+  generateKioskShellHtml,
+  renderPosterBuffers,
+  type KioskPicker,
+} from '@astellum/renderer';
 import { runKiosk } from './kiosk.js';
 import { exitWhenOrphaned } from '../supervised.js';
 import { langFor } from '../lang.js';
@@ -112,6 +118,45 @@ export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
       res.json({ ok: true, url: `/view/${id}`, objectName: result.objectName, state: result.state });
     } catch (e) {
       res.status(400).json({ ok: false, error: (e as Error).message });
+    }
+  });
+
+  /**
+   * The poster for a frame already on screen.
+   *
+   * Everything it needs is in the frame's own directory — the reading and the
+   * image the reading points at — so this re-renders rather than keeping
+   * anything in memory. The language is the page's, not the one baked into the
+   * reading: the frame can be switched after it was made, and a poster that
+   * disagreed with the screen it was printed from would be a puzzle.
+   *
+   * It is slow on purpose-built hardware and slower on a laptop: the renderer
+   * starts a headless browser. The button that calls this says so.
+   */
+  app.get('/view/:id/poster', async (req, res) => {
+    try {
+      if (!/^f\d+$/.test(req.params.id)) throw new Error('bad id');
+      const dir = join(workdir, req.params.id);
+      const raw = JSON.parse(await readFile(join(dir, 'reading.json'), 'utf8')) as unknown;
+      const lang = req.query.lang === 'en' ? 'en' : req.query.lang === 'zh' ? 'zh' : undefined;
+      const report = Reading.parse(
+        lang ? { ...(raw as Record<string, unknown>), display_language: lang } : raw,
+      );
+      const layout = req.query.layout === 'landscape' ? 'landscape' : 'portrait';
+      const imgPath = join(dir, report.image.src);
+      const mime = extname(imgPath).toLowerCase() === '.png' ? 'image/png' : 'image/jpeg';
+      const dataUri = `data:${mime};base64,${(await readFile(imgPath)).toString('base64')}`;
+      const [poster] = await renderPosterBuffers({ report, imageDataUri: dataUri, layouts: [layout] });
+      if (!poster) throw new Error('poster render produced nothing');
+      const stem = (report.object.name.en || report.object.name.zh || 'poster')
+        .replace(/[\\/:*?"<>|]/g, '')
+        .replace(/\s+/g, '-');
+      res
+        .type('image/png')
+        .set('content-disposition', `attachment; filename="${stem}_${poster.name}"`)
+        .send(poster.buffer);
+    } catch (e) {
+      res.status(400).type('text').send((e as Error).message);
     }
   });
 
