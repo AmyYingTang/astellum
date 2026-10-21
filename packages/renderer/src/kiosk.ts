@@ -122,7 +122,6 @@ const UI = {
     back: '返回',
     generic: '通用说明:这段讲的是这类结构，不是专门写这个天体的',
     statusTitle: '这一屏的状态(仅工作人员可见)',
-    genericHelp: '带 ※ 的条目用的是该类结构的通用说明，还没有专门为这个天体写的文字。',
     langBtn: 'EN',
     styleLabel: '讲解风格',
     pick: '选择图片',
@@ -159,7 +158,6 @@ const UI = {
     back: 'Back',
     generic: 'General note: about this kind of structure, not written for this object',
     statusTitle: 'Status of this screen (for staff)',
-    genericHelp: 'Items marked ※ use the general note for that kind of structure — nothing specific to this object has been written yet.',
     langBtn: '中文',
     styleLabel: 'Style',
     pick: 'Pick image',
@@ -668,17 +666,15 @@ export function generateKioskHtml(report: Reading, opts: KioskOptions): string {
   // Staff-only. Hidden until tapped, and it carries everything an operator
   // might wonder about this frame — including what the ※ marks mean — so none
   // of that has to appear where an audience will read it and ask questions.
-  const anyGeneric = report.features.some(
-    (f) => sources[f.id] === 'feature_generic' || sources[f.id] === 'facts',
-  );
   // Each line carries its own pair of languages, so the switcher's generic
   // textContent swap works on it. Handing the whole popover one multi-line
   // string instead collapsed the paragraphs into a single text node with a
   // literal newline in it, which renders as one run-on line.
-  const notes: { zh: string; en: string }[] = [
-    ...(state === 'ok' ? [] : [{ zh: UI.zh[state], en: UI.en[state] }]),
-    ...(anyGeneric ? [{ zh: UI.zh.genericHelp, en: UI.en.genericHelp }] : []),
-  ];
+  // Only what is wrong with the identification. The ※ beside an entry used to
+  // be explained here as well, which meant the dot appeared on a frame where
+  // nothing was wrong — and the mark carries its own explanation anyway.
+  const notes: { zh: string; en: string }[] =
+    state === 'ok' ? [] : [{ zh: UI.zh[state], en: UI.en[state] }];
   const info = notes.length
     ? `<button id="k-info" aria-label="status" title="${esc(UI[lang].statusTitle)}">i</button>
 <div id="k-note">${notes
