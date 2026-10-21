@@ -125,6 +125,10 @@ const UI = {
     failed: '识别失败',
     close: '关闭',
     emptyHint: '点右上角「选择图片」开始',
+    zoomIn: '放大',
+    zoomOut: '缩小',
+    zoomReset: '复位',
+    allItems: '全部',
     no_annotations: '这张图已经认出目标，但标注库里还没有它的标注。',
     generic_only: '下面是这类结构的通用说明，还没有针对这个目标写的解读。',
     unsolved: '这张图没能解析出天区，所以下面不做任何身份判断。',
@@ -151,6 +155,10 @@ const UI = {
     failed: 'Could not read this image',
     close: 'Close',
     emptyHint: 'Pick an image, top right, to begin',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    zoomReset: 'Fit',
+    allItems: 'All',
     no_annotations: 'The target is identified, but nothing has been annotated for it yet.',
     generic_only: 'These are general notes for this kind of structure — nothing specific to this object yet.',
     unsolved: 'This image could not be plate-solved, so no identity is claimed below.',
@@ -587,7 +595,11 @@ html,body{height:100%;overflow:hidden;background:#05070c;
    ratio, letterboxing the photo inside a taller box and leaving the overlay
    floating off the picture. */
 #k-stage{position:relative;aspect-ratio:${width}/${height};width:100%;
-  max-width:calc((100vh - 24px) * ${width} / ${height});max-height:100%;line-height:0;}
+  max-width:calc((100vh - 24px) * ${width} / ${height});max-height:100%;line-height:0;
+  overflow:hidden;touch-action:none;}
+#k-zoomwrap{position:absolute;inset:0;transform-origin:0 0;
+  transition:transform .12s ease-out;will-change:transform;}
+#k-zoomwrap.k-drag{transition:none;}
 #k-stage img{width:100%;height:100%;display:block;object-fit:contain;}
 #k-svg{position:absolute;inset:0;width:100%;height:100%;}
 .k-feat{cursor:pointer;}
@@ -621,16 +633,31 @@ html,body{height:100%;overflow:hidden;background:#05070c;
    white core — which is what a reader ran into. Nothing here depends on what
    is behind it. */
 .k-plate{fill:rgba(8,11,18,.9);}
+/* The zoom controls sit with the rest of the chrome and fade like it: a
+   touchscreen cannot be relied on for pinch, so these are the floor. */
+#k-zoomers{display:flex;gap:4px;}
+#k-zoomers button{min-width:34px;font-size:16px;line-height:1;}
 /* Geometry for the crop's mask, nothing more — it must not answer the pointer,
    or clicking a structure would do what coming near it no longer does. */
 .k-geo{pointer-events:none;}
-/* The crop, floating over the photo beside whatever is being read. It takes no
-   pointer events: it sits exactly where the hit-testing looks, and swallowing
-   the pointer would make the thing underneath flicker in and out. */
-#k-loupe{position:absolute;display:none;border-radius:14px;
-  border:1px solid rgba(214,224,242,.5);box-shadow:0 10px 34px rgba(0,0,0,.6);
-  background-repeat:no-repeat;pointer-events:none;opacity:0;transition:opacity .18s;}
-#k-loupe.show{display:block;opacity:1;}
+/* What is being read: the piece of sky, then the words about it. Both appear
+   together and both go when the pointer moves on. */
+#k-read{display:none;}
+#k-read.show{display:block;}
+#k-crop{width:100%;aspect-ratio:1/1;border-radius:12px;overflow:hidden;
+  border:1px solid #243049;background:#05070c;}
+#k-crop svg{display:block;width:100%;height:100%;}
+#k-read-title{margin-top:16px;font-size:clamp(18px,2.1vw,26px);font-weight:700;line-height:1.3;}
+#k-read-body p{margin-top:10px;font-size:clamp(14px,1.5vw,18px);line-height:1.8;color:#ccd4e3;}
+/* The whole list, one row away. It is how a visitor sees what else is here
+   without hunting the picture, but it is not what they came to read first. */
+#k-all{display:none;margin-top:26px;border-top:1px solid #1b2231;}
+#k-all.show{display:block;}
+#k-all-head{width:100%;text-align:left;padding:14px 2px;background:none;border:0;
+  color:#8a93a8;font:inherit;font-size:14px;cursor:pointer;}
+#k-all-head:hover{color:#cfd6e4;}
+#k-all-body{display:none;}
+#k-all.open #k-all-body{display:block;}
 /* The invitation has to stay. A visitor arrives mid-session, after someone
    else has already touched something — if the line had gone for good they
    would face a picture with no way in. It stops pulsing once the screen has
@@ -702,29 +729,51 @@ ${CHROME_CSS}
 <div id="k">
   <div id="k-view">
     <div id="k-stage">
-      <img src="${opts.imageDataUri}" alt="${esc(report.object.name[lang])}">
-      <svg id="k-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+      <!-- Picture and marks ride one transform: zoom either on its own and the
+           labels would drift off the sky they name. The hint and the crop stay
+           outside it — they belong to the screen, not to the photograph. -->
+      <div id="k-zoomwrap">
+        <img src="${opts.imageDataUri}" alt="${esc(report.object.name[lang])}">
+        <svg id="k-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
 ${overlay}
-      </svg>
+        </svg>
+      </div>
       <div id="k-hint" data-zh="${esc(UI.zh.nearHint)}" data-en="${esc(UI.en.nearHint)}">${esc(UI[lang].nearHint)}</div>
-      <div id="k-loupe"></div>
     </div>
     ${info}
   </div>
   <div id="k-split" role="separator" aria-orientation="vertical"></div>
   <aside id="k-panel">
     <div id="k-head">
+      <span id="k-zoomers">
+        <button id="k-zi" class="k-chrome" title="${esc(UI[lang].zoomIn)}" aria-label="${esc(UI[lang].zoomIn)}">+</button>
+        <button id="k-zo" class="k-chrome" title="${esc(UI[lang].zoomOut)}" aria-label="${esc(UI[lang].zoomOut)}">−</button>
+        <button id="k-zr" class="k-chrome" title="${esc(UI[lang].zoomReset)}" aria-label="${esc(UI[lang].zoomReset)}">⟲</button>
+      </span>
       ${chromeButtons(opts, lang)}
       <button id="k-lang" data-zh="${esc(UI.zh.langBtn)}" data-en="${esc(UI.en.langBtn)}">${esc(UI[lang].langBtn)}</button>
       ${styleSwitch}
     </div>
+    <!-- Empty until something is being read. A panel that opens full of text
+         asks to be read before anyone has pointed at anything; this one answers
+         a question instead of anticipating it. -->
     <div id="k-body">
-      <div id="k-intro">
-        <h1 id="k-title" data-zh="${esc(report.object.name.zh)}" data-en="${esc(report.object.name.en)}">${esc(report.object.name[lang])}</h1>
-        <p id="k-narr" data-zh="${esc(report.narrative.zh)}" data-en="${esc(report.narrative.en)}">${esc(report.narrative[lang])}</p>
-        ${extras}
+      <div id="k-read">
+        <div id="k-crop"></div>
+        <h2 id="k-read-title"></h2>
+        <div id="k-read-body"></div>
       </div>
+      <div id="k-all">
+        <button id="k-all-head" data-zh="${esc(UI.zh.allItems)} (${report.features.filter((f) => f.draw !== false).length})" data-en="${esc(UI.en.allItems)} (${report.features.filter((f) => f.draw !== false).length})">${esc(UI[lang].allItems)} (${report.features.filter((f) => f.draw !== false).length})</button>
+        <div id="k-all-body">
+          <div id="k-intro">
+            <h1 id="k-title" data-zh="${esc(report.object.name.zh)}" data-en="${esc(report.object.name.en)}">${esc(report.object.name[lang])}</h1>
+            <p id="k-narr" data-zh="${esc(report.narrative.zh)}" data-en="${esc(report.narrative.en)}">${esc(report.narrative[lang])}</p>
+            ${extras}
+          </div>
 ${cards}
+        </div>
+      </div>
     </div>
   </aside>
 </div>
@@ -745,14 +794,15 @@ ${chromeScript(opts.picker)}
   var panelEl=document.getElementById('k-panel');
   var body=document.getElementById('k-body');
   var stage=document.getElementById('k-stage');
-  var loupe=document.getElementById('k-loupe');
   var photo=stage.querySelector('img');
   var timer=null, active=null;
 
   function idleReset(){
     if(!IDLE) return;
     clearTimeout(timer);
-    timer=setTimeout(function(){ show(null); }, IDLE*1000);
+    // Back to the whole picture too: the next visitor should not arrive at
+    // someone else's close-up of a corner.
+    timer=setTimeout(function(){ show(null); resetZoom(); }, IDLE*1000);
   }
 
   function show(id){
@@ -773,7 +823,7 @@ ${chromeScript(opts.picker)}
       if(on) c.scrollIntoView({block:'nearest',behavior:'smooth'});
     });
     if(id) hint.classList.add('quiet'); // used now — stop summoning
-    showLoupe(id);
+    showRead(id);
     idleReset();
   }
 
@@ -798,71 +848,174 @@ ${chromeScript(opts.picker)}
     return Math.sqrt((a[0]-b[0])*(a[0]-b[0])+(a[1]-b[1])*(a[1]-b[1])) <= span*0.08;
   }
 
-  function showLoupe(id){
-    if(!id){ loupe.classList.remove('show'); return; }
-    var crop=null, geo=null, i;
-    for(i=0;i<CROPS.length;i++){ if(CROPS[i].id===id){ crop=CROPS[i]; break; } }
-    for(i=0;i<GEO.length;i++){ if(GEO[i].id===id){ geo=GEO[i]; break; } }
-    var box=photo.getBoundingClientRect();
-    // A subject the frame is a crop of has no region to magnify: the answer to
-    // "show me that part" is the picture already on screen.
-    var hasShape = geo && (geo.pts || geo.r!==undefined);
-    if(!crop || !box.width || !hasShape){ loupe.classList.remove('show'); return; }
-    var disp=box.width/IMG_W;                       // image px -> CSS px on screen
-    var side=Math.round(Math.min(box.width, box.height)*0.33);
-    // Fill most of the loupe with the feature, but stay inside a sane range:
-    // below 1.5x there is no point magnifying, above 8x it is just interpolation.
-    var k=side*0.7/(crop.half*2);
-    k=Math.max(disp*1.5, Math.min(disp*8, k));
+  /**
+   * Zoom and pan, on the layer that carries both the photograph and the marks.
+   *
+   * Scale about a point on screen so the thing under the finger stays under
+   * it, then hold the picture against the stage: at rest it fills the frame,
+   * and zoomed in it may be dragged but never pulled away from an edge, since
+   * a kiosk has nobody to explain a blank corner to.
+   */
+  var readBox=document.getElementById('k-read');
+  var cropBox=document.getElementById('k-crop');
+  var readTitle=document.getElementById('k-read-title');
+  var readBody=document.getElementById('k-read-body');
+  var allBox=document.getElementById('k-all');
+  document.getElementById('k-all-head').addEventListener('click', function(){
+    allBox.classList.toggle('open');
+    idleReset();
+  });
 
-    /*
-     * Light and shade mark the region instead of a drawn outline: the part
-     * being talked about keeps the photograph, everything around it is pushed
-     * down. A line has no inside, so it gets one — a band a few image pixels
-     * either side of it, which is what the eye reads as "this ridge" anyway.
-     * One mask covers all three cases: fill a closed shape, stroke an open one,
-     * stroke a ring that was never meant to be filled.
-     */
-    var band=Math.max(6, Math.round(Math.min(IMG_W, IMG_H)/100));
-    var hole='';
-    if(geo && geo.pts){
-      var pts=geo.pts.map(function(q){ return q[0]+','+q[1]; }).join(' ');
-      // Black in a mask hides what it covers, so the region keeps the picture.
-      hole = (geo.closed || nearlyClosed(geo.pts))
-        ? '<polygon points="'+pts+'" fill="#000"/>'
-        : '<polyline points="'+pts+'" fill="none" stroke="#000" stroke-width="'+(band*2)+
-          '" stroke-linejoin="round" stroke-linecap="round"/>';
-    } else if(geo && geo.r!==undefined){
-      hole = geo.hollow
-        ? '<circle cx="'+geo.cx+'" cy="'+geo.cy+'" r="'+geo.r+'" fill="none" stroke="#000" stroke-width="'+(band*2)+'"/>'
-        : '<circle cx="'+geo.cx+'" cy="'+geo.cy+'" r="'+geo.r+'" fill="#000"/>';
+  var zoomWrap=document.getElementById('k-zoomwrap');
+  var zoom=1, panX=0, panY=0;
+  var ZMIN=1, ZMAX=6;
+
+  function applyZoom(){
+    var r=stage.getBoundingClientRect();
+    var maxX=r.width*(zoom-1), maxY=r.height*(zoom-1);
+    panX=Math.min(0, Math.max(-maxX, panX));
+    panY=Math.min(0, Math.max(-maxY, panY));
+    zoomWrap.style.transform='translate('+panX+'px,'+panY+'px) scale('+zoom+')';
+    document.getElementById('k-zr').disabled = zoom<=ZMIN+0.001;
+  }
+
+  /** Scale by a factor, keeping the given screen point fixed. */
+  function zoomAt(factor, clientX, clientY){
+    var r=stage.getBoundingClientRect();
+    var px=(clientX===undefined? r.width/2 : clientX-r.left);
+    var py=(clientY===undefined? r.height/2 : clientY-r.top);
+    var next=Math.min(ZMAX, Math.max(ZMIN, zoom*factor));
+    if(next===zoom) return;
+    // The picture coordinate under the pointer must come out where it went in.
+    panX = px - (px - panX) * (next/zoom);
+    panY = py - (py - panY) * (next/zoom);
+    zoom = next;
+    applyZoom();
+    idleReset();
+  }
+
+  function resetZoom(){ zoom=1; panX=0; panY=0; applyZoom(); }
+
+  document.getElementById('k-zi').addEventListener('click', function(e){ e.stopPropagation(); zoomAt(1.4); });
+  document.getElementById('k-zo').addEventListener('click', function(e){ e.stopPropagation(); zoomAt(1/1.4); });
+  document.getElementById('k-zr').addEventListener('click', function(e){ e.stopPropagation(); resetZoom(); idleReset(); });
+
+  stage.addEventListener('wheel', function(e){
+    e.preventDefault();
+    zoomAt(e.deltaY<0 ? 1.12 : 1/1.12, e.clientX, e.clientY);
+  }, {passive:false});
+
+  // Two fingers pinch; one finger pans, but only once there is somewhere to pan
+  // to — otherwise a drag across the picture would fight the proximity reading.
+  var touches={};
+  var pinch=null;
+  stage.addEventListener('pointerdown', function(e){
+    touches[e.pointerId]={x:e.clientX, y:e.clientY};
+    var ids=Object.keys(touches);
+    if(ids.length===2){
+      var a=touches[ids[0]], b=touches[ids[1]];
+      pinch={ d:Math.hypot(a.x-b.x, a.y-b.y), cx:(a.x+b.x)/2, cy:(a.y+b.y)/2 };
+      zoomWrap.classList.add('k-drag');
     }
-    var mid='k-lm';
-    loupe.innerHTML=
-      '<svg width="'+side+'" height="'+side+'" viewBox="0 0 '+side+' '+side+'">'+
-        '<defs><mask id="'+mid+'" maskUnits="userSpaceOnUse" x="0" y="0" width="'+side+'" height="'+side+'">'+
-          '<rect x="0" y="0" width="'+side+'" height="'+side+'" fill="#fff"/>'+
-          '<g transform="translate('+(side/2)+','+(side/2)+') scale('+k+') translate('+(-crop.cx)+','+(-crop.cy)+')">'+
-            hole+
-          '</g>'+
-        '</mask></defs>'+
-        '<image href="'+photo.getAttribute('src')+'" x="'+(side/2-crop.cx*k)+'" y="'+(side/2-crop.cy*k)+
-          '" width="'+(IMG_W*k)+'" height="'+(IMG_H*k)+'" preserveAspectRatio="none"/>'+
-        '<rect x="0" y="0" width="'+side+'" height="'+side+'" fill="rgba(3,5,10,.66)" mask="url(#'+mid+')"/>'+
-      '</svg>';
-    loupe.style.width=side+'px';
-    loupe.style.height=side+'px';
+  });
+  stage.addEventListener('pointermove', function(e){
+    if(!touches[e.pointerId]) return;
+    var prev=touches[e.pointerId];
+    touches[e.pointerId]={x:e.clientX, y:e.clientY};
+    var ids=Object.keys(touches);
+    if(ids.length>=2 && pinch){
+      var a=touches[ids[0]], b=touches[ids[1]];
+      var d=Math.hypot(a.x-b.x, a.y-b.y);
+      if(pinch.d>0) zoomAt(d/pinch.d, pinch.cx, pinch.cy);
+      pinch.d=d;
+      return;
+    }
+    if(zoom>1 && e.pressure!==0){
+      zoomWrap.classList.add('k-drag');
+      panX+=e.clientX-prev.x; panY+=e.clientY-prev.y;
+      applyZoom();
+    }
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(function(ev){
+    stage.addEventListener(ev, function(e){
+      delete touches[e.pointerId];
+      if(Object.keys(touches).length<2) pinch=null;
+      zoomWrap.classList.remove('k-drag');
+    });
+  });
 
-    // One of the four corners — the one across the picture from whatever is
-    // being read, so the crop never sits on top of its own subject.
-    var fx=crop.cx*disp, fy=crop.cy*disp;
-    var m=14;
-    var x = fx < box.width/2 ? box.width-side-m : m;
-    var y = fy < box.height/2 ? box.height-side-m : m;
-    var stageBox=stage.getBoundingClientRect();
-    loupe.style.left=Math.round(box.left-stageBox.left+x)+'px';
-    loupe.style.top=Math.round(box.top-stageBox.top+y)+'px';
-    loupe.classList.add('show');
+  applyZoom();
+
+  /**
+   * What is being read, in the panel: the piece of sky on top, the words under
+   * it. The crop is drawn at a fixed square in the panel rather than floating
+   * over the photograph — one place to look, and it never covers its own
+   * subject.
+   */
+  function showRead(id){
+    if(!id){ readBox.classList.remove('show'); allBox.classList.remove('show','open'); return; }
+    var geo=null, txt=null, i;
+    for(i=0;i<GEO.length;i++){ if(GEO[i].id===id){ geo=GEO[i]; break; } }
+    for(i=0;i<TEXT.length;i++){ if(TEXT[i].id===id){ txt=TEXT[i]; break; } }
+
+    // The crop. A subject the frame is a crop of has no region of its own, so
+    // it gets words only.
+    var hasShape = geo && (geo.pts || geo.r!==undefined);
+    if(hasShape){
+      var bx0,by0,bx1,by1;
+      if(geo.pts){
+        var xs=geo.pts.map(function(q){return q[0];}), ys=geo.pts.map(function(q){return q[1];});
+        bx0=Math.min.apply(null,xs); bx1=Math.max.apply(null,xs);
+        by0=Math.min.apply(null,ys); by1=Math.max.apply(null,ys);
+      } else {
+        bx0=geo.cx-geo.r; bx1=geo.cx+geo.r; by0=geo.cy-geo.r; by1=geo.cy+geo.r;
+      }
+      var cx=Math.round((bx0+bx1)/2), cy=Math.round((by0+by1)/2);
+      var half=Math.max((bx1-bx0)/2, (by1-by0)/2, Math.min(IMG_W,IMG_H)/50);
+      var side=1000;                          // the crop's own units; CSS sizes it
+      var k=side*0.78/(half*2);
+
+      var band=Math.max(6, Math.round(Math.min(IMG_W, IMG_H)/100));
+      var hole='';
+      if(geo.pts){
+        var pts=geo.pts.map(function(q){ return q[0]+','+q[1]; }).join(' ');
+        // Black in a mask hides what it covers, so the region keeps the picture.
+        hole = (geo.closed || nearlyClosed(geo.pts))
+          ? '<polygon points="'+pts+'" fill="#000"/>'
+          : '<polyline points="'+pts+'" fill="none" stroke="#000" stroke-width="'+(band*2)+
+            '" stroke-linejoin="round" stroke-linecap="round"/>';
+      } else {
+        hole = geo.hollow
+          ? '<circle cx="'+geo.cx+'" cy="'+geo.cy+'" r="'+geo.r+'" fill="none" stroke="#000" stroke-width="'+(band*2)+'"/>'
+          : '<circle cx="'+geo.cx+'" cy="'+geo.cy+'" r="'+geo.r+'" fill="#000"/>';
+      }
+      cropBox.innerHTML=
+        '<svg viewBox="0 0 '+side+' '+side+'" preserveAspectRatio="xMidYMid slice">'+
+          '<defs><mask id="k-cm" maskUnits="userSpaceOnUse" x="0" y="0" width="'+side+'" height="'+side+'">'+
+            '<rect x="0" y="0" width="'+side+'" height="'+side+'" fill="#fff"/>'+
+            '<g transform="translate('+(side/2)+','+(side/2)+') scale('+k+') translate('+(-cx)+','+(-cy)+')">'+
+              hole+
+            '</g>'+
+          '</mask></defs>'+
+          '<image href="'+photo.getAttribute('src')+'" x="'+(side/2-cx*k)+'" y="'+(side/2-cy*k)+
+            '" width="'+(IMG_W*k)+'" height="'+(IMG_H*k)+'" preserveAspectRatio="none"/>'+
+          '<rect x="0" y="0" width="'+side+'" height="'+side+'" fill="rgba(3,5,10,.66)" mask="url(#k-cm)"/>'+
+        '</svg>';
+      cropBox.style.display='';
+    } else {
+      cropBox.innerHTML='';
+      cropBox.style.display='none';
+    }
+
+    // The words. Built from the same table the language switch uses, so both
+    // languages are already here and nothing is fetched.
+    readTitle.textContent = txt ? txt[LANG].label : '';
+    readBody.textContent='';
+    if(txt) txt[LANG].body.forEach(function(s){
+      var el=document.createElement('p'); el.textContent=s; readBody.appendChild(el);
+    });
+    readBox.classList.add('show');
+    allBox.classList.add('show');
   }
 
   /**
@@ -1101,6 +1254,7 @@ ${chromeScript(opts.picker)}
     document.querySelectorAll('[data-zh]').forEach(function(el){
       el.textContent = el.getAttribute('data-'+LANG) || el.textContent;
     });
+    if(active) showRead(active);   // the panel holds a copy of the words
     TEXT.forEach(function(t){
       var card=document.querySelector('.k-card[data-f="'+t.id+'"]');
       if(!card) return;

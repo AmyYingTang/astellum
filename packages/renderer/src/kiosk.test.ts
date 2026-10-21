@@ -147,9 +147,10 @@ describe('proximity and the magnified crop', () => {
     expect(parsed[0]!.half).toBeGreaterThanOrEqual(800 / 25 / 2);
   });
 
-  it('keeps the crop from swallowing the pointer it is hit-tested with', () => {
+  it('keeps the crop off the picture entirely, so it cannot shadow the pointer', () => {
     const html = generateKioskHtml(report, { imageDataUri: 'data:...' });
-    expect(html).toMatch(/#k-loupe\{[^}]*pointer-events:none/);
+    expect(html).not.toContain('k-loupe');
+    expect(html).toContain('id="k-crop"');   // it lives in the panel now
   });
 
   it('leaves the picture unmarked until something is being read', () => {
@@ -257,9 +258,19 @@ describe('the magnified crop', () => {
     expect(html).toMatch(/band=Math\.max\(6/);
   });
 
-  it('goes to the corner across the picture from its subject', () => {
+  // A panel that opens full of text asks to be read before anyone has pointed
+  // at anything.
+  it('opens with nothing in the panel at all', () => {
     const html = generateKioskHtml(report, { imageDataUri: 'data:...' });
-    expect(html).toMatch(/fx < box\.width\/2 \? box\.width-side-m : m/);
+    expect(html).toMatch(/#k-read\{display:none/);
+    expect(html).toMatch(/#k-all\{display:none/);
+  });
+
+  it('puts the whole list one row away rather than in the way', () => {
+    const html = generateKioskHtml(report, { imageDataUri: 'data:...' });
+    expect(html).toContain('id="k-all-head"');
+    expect(html).toMatch(/#k-all-body\{display:none/);
+    expect(html).toMatch(/#k-all\.open #k-all-body\{display:block/);
   });
 
   it('lingers after the pointer leaves, then gets out of the way', () => {
