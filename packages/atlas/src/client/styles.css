@@ -646,7 +646,6 @@ button.link {
   white-space: nowrap;
 }
 .target-counts {
-  margin-left: auto;
   font-size: 11px;
   display: flex;
   align-items: center;
@@ -667,14 +666,18 @@ button.link {
 .target-counts .mark-exported {
   color: #9ece6a;
 }
-.target-counts .mark-needsExport {
+.target-counts .mark-incomplete {
   color: #e0af68;
 }
-.target-counts .mark-todo {
+/* Its own column, right-aligned, so the marks make a straight line down the
+   list whether a target has 2 annotations or 12. */
+.target-n {
+  flex: none;
+  margin-left: auto;
+  min-width: 2ch;
+  text-align: right;
+  font-size: 11px;
   color: var(--muted);
-}
-.target-counts b {
-  cursor: help;
 }
 .target-desig {
   flex: none;
@@ -730,7 +733,7 @@ button.link {
 .legend .leg-exported dt {
   color: #9ece6a;
 }
-.legend .leg-needsExport dt {
+.legend .leg-incomplete dt {
   color: #e0af68;
 }
 

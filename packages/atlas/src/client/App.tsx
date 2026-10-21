@@ -784,20 +784,19 @@ export function App(): JSX.Element {
               {visibleTargets.map((x) => {
                 const done = x.status.approved > 0 && x.status.approved === x.annotations;
                 /*
-                 * One mark, answering one question: is there something for me
-                 * to do here? The quick win comes first — a target that is
-                 * reviewed but not exported is one click away, and it is the
-                 * one that silently leaves the kiosk showing last week's
-                 * shapes, so it should not hide behind the drafts.
+                 * One mark, answering one question: is there something left to
+                 * do here? A draft to review and a review not yet exported are
+                 * both "not finished" — which one it is belongs to the target
+                 * when you open it, not to a list you scan.
                  */
                 const mark: IconName | null =
                   x.annotations === 0
                     ? null
-                    : x.primary_id && stale.includes(x.primary_id)
-                      ? 'needsExport'
-                      : x.status.draft > 0 || x.status.in_review > 0
-                        ? 'todo'
-                        : 'exported';
+                    : x.status.draft > 0 ||
+                        x.status.in_review > 0 ||
+                        (x.primary_id ? stale.includes(x.primary_id) : false)
+                      ? 'incomplete'
+                      : 'exported';
                 return (
                   <li
                     key={x.key}
@@ -817,27 +816,21 @@ export function App(): JSX.Element {
                     </button>
                     {/* An imported target has an image but no annotations yet,
                         so "ready to draw on" needs its own marker. */}
+                    {/* The legend under the list says what these mean; a
+                        tooltip on every row would only say it again, once per
+                        row, under a question-mark cursor. */}
                     <span className={x.has_image ? 'img-dot on' : 'img-dot'}>
-                      <Icon name="image" title={t('hasImage')} />
+                      <Icon name="image" />
                     </span>
+                    {/* The count has a column of its own so the marks line up
+                        down the list however many annotations a target has. */}
+                    <span className="target-n">{x.annotations || ''}</span>
                     <span className="target-counts">
                       {mark === null ? (
-                        <span className="none-yet" title={t('markNone')}>
-                          —
-                        </span>
+                        <span className="none-yet">—</span>
                       ) : (
                         <b className={`mark mark-${mark}`}>
-                          {x.annotations}
-                          <Icon
-                            name={mark}
-                            title={t(
-                              mark === 'exported'
-                                ? 'markExported'
-                                : mark === 'needsExport'
-                                  ? 'markNeedsExport'
-                                  : 'markTodo',
-                            )}
-                          />
+                          <Icon name={mark} />
                         </b>
                       )}
                     </span>
@@ -853,9 +846,8 @@ export function App(): JSX.Element {
                 [
                   ['image', 'legImage'],
                   ['exported', 'legExported'],
-                  ['needsExport', 'legNeedsExport'],
-                  ['todo', 'legTodo'],
-                ] as [IconName, 'legImage' | 'legExported' | 'legNeedsExport' | 'legTodo'][]
+                  ['incomplete', 'legIncomplete'],
+                ] as [IconName, 'legImage' | 'legExported' | 'legIncomplete'][]
               ).map(([icon, key]) => (
                 <div key={icon} className={`leg leg-${icon}`}>
                   <dt>
@@ -874,7 +866,7 @@ export function App(): JSX.Element {
             <button onClick={() => void doExport()}>{t('exportRegistry')}</button>
             {stale.length > 0 && (
               <p className="stale" title={t('staleWhy')}>
-                <Icon name="needsExport" />
+                <Icon name="incomplete" />
                 {stale.length} {t('staleSome')}
               </p>
             )}

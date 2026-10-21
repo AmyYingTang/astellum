@@ -2,16 +2,17 @@
  * The target list's marks.
  *
  * One per target, and it answers one question: do I have to do something
- * about this? Not a census of annotation states — the filter chips above the
- * list already give that, and a row scanned down a list of ninety-eight is
- * read, not studied. The reference image is the exception: it is about whether
- * the target can be worked on at all, so it has a column of its own.
+ * about this? Not a census of annotation states, and not what the something
+ * is — the filter chips above the list already give that, and a row scanned
+ * down a list of ninety-eight is read, not studied. The reference image is the
+ * exception: it is about whether the target can be worked on at all, so it has
+ * a column of its own.
  *
  * Drawings rather than glyphs (▣ ✓ ⏳) so they share a size and a baseline
  * whatever font answers, and they take their colour from the row.
  */
 
-export type IconName = 'image' | 'exported' | 'needsExport' | 'todo';
+export type IconName = 'image' | 'exported' | 'incomplete';
 
 const PATHS: Record<IconName, JSX.Element> = {
   // There is a reference image: a picture, with a horizon and a sun in it.
@@ -29,15 +30,9 @@ const PATHS: Record<IconName, JSX.Element> = {
       <path d="M4.6 7.2 6.3 9l3.2-3.6" />
     </>
   ),
-  // Approved, still sitting here: an arrow that has not left. One click.
-  needsExport: (
-    <>
-      <circle cx="7" cy="7" r="5.2" />
-      <path d="M7 9.6V4.6M4.9 6.6 7 4.4l2.1 2.2" />
-    </>
-  ),
-  // Drafts or things waiting to be looked at: an unfinished ring. An evening.
-  todo: <circle cx="7" cy="7" r="5.2" strokeDasharray="2.2 1.8" />,
+  // Anything still owed: a draft to review, or a review not yet handed to the
+  // runtime. An unfinished ring, because that is what it is.
+  incomplete: <circle cx="7" cy="7" r="5.2" strokeDasharray="2.2 1.8" />,
 };
 
 export function Icon({ name, title }: { name: IconName; title?: string }): JSX.Element {
