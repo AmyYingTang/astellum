@@ -645,12 +645,16 @@ button.link {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Fixed, not fitted: an em dash is narrower than a 13px drawing, and with the
+   whole group right-aligned that difference shunted every unannotated row a
+   few pixels across. */
 .target-counts {
   font-size: 11px;
   display: flex;
   align-items: center;
-  gap: 7px;
+  justify-content: center;
   flex: none;
+  width: 14px;
 }
 .target-counts b {
   display: flex;
