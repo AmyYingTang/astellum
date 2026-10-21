@@ -206,25 +206,23 @@ const PICK_ACCEPT = '.fits,.fit,.fts,.jpg,.jpeg,.png,.tif,.tiff';
  * frame. Shared by the reading page and the empty shell so there is one
  * definition of each.
  *
- * It is deliberately faint. The audience is looking at this screen, and a
- * visitor who taps "← ASTELLUM" out of curiosity has ended the session — so
- * the controls sit at a third opacity until you reach for them. Hover and
- * keyboard focus bring them up on a desk; on a touchscreen there is no hover,
- * so a touch anywhere in the head lights them for a few seconds instead.
+ * It used to sit at a third opacity so a visitor would not wander into
+ * "← ASTELLUM" — but on a black screen that is not discretion, it is a row of
+ * controls the operator cannot find either. They are lit like everything else
+ * now; keeping the audience out of them is the operator's job, not the
+ * stylesheet's.
  */
 const CHROME_CSS = `
 #k-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   padding:14px 22px;border-bottom:1px solid #1b2231;}
 #k-head button,.k-style{background:#141925;border:1px solid #2a3346;color:#cfd6e4;
-  border-radius:9px;padding:8px 14px;font-size:14px;cursor:pointer;}
+  border-radius:9px;padding:8px 14px;font-size:14px;cursor:pointer;white-space:nowrap;}
 #k-head button:hover{background:#1c2333;}
 .k-style{display:flex;gap:8px;align-items:center;font-size:13px;color:#8a93a8;padding:6px 10px;}
 .k-style select{background:transparent;border:0;color:#cfd6e4;font-size:14px;}
-.k-chrome{opacity:.32;transition:opacity .15s;}
-.k-chrome:hover,.k-chrome:focus-visible,#k-head.lit .k-chrome{opacity:1;}
-a.k-chrome{display:inline-block;color:#8a93a8;text-decoration:none;font-size:13px;
-  padding:8px 12px;border:1px solid #2a3346;border-radius:9px;}
-a.k-chrome:hover{color:#cfd6e4;border-color:#3a4a6b;}
+a.k-chrome{display:inline-block;color:#cfd6e4;text-decoration:none;font-size:13px;
+  white-space:nowrap;padding:8px 12px;border:1px solid #2a3346;border-radius:9px;}
+a.k-chrome:hover{background:#1c2333;border-color:#3a4a6b;}
 
 /* The picker, as an overlay rather than a screen of its own: choosing the next
    image is a detour from the frame that is up, not a place you go. */
@@ -428,13 +426,6 @@ function chromeScript(picker?: KioskPicker): string {
     });
   }
 
-  var head=document.getElementById('k-head');
-  // No hover on a touchscreen, so a touch in the head stands in for one.
-  if(head) head.addEventListener('pointerdown', function(){
-    head.classList.add('lit');
-    clearTimeout(head._dim);
-    head._dim=setTimeout(function(){ head.classList.remove('lit'); }, 4000);
-  }, {passive:true});
 ${
   picker
     ? `
@@ -728,7 +719,11 @@ html,body{height:100%;overflow:hidden;background:#05070c;
    make room for a sliding panel; watching it, the movement was the problem —
    the picture an audience is reading jumps every time somebody touches a label.
    Nothing here animates except the text swap. */
-#k{position:fixed;inset:0;display:flex;align-items:stretch;}
+/* One row of controls across the top, then picture and words beneath it. The
+   head used to live inside the panel, where it had a third of the width to fit
+   in and wrapped into two cramped rows. */
+#k{position:fixed;inset:0;display:flex;flex-direction:column;}
+#k-main{flex:1 1 auto;min-height:0;display:flex;align-items:stretch;}
 #k-view{flex:1 1 auto;min-width:0;position:relative;display:flex;
   align-items:center;justify-content:center;padding:12px;}
 /* The overlay is a 100%×100% SVG over the stage, so the stage box must have the
@@ -737,7 +732,8 @@ html,body{height:100%;overflow:hidden;background:#05070c;
    ratio, letterboxing the photo inside a taller box and leaving the overlay
    floating off the picture. */
 #k-stage{position:relative;aspect-ratio:${width}/${height};width:100%;
-  max-width:calc((100vh - 24px) * ${width} / ${height});max-height:100%;line-height:0;
+  max-width:calc((100vh - var(--k-head,64px) - 24px) * ${width} / ${height});
+  max-height:100%;line-height:0;
   overflow:hidden;touch-action:none;}
 #k-zoomwrap{position:absolute;inset:0;transform-origin:0 0;
   transition:transform .12s ease-out;will-change:transform;}
@@ -786,7 +782,7 @@ html,body{height:100%;overflow:hidden;background:#05070c;
    together and both go when the pointer moves on. */
 #k-read{display:none;}
 #k-read.show{display:block;}
-#k-crop{width:100%;aspect-ratio:1/1;border-radius:12px;overflow:hidden;
+#k-crop{width:40%;min-width:130px;aspect-ratio:1/1;border-radius:12px;overflow:hidden;
   border:1px solid #243049;background:#05070c;}
 #k-crop svg{display:block;width:100%;height:100%;}
 #k-read-title{margin-top:16px;font-size:clamp(18px,2.1vw,26px);font-weight:700;line-height:1.3;}
@@ -821,6 +817,8 @@ html,body{height:100%;overflow:hidden;background:#05070c;
 #k-panel{flex:0 0 min(460px,38vw);min-width:220px;display:flex;flex-direction:column;
   background:#090c13;color:#e6e9f0;}
 ${CHROME_CSS}
+#k>#k-head{flex:0 0 auto;height:var(--k-head,64px);box-sizing:border-box;
+  padding:0 22px;flex-wrap:nowrap;overflow-x:auto;background:#070a10;}
 #k-body{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:22px 22px 40px;}
 #k-title{font-size:clamp(20px,2.4vw,30px);font-weight:700;line-height:1.25;}
 #k-narr{margin-top:10px;color:#c3cbdb;font-size:clamp(14px,1.5vw,18px);line-height:1.75;}
@@ -858,7 +856,7 @@ ${CHROME_CSS}
 #k-note p+p{margin-top:8px;}
 
 @media (max-width:820px){
-  #k{flex-direction:column;}
+  #k-main{flex-direction:column;}
   #k-view{flex:0 0 52vh;padding:8px;}
   #k-stage{max-width:100%;max-height:100%;
     width:min(100%, calc((52vh - 16px) * ${width} / ${height}));}
@@ -869,6 +867,17 @@ ${CHROME_CSS}
 </head>
 <body>
 <div id="k">
+  <div id="k-head">
+    <span id="k-zoomers">
+      <button id="k-zi" class="k-chrome" title="${esc(UI[lang].zoomIn)}" aria-label="${esc(UI[lang].zoomIn)}">+</button>
+      <button id="k-zo" class="k-chrome" title="${esc(UI[lang].zoomOut)}" aria-label="${esc(UI[lang].zoomOut)}">−</button>
+      <button id="k-zr" class="k-chrome" title="${esc(UI[lang].zoomReset)}" aria-label="${esc(UI[lang].zoomReset)}">⟲</button>
+    </span>
+    ${chromeButtons({ ...opts, poster: true }, lang)}
+    <button id="k-lang" data-zh="${esc(UI.zh.langBtn)}" data-en="${esc(UI.en.langBtn)}">${esc(UI[lang].langBtn)}</button>
+    ${styleSwitch}
+  </div>
+  <div id="k-main">
   <div id="k-view">
     <div id="k-stage">
       <!-- Picture and marks ride one transform: zoom either on its own and the
@@ -886,19 +895,10 @@ ${overlay}
   </div>
   <div id="k-split" role="separator" aria-orientation="vertical"></div>
   <aside id="k-panel">
-    <div id="k-head">
-      <span id="k-zoomers">
-        <button id="k-zi" class="k-chrome" title="${esc(UI[lang].zoomIn)}" aria-label="${esc(UI[lang].zoomIn)}">+</button>
-        <button id="k-zo" class="k-chrome" title="${esc(UI[lang].zoomOut)}" aria-label="${esc(UI[lang].zoomOut)}">−</button>
-        <button id="k-zr" class="k-chrome" title="${esc(UI[lang].zoomReset)}" aria-label="${esc(UI[lang].zoomReset)}">⟲</button>
-      </span>
-      ${chromeButtons({ ...opts, poster: true }, lang)}
-      <button id="k-lang" data-zh="${esc(UI.zh.langBtn)}" data-en="${esc(UI.en.langBtn)}">${esc(UI[lang].langBtn)}</button>
-      ${styleSwitch}
-    </div>
-    <!-- Empty until something is being read. A panel that opens full of text
-         asks to be read before anyone has pointed at anything; this one answers
-         a question instead of anticipating it. -->
+    <!-- At rest this holds the subject of the picture — the first mark, which
+         is what the frame is of. Anything else read replaces it, and the idle
+         timer brings it back: a kiosk nobody is touching should still say what
+         is on the screen. -->
     <div id="k-body">
       <div id="k-read">
         <div id="k-crop"></div>
@@ -918,6 +918,7 @@ ${cards}
       </div>
     </div>
   </aside>
+  </div>
 </div>
 ${pickerOverlay(opts.picker, lang)}
 <script>
@@ -932,6 +933,9 @@ ${chromeScript(opts.picker)}
   var IMG_W=${width}, IMG_H=${height};
   var NAME=${JSON.stringify({ zh: report.object.name.zh, en: report.object.name.en })};
   var IDLE=${idle};
+  // What the panel shows when nobody is pointing at anything: the first mark,
+  // which the reader orders as the subject of the frame.
+  var HOME=(TEXT[0]||{}).id||null;
   var hint=document.getElementById('k-hint');
   var panelEl=document.getElementById('k-panel');
   var body=document.getElementById('k-body');
@@ -1095,6 +1099,9 @@ ${chromeScript(opts.picker)}
    * subject.
    */
   function showRead(id){
+    // Nothing being read is not nothing to say: fall back to the first mark,
+    // which is the subject the picture is of.
+    if(!id) id = HOME;
     if(!id){ readBox.classList.remove('show'); allBox.classList.remove('show','open'); return; }
     var geo=null, txt=null, i;
     for(i=0;i<GEO.length;i++){ if(GEO[i].id===id){ geo=GEO[i]; break; } }
@@ -1363,7 +1370,7 @@ ${chromeScript(opts.picker)}
         var h=Math.min(r.height-160, Math.max(160, r.bottom-ev.clientY));
         panelEl.style.flex='0 0 '+Math.round(h)+'px';
       }
-      if(active) showLoupe(active); // the photo just changed size under it
+      showRead(active); // the photo just changed size under it
       idleReset();
     }
     function up(){
@@ -1440,13 +1447,15 @@ ${chromeScript(opts.picker)}
     document.addEventListener(ev, idleReset, {passive:true});
   });
 
+  showRead(null); // the subject, until somebody asks about something else
+
   // Plates are measured, so they wait for the fonts the measurement depends on.
   fitPlates(); layoutLabels();
   if(document.fonts && document.fonts.ready)
     document.fonts.ready.then(function(){ fitPlates(); layoutLabels(); });
   // The crop is sized from the photo's box, which a resize or a dragged
   // divider changes underneath it.
-  window.addEventListener('resize', function(){ if(active) showLoupe(active); });
+  window.addEventListener('resize', function(){ showRead(active); });
   idleReset();
 })();
 </script>
