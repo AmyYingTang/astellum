@@ -92,8 +92,9 @@ export const ReadingConfig = z.object({
    * deployment with no `claude` CLI sets this once and the studio stops offering
    * something it cannot do.
    *
-   * The kiosk does not consult this — it always reads from the library, because
-   * it has to work with the network unplugged.
+   * The kiosk does not consult this — what it does on the night is its own
+   * decision, `kiosk.readingSource`, which starts from the library because a
+   * kiosk has to work with the network unplugged.
    */
   mode: ReadingMode.default('ai'),
   /** Only names the runner; secrets stay in .env, never in this file. */
@@ -127,6 +128,20 @@ export const KioskConfig = z.object({
   idleResetSec: z.number().int().nonnegative().default(120),
   /** Offer the reading-style switch on screen (schools session vs public). */
   switchableStyle: z.boolean().default(true),
+  /**
+   * Where a frame's words come from.
+   *
+   * `predefined` is the kiosk as designed: pick from what a curator already
+   * wrote, which needs nothing but the machine itself. `ai` writes on the
+   * night for the audience in front of you — a real wish at an open evening,
+   * and the reason this knob exists — at the cost of a network, a wait of
+   * tens of seconds, and prose nobody has read before it is on the wall.
+   *
+   * Hence the default, and hence a kiosk-specific setting rather than reusing
+   * `reading.mode`: turning this on is a decision about one deployment's
+   * night, not about what the studio does.
+   */
+  readingSource: z.enum(['predefined', 'ai']).default('predefined'),
 });
 export type KioskConfig = z.infer<typeof KioskConfig>;
 

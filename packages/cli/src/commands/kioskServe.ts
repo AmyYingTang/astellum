@@ -2,7 +2,7 @@ import express from 'express';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { join, resolve, extname } from 'node:path';
 import { tmpdir } from 'node:os';
-import { Reading } from '@astellum/schema';
+import { Reading, BUILT_IN_STYLE_PRESETS, contentOverlay } from '@astellum/schema';
 import { loadConfig } from '@astellum/schema/node';
 import { offlineCatalogStatus, isOfflineReady } from '@astellum/identify';
 import {
@@ -11,7 +11,8 @@ import {
   renderPosterBuffers,
   type KioskPicker,
 } from '@astellum/renderer';
-import { runKiosk } from './kiosk.js';
+import { loadReadingLibraries, defaultReadingsPaths } from '@astellum/reader';
+import { runKiosk, styleNames } from './kiosk.js';
 import { exitWhenOrphaned } from '../supervised.js';
 import { langFor } from '../lang.js';
 
@@ -62,11 +63,29 @@ export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
     const status = await offlineCatalogStatus().catch(() => []);
     const missing = status.filter((s) => !s.present).map((s) => s.key);
     const ready = status.length ? isOfflineReady(status) : true;
+    // Offer whichever question this deployment can answer: the styles somebody
+    // has actually written for, or — when it writes on the night — who is in
+    // the room. The style list is the library's, the same one the frame's own
+    // switch uses; it used to be the single configured style, which could
+    // never satisfy the form's "more than one" condition, so that select has
+    // never appeared.
+    const ai = cfg.kiosk.readingSource === 'ai';
+    // A library that will not parse must not take the picker down with it —
+    // but it must not vanish quietly either, or a deployment loses its styles
+    // and nobody learns why until the frame itself fails.
+    const library = ai
+      ? null
+      : await loadReadingLibraries(defaultReadingsPaths()).catch((e: Error) => {
+          console.log(`  ⚠ could not read the readings library: ${e.message}`);
+          return null;
+        });
+    const overlay = contentOverlay().stylePresets;
     return {
       hubUrl: process.env.ASTELLUM_HUB_URL || undefined,
       picker: {
         endpoint: '/api/run',
-        styles: [cfg.reading.style],
+        styles: library ? styleNames(library) : undefined,
+        presets: ai ? (overlay?.length ? overlay : BUILT_IN_STYLE_PRESETS) : undefined,
         offlineNote: ready
           ? { zh: '离线星表齐全,可断网运行', en: 'Offline catalogues ready — this works unplugged.' }
           : {
@@ -92,6 +111,7 @@ export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
         target?: string;
         lang?: string;
         style?: string;
+        tone?: string;
       };
       if (!body.dataUrl) throw new Error('No file received');
       const ext = (extname(body.filename ?? '') || '.jpg').toLowerCase();
@@ -108,6 +128,10 @@ export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
         target: body.target,
         lang: body.lang,
         style: body.style,
+        // Only the form in `ai` mode sends one, and only `ai` mode's runKiosk
+        // looks at it — but say it explicitly rather than inferring the source
+        // from whether a chip was pressed.
+        ...(cfg.kiosk.readingSource === 'ai' ? { source: 'ai' as const, tone: body.tone } : {}),
         out: dir,
         open: false,
         // The frame carries the same chrome as the shell it replaces, so the

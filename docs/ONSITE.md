@@ -122,9 +122,35 @@ The terminal is the operator's side: it prints which layer wrote each line
 
 ## Style switching
 
-The kiosk profile allows switching the reading style live, so a schools group
-and a public session can get different wording from the same library. Only
-styles that exist in `readings.json` appear.
+The kiosk allows switching the reading style live, so a schools group and a
+public session can get different wording from the same library. Only styles
+that exist in `readings.json` appear — with one style written, there is nothing
+to choose between and no switch is offered.
+
+## Writing for the room instead (online)
+
+A kiosk reads what somebody already wrote. If you would rather have the words
+written for the audience actually in front of you, set **"Where the words come
+from"** in Settings (`kiosk.readingSource: ai`). The picker then asks who they
+are — children, experienced observers, a light tone, and a box for anything
+else — instead of which style to use.
+
+What this costs, plainly:
+
+- **It needs a network**, and the model takes tens of seconds on top of the
+  solve. Budget a minute per frame rather than the usual few seconds.
+- **Nobody has read the prose before it is on the wall.** With the library you
+  know what the screen says.
+- If the model cannot be reached, the frame still goes up — with the predefined
+  reading. You get a line in the terminal, the audience gets a page.
+
+What it does *not* change: identity, position, colour and which features are
+drawn all still come from the identification and the atlas. The model only
+rewrites the wording of what was already grounded, which is why it cannot
+invent a feature or move one.
+
+The default is the library, and it is the right default for a night with an
+unreliable network — which is most of them.
 
 ## If something goes wrong
 

@@ -20,7 +20,7 @@ import { runClaude, type RunClaudeOptions } from './claudeCli.js';
 import { parseTailoring, type LlmTailoring } from './parseJson.js';
 
 export { buildTailorPrompt } from './prompt.js';
-export { runClaude } from './claudeCli.js';
+export { runClaude, type RunClaudeOptions } from './claudeCli.js';
 export { parseTailoring, extractJson, LlmTailoring } from './parseJson.js';
 export { lookupSimbad, parseSimbadAscii, type SimbadFacts } from './simbad.js';
 export {

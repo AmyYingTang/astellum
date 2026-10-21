@@ -1,4 +1,10 @@
-import { COLOR_PALETTE, badgeAnchor, type Feature, type Reading } from '@astellum/schema';
+import {
+  COLOR_PALETTE,
+  badgeAnchor,
+  type Feature,
+  type Reading,
+  type StylePreset,
+} from '@astellum/schema';
 import { overlayLabel } from './overlayLabel.js';
 
 /**
@@ -94,11 +100,18 @@ export interface KioskOptions {
 }
 
 export interface KioskPicker {
-  /** Endpoint that takes {filename, dataUrl, target, lang, style} and answers
-   *  {ok, url} — the kiosk server's /api/run. */
+  /** Endpoint that takes {filename, dataUrl, target, lang, style, tone} and
+   *  answers {ok, url} — the kiosk server's /api/run. */
   endpoint: string;
   /** Offered in the form when the library has more than one. */
   styles?: string[];
+  /**
+   * Audience buttons, when this deployment writes its words on the night
+   * (`kiosk.readingSource: 'ai'`) rather than reading what a curator wrote.
+   * Supplied instead of `styles`: picking from a library and describing an
+   * audience are the same question asked of two different machines.
+   */
+  presets?: StylePreset[];
   /** Offline-catalogue state, already phrased; shown under the form. */
   offlineNote?: { zh: string; en: string };
 }
@@ -129,6 +142,10 @@ const UI = {
     zoomOut: '缩小',
     zoomReset: '复位',
     allItems: '全部',
+    audienceLabel: '讲给谁听',
+    focusLabel: '侧重',
+    customLabel: '还想补充什么(可选)',
+    aiNote: '现场为这批观众写文字:需要网络,要等模型几十秒。身份、位置和颜色仍然来自识别,模型只改措辞。',
     poster: '海报',
     posterPortrait: '竖版',
     posterLandscape: '横版',
@@ -163,6 +180,10 @@ const UI = {
     zoomOut: 'Zoom out',
     zoomReset: 'Fit',
     allItems: 'All',
+    audienceLabel: 'Who is this for',
+    focusLabel: 'Lean towards',
+    customLabel: 'Anything to add (optional)',
+    aiNote: 'Written on the night for the people in front of you: needs a network, and the model takes tens of seconds. Identity, position and colour still come from the identification — the model only changes the wording.',
     poster: 'Poster',
     posterPortrait: 'Portrait',
     posterLandscape: 'Landscape',
@@ -228,6 +249,13 @@ a.k-chrome:hover{color:#cfd6e4;border-color:#3a4a6b;}
 #k-pick .k-go:disabled{background:#243447;color:#6b768f;cursor:default;}
 #k-pick .k-status{margin-top:16px;font-size:13px;line-height:1.6;color:#8a93a8;min-height:20px;}
 #k-pick .k-status.err{color:#f7768e;}
+#k-pick .k-chips{margin-top:20px;font-size:13px;color:#8a93a8;}
+#k-pick .k-chips>div{margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;}
+#k-pick .k-chip{background:#141925;border:1px solid #2a3344;color:#cfd6e4;
+  border-radius:999px;padding:7px 14px;font-size:13px;cursor:pointer;}
+#k-pick .k-chip:hover{border-color:#3f4d6b;}
+#k-pick .k-chip.on{background:#2b6cb0;border-color:#2b6cb0;color:#fff;}
+#k-pick .k-note{margin-top:16px;color:#6b768f;font-size:12px;line-height:1.6;}
 #k-pick .k-foot{margin-top:22px;padding-top:16px;border-top:1px solid #1b2231;
   color:#5d6780;font-size:12px;line-height:1.6;}
 #k-pick .k-close{margin-top:14px;width:100%;background:none;border:0;color:#5d6780;
@@ -258,8 +286,29 @@ function chromeButtons(opts: { hubUrl?: string; picker?: KioskPicker }, lang: 'z
 /** The overlay form. Lifted from the kiosk's old front door, which this replaces. */
 function pickerOverlay(picker: KioskPicker | undefined, lang: 'zh' | 'en'): string {
   if (!picker) return '';
+  const group = (g: 'audience' | 'focus', label: 'audienceLabel' | 'focusLabel'): string => {
+    const chips = (picker.presets ?? []).filter((x) => x.group === g);
+    if (!chips.length) return '';
+    return `<div class="k-chips"><span data-zh="${esc(UI.zh[label])}" data-en="${esc(UI.en[label])}">${esc(UI[lang][label])}</span>
+      <div>${chips
+        .map(
+          (c) =>
+            `<button type="button" class="k-chip" data-zh="${esc(c.labelZh)}" data-en="${esc(c.labelEn)}" ` +
+            `data-text-zh="${esc(c.textZh)}" data-text-en="${esc(c.textEn)}">${esc(lang === 'zh' ? c.labelZh : c.labelEn)}</button>`,
+        )
+        .join('')}</div></div>`;
+  };
+  // Either the library's styles or an audience to write for — never both; which
+  // one the server offers is what `kiosk.readingSource` decides.
+  const presets = picker.presets?.length
+    ? `${group('audience', 'audienceLabel')}${group('focus', 'focusLabel')}
+    <label><span data-zh="${esc(UI.zh.customLabel)}" data-en="${esc(UI.en.customLabel)}">${esc(UI[lang].customLabel)}</span>
+      <input type="text" id="k-pick-tone" placeholder="${esc(lang === 'zh' ? '例如:观众里有小朋友' : 'e.g. there are children in the room')}">
+    </label>
+    <p class="k-note" data-zh="${esc(UI.zh.aiNote)}" data-en="${esc(UI.en.aiNote)}">${esc(UI[lang].aiNote)}</p>`
+    : '';
   const styles =
-    picker.styles && picker.styles.length > 1
+    !picker.presets?.length && picker.styles && picker.styles.length > 1
       ? `<label><span data-zh="${esc(UI.zh.styleLabel)}" data-en="${esc(UI.en.styleLabel)}">${esc(UI[lang].styleLabel)}</span>
       <select id="k-pick-style">${picker.styles
         .map((s) => `<option>${esc(s)}</option>`)
@@ -292,6 +341,7 @@ function pickerOverlay(picker: KioskPicker | undefined, lang: 'zh' | 'en'): stri
       </label>
       ${styles}
     </div>
+    ${presets}
 
     <button class="k-go" id="k-pick-go" type="submit" disabled
       data-zh="${esc(UI.zh.start)}" data-en="${esc(UI.en.start)}">${esc(UI[lang].start)}</button>
@@ -388,6 +438,23 @@ ${
   wrap.addEventListener('click', function(e){ if(e.target===wrap) closePick(); });
   document.addEventListener('keydown', function(e){ if(e.key==='Escape') closePick(); });
 
+  // A chip is a sentence the model will be given, not a filter — so they add
+  // up, and nothing is selected by default: the operator says what is true of
+  // the room, or says nothing.
+  document.querySelectorAll('#k-pick .k-chip').forEach(function(c){
+    c.addEventListener('click', function(){ c.classList.toggle('on'); });
+  });
+  function tone(){
+    var l=document.getElementById('k-pick-lang').value==='en'?'en':'zh';
+    var parts=[];
+    document.querySelectorAll('#k-pick .k-chip.on').forEach(function(c){
+      parts.push(c.getAttribute('data-text-'+l));
+    });
+    var free=document.getElementById('k-pick-tone');
+    if(free && free.value.trim()) parts.push(free.value.trim());
+    return parts.length?parts.join(' '):undefined;
+  }
+
   file.addEventListener('change', function(){
     var f=file.files[0];
     if(f){ fname.textContent=f.name; fname.removeAttribute('data-zh'); fname.removeAttribute('data-en'); }
@@ -410,7 +477,8 @@ ${
         body:JSON.stringify({filename:f.name, dataUrl:b64,
           target:document.getElementById('k-pick-target').value.trim()||undefined,
           lang:document.getElementById('k-pick-lang').value,
-          style:styleSel?styleSel.value:undefined})});
+          style:styleSel?styleSel.value:undefined,
+          tone:tone()})});
       var j=await r.json();
       if(!j.ok) throw new Error(j.error||T('failed'));
       st.textContent=T('opening');

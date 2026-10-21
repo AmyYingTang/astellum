@@ -350,6 +350,16 @@ function settingsPage(o: {
     ${check('kiosk.dropContext', p.kiosk.dropContext, t('丢掉次要的陪衬天体(宁缺毋滥)', 'Drop incidental context objects — few, confident labels'))}
     ${check('kiosk.requireAtlasForB', p.kiosk.requireAtlasForB, t('只画标注库里已审核的形态特征', 'Only draw features approved in the atlas'))}
     ${check('kiosk.switchableStyle', p.kiosk.switchableStyle, t('现场页面上可以切换讲解风格', 'Offer the reading-style switch on screen'))}
+    <label>${t('现场文字从哪来', 'Where the words come from')}
+      <select name="kiosk.readingSource">
+        ${opt('predefined', p.kiosk.readingSource, t('预定义解读库(离线,默认)', 'The predefined library (offline, default)'))}
+        ${opt('ai', p.kiosk.readingSource, t('现场为观众生成(需联网)', 'Written on the night for the audience (needs a network)'))}
+      </select>
+    </label>
+    <p class="hint">${t(
+      '选「现场生成」后,选图弹层会让你说清楚观众是谁;要等模型几十秒,而且文字没人读过就上了墙。身份、位置和颜色始终来自识别,模型只改措辞。模型不可用时自动退回解读库。',
+      'With the second, the picker asks who is in the room. It costs tens of seconds and nobody has read the prose before it is on the wall. Identity, position and colour always come from the identification — the model only changes the wording — and if the model cannot be reached the frame falls back to the library.',
+    )}</p>
   </fieldset>
 
   <button type="submit">${t('保存', 'Save')}</button>

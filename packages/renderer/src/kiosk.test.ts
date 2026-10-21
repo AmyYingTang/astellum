@@ -324,3 +324,50 @@ describe('kiosk shell', () => {
     expect(generateKioskShellHtml({ picker, lang: 'en' })).toContain('<html lang="en">');
   });
 });
+
+/**
+ * Which question the picker asks is the whole of the offline/online choice:
+ * pick from what somebody wrote, or describe the room and have it written.
+ */
+describe('picker: library styles vs an audience to write for', () => {
+  const presets = [
+    { id: 'kids', group: 'audience' as const, labelZh: '儿童', labelEn: 'Kids', textZh: '写给孩子', textEn: 'For children' },
+    { id: 'art', group: 'focus' as const, labelZh: '艺术', labelEn: 'Artistic', textZh: '侧重艺术', textEn: 'Lean artistic' },
+  ];
+
+  it('offers the styles it was handed, not a single configured one', () => {
+    const html = generateKioskShellHtml({ picker: { endpoint: '/api/run', styles: ['general', '诗意'] } });
+    expect(html).toContain('id="k-pick-style"');
+    expect(html).toContain('<option>诗意</option>');
+  });
+
+  // The server used to pass `[config.reading.style]`, which could never satisfy
+  // this condition, so the select had never once appeared.
+  it('leaves the style out when there is nothing to choose between', () => {
+    expect(generateKioskShellHtml({ picker: { endpoint: '/api/run', styles: ['general'] } })).not.toContain(
+      'id="k-pick-style"',
+    );
+  });
+
+  it('asks who is in the room instead, when it writes on the night', () => {
+    const html = generateKioskShellHtml({ picker: { endpoint: '/api/run', presets } });
+    expect(html).toContain('class="k-chip"');
+    expect(html).toContain('data-text-zh="写给孩子"'); // the sentence the model gets
+    expect(html).toContain('id="k-pick-tone"'); // and room to add to it
+    expect(html).toContain('tone:tone()'); // which the POST carries
+  });
+
+  it('never asks both — the two are the same question of different machines', () => {
+    const html = generateKioskShellHtml({
+      picker: { endpoint: '/api/run', styles: ['general', '诗意'], presets },
+    });
+    expect(html).toContain('class="k-chip"');
+    expect(html).not.toContain('id="k-pick-style"');
+  });
+
+  it('says plainly what writing on the night costs', () => {
+    const html = generateKioskShellHtml({ picker: { endpoint: '/api/run', presets }, lang: 'en' });
+    expect(html).toContain('needs a network');
+    expect(html).toContain('the model only changes the wording');
+  });
+});

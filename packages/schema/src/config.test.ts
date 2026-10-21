@@ -8,6 +8,9 @@ describe('control file', () => {
     // The kiosk's presentation defaults are opinionated: few, confident labels.
     expect(DEFAULT_CONFIG.kiosk.dropContext).toBe(true);
     expect(DEFAULT_CONFIG.kiosk.requireAtlasForB).toBe(true);
+    // And it stays on the side that works with the network unplugged: writing
+    // on the night is a deployment's explicit choice, never a default.
+    expect(DEFAULT_CONFIG.kiosk.readingSource).toBe('predefined');
   });
 
   it('merges a partial file section-wise, keeping untouched settings', () => {

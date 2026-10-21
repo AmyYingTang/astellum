@@ -5,6 +5,8 @@ import {
   featureNoteFor,
   featureNoteKeys,
   setContentOverlay,
+  BUILT_IN_STYLE_PRESETS,
+  StylePreset,
 } from './index.js';
 
 beforeEach(() => setContentOverlay({}));
@@ -40,5 +42,28 @@ describe('curator content overlay', () => {
     expect(ContentOverlay.safeParse({ featureNotes: { pillar: { zh: '只有中文' } } }).success).toBe(
       false,
     );
+  });
+});
+
+/**
+ * Both the studio and the kiosk ask the audience question now, so the answer
+ * list is here rather than in either client.
+ */
+describe('built-in style presets', () => {
+  it('covers both groups the two surfaces group them by', () => {
+    const groups = new Set(BUILT_IN_STYLE_PRESETS.map((p) => p.group));
+    expect([...groups].sort()).toEqual(['audience', 'focus']);
+  });
+
+  it('is bilingual throughout — label and instruction alike', () => {
+    for (const p of BUILT_IN_STYLE_PRESETS) {
+      expect(StylePreset.parse(p)).toEqual(p);
+      for (const s of [p.labelZh, p.labelEn, p.textZh, p.textEn]) expect(s.trim()).not.toBe('');
+    }
+  });
+
+  it('has no duplicate ids, which a preset is picked by', () => {
+    const ids = BUILT_IN_STYLE_PRESETS.map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });

@@ -41,6 +41,12 @@ a deployment's own layer. The launcher and the CLI's `bin` are both named
   plate-solve. B-class comes *only* from the human-approved atlas, projected by
   WCS. The old auto-detectors (CV / geometric / VLM) are disconnected from the
   fact sheet — don't reconnect them without a decision.
+- **The kiosk reads, it does not write.** By default — `kiosk.readingSource`
+  turns it into writing on the night for the audience in front of you, which
+  costs a network and tens of seconds, and is why the default is the other way.
+  Even then the model only rewrites prose: identity, geometry and colour still
+  come from the identification, and an unreachable model falls back to the
+  library rather than losing the frame.
 - **Bilingual everywhere.** Every user-facing string, feature name and
   explanation ships zh + en. UI language starts from the browser locale
   (`preferredLang`) and is remembered.
@@ -98,7 +104,7 @@ annotations themselves (drafts included), the **CLI** from the exported registry
 
 ```bash
 pnpm build          # tsc + all three clients (editor, atlas, viewer)
-pnpm test           # vitest, 203 tests
+pnpm test           # vitest, 211 tests
 pnpm lint           # eslint
 ./astellum help
 ```
@@ -108,8 +114,10 @@ for a while, so interface changes there appeared not to take effect.
 
 ## Known gaps
 
-- `readings-draft` has never been run against a live model here (the `claude`
-  CLI is not logged in on this machine); only mocked runners are tested.
+- `readings-draft` has never been run against a live model here; only mocked
+  runners are tested. (The `claude` CLI *is* logged in now — the kiosk's online
+  path was run end to end on 2026-10-21, 89 s for one Carina frame — so this
+  gap is about that command, not about the machine.)
 - The kiosk page has not been tried on a real touchscreen, and the idle reset
   has not been observed firing.
 - No genuine network-unplugged rehearsal yet.

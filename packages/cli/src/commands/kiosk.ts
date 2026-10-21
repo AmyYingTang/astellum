@@ -14,9 +14,11 @@ import {
 } from '@astellum/identify';
 import {
   readingFromPredefined,
+  tailorReading,
   loadReadingLibraries,
   defaultReadingsPaths,
   coverageSummary,
+  type RunClaudeOptions,
 } from '@astellum/reader';
 import { generateKioskHtml, type KioskPicker, type KioskState } from '@astellum/renderer';
 import { loadConfig } from '@astellum/schema/node';
@@ -42,6 +44,16 @@ export interface KioskArgs {
   out?: string;
   lang?: string;
   style?: string;
+  /**
+   * Write for the audience in front of you instead of reading what a curator
+   * wrote. `undefined` follows `kiosk.readingSource`, which is `predefined`
+   * unless a deployment has turned this on.
+   */
+  source?: 'predefined' | 'ai';
+  /** Audience instruction for the `ai` path, already phrased. */
+  tone?: string;
+  /** Model runner, so this path can be exercised without a logged-in CLI. */
+  runner?: (o: RunClaudeOptions) => Promise<string>;
   /** Open the finished page in a browser. Default true — the command exists to
    *  put something on a screen, and another tool invoking it shouldn't have to
    *  know how. */
@@ -99,9 +111,14 @@ export async function runKiosk(args: KioskArgs): Promise<KioskResult | null> {
   const p = loadConfig();
   const lang = args.lang === 'en' ? 'en' : 'zh';
   const style = args.style ?? p.reading.style;
-  // A kiosk always reads from the library — it has to work unplugged, so that
-  // is what it is rather than something to configure.
-  console.log(`solve=${p.solve.mode}, catalog=${p.catalog.sources.join('+')}, reading=predefined:${style}`);
+  // A kiosk reads from the library by default — it has to work unplugged. A
+  // deployment can ask for the words to be written on the night instead; the
+  // structure is still grounded either way, the model only rewrites prose.
+  const textSource = args.source ?? p.kiosk.readingSource;
+  console.log(
+    `solve=${p.solve.mode}, catalog=${p.catalog.sources.join('+')}, ` +
+      (textSource === 'ai' ? `reading=ai${args.tone ? ' (tailored)' : ''}` : `reading=predefined:${style}`),
+  );
 
   // Fail loudly *here*, with the audience not yet watching, rather than halfway
   // through the first frame of the night.
@@ -189,13 +206,34 @@ export async function runKiosk(args: KioskArgs): Promise<KioskResult | null> {
   }
 
   const library = await loadReadingLibraries(defaultReadingsPaths());
-  const { reading, coverage } = readingFromPredefined(trimmed, library, {
+  const predefined = readingFromPredefined(trimmed, library, {
     toolVersion: TOOL_VERSION,
     displayLanguage: lang,
     imageSrc: basename(imagePath),
     style,
     fallback: p.reading.fallback,
   });
+  const coverage = predefined.coverage;
+  let reading = predefined.reading;
+
+  // The grounded reading above is the floor, not the draft: if the model is
+  // unreachable — the case this whole surface is built around — the frame goes
+  // up with the curator's words rather than not at all.
+  if (textSource === 'ai') {
+    try {
+      reading = await tailorReading(reading, {
+        imagePath,
+        tone: args.tone,
+        factsheet: trimmed,
+        model: p.reading.model ?? undefined,
+        runner: args.runner,
+      });
+      console.log('  text: written for this audience');
+    } catch (e) {
+      console.log(`  ⚠ could not write on the night (${(e as Error).message})`);
+      console.log('    Showing the predefined reading instead.');
+    }
+  }
 
   const bClass = trimmed.objects.filter((o) => o.tier === 'B').length;
   const state: KioskState = !solved
@@ -240,7 +278,14 @@ export async function runKiosk(args: KioskArgs): Promise<KioskResult | null> {
   };
 }
 
-function styleNames(library: { entries: { styles: Record<string, unknown> }[] }): string[] {
+/**
+ * Every style anybody has written for, anywhere in the merged library.
+ *
+ * Both the in-frame switch and the picker offer this same list — they used to
+ * disagree, the picker having been handed the single configured style and so
+ * never meeting its own "more than one" condition.
+ */
+export function styleNames(library: { entries: { styles: Record<string, unknown> }[] }): string[] {
   const out = new Set<string>();
   for (const e of library.entries) for (const s of Object.keys(e.styles)) out.add(s);
   return [...out];
