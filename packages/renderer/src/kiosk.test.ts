@@ -249,7 +249,9 @@ describe('the magnified crop', () => {
   it('dims around the region instead of outlining it', () => {
     const html = generateKioskHtml(report, { imageDataUri: 'data:...' });
     expect(html).toContain('<mask id="');
-    expect(html).toMatch(/fill="rgba\(3,5,10,\.66\)" mask=/);
+    // Held back, not blacked out: the crop is a piece of a photograph, and the
+    // sky around the named thing is what makes the naming mean anything.
+    expect(html).toMatch(/fill="rgba\(3,5,10,\.4\)" mask=/);
   });
 
   it('gives an open line a band to stand for its inside', () => {

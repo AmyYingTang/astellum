@@ -1128,6 +1128,9 @@ ${chromeScript(opts.picker)}
       var side=1000;                          // the crop's own units; CSS sizes it
       var k=side*0.78/(half*2);
 
+      // The surround is held back, not blacked out: this is a crop of a
+      // photograph, and the region being named has to sit in the sky around it
+      // for the naming to mean anything.
       var band=Math.max(6, Math.round(Math.min(IMG_W, IMG_H)/100));
       var hole='';
       if(geo.pts){
@@ -1152,7 +1155,7 @@ ${chromeScript(opts.picker)}
           '</mask></defs>'+
           '<image href="'+photo.getAttribute('src')+'" x="'+(side/2-cx*k)+'" y="'+(side/2-cy*k)+
             '" width="'+(IMG_W*k)+'" height="'+(IMG_H*k)+'" preserveAspectRatio="none"/>'+
-          '<rect x="0" y="0" width="'+side+'" height="'+side+'" fill="rgba(3,5,10,.66)" mask="url(#k-cm)"/>'+
+          '<rect x="0" y="0" width="'+side+'" height="'+side+'" fill="rgba(3,5,10,.4)" mask="url(#k-cm)"/>'+
         '</svg>';
       cropBox.style.display='';
     } else {
