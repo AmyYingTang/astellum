@@ -12,7 +12,7 @@ import {
   type KioskPicker,
 } from '@astellum/renderer';
 import { loadReadingLibraries, defaultReadingsPaths } from '@astellum/reader';
-import { runKiosk, styleNames } from './kiosk.js';
+import { runKiosk, restyleFrame, styleNames } from './kiosk.js';
 import { exitWhenOrphaned } from '../supervised.js';
 import { langFor } from '../lang.js';
 
@@ -184,10 +184,35 @@ export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
     }
   });
 
+  /**
+   * The frame. With `?style=` it is re-read in that style first — the switch on
+   * screen reloads here, and until now this route ignored the query, so that
+   * switch silently did nothing at all.
+   *
+   * Re-reading costs a second (the solve and the catalogue query are already on
+   * disk) and is only possible from the library, so it is refused outright when
+   * this deployment has the words written on the night.
+   */
   app.get('/view/:id', async (req, res) => {
     try {
       if (!/^f\d+$/.test(req.params.id)) throw new Error('bad id');
-      res.type('html').send(await readFile(join(workdir, req.params.id, 'kiosk.html'), 'utf8'));
+      const dir = join(workdir, req.params.id);
+      const style = typeof req.query.style === 'string' ? req.query.style : undefined;
+      if (style && cfg.kiosk.readingSource !== 'ai') {
+        const html = await restyleFrame({
+          dir,
+          style,
+          lang: langFor(req),
+          chrome: await chrome(),
+        });
+        if (html) {
+          res.type('html').send(html);
+          return;
+        }
+        // No fact sheet to re-read from: show the frame as it stands rather
+        // than an error page in front of an audience.
+      }
+      res.type('html').send(await readFile(join(dir, 'kiosk.html'), 'utf8'));
     } catch {
       res.status(404).type('text').send('Not found');
     }

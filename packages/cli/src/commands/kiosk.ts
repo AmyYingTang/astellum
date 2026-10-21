@@ -22,7 +22,7 @@ import {
 } from '@astellum/reader';
 import { generateKioskHtml, type KioskPicker, type KioskState } from '@astellum/renderer';
 import { loadConfig } from '@astellum/schema/node';
-import type { FactSheet, Reading } from '@astellum/schema';
+import { FactSheet, type KioskConfig, type Reading } from '@astellum/schema';
 import { TOOL_VERSION } from '../version.js';
 
 /**
@@ -182,19 +182,7 @@ export async function runKiosk(args: KioskArgs): Promise<KioskResult | null> {
   );
   await writeFile(join(outDir, 'factsheet.json'), JSON.stringify(sheet, null, 2) + '\n', 'utf8');
 
-  // Precision over recall onsite: drop the incidental context objects and any
-  // B-class feature a human hasn't approved in the atlas.
-  let objects = sheet.objects;
-  if (p.kiosk.dropContext) objects = objects.filter((o) => o.role !== 'context' || o.tier === 'B');
-  if (p.kiosk.requireAtlasForB) {
-    objects = objects.filter((o) => o.tier !== 'B' || o.detection_source === 'atlas');
-  }
-  if (p.kiosk.maxFeatures) {
-    const a = objects.filter((o) => o.tier !== 'B');
-    const b = objects.filter((o) => o.tier === 'B').slice(0, p.kiosk.maxFeatures);
-    objects = [...a, ...b];
-  }
-  const trimmed: FactSheet = { ...sheet, objects };
+  const trimmed = trimForKiosk(sheet, p.kiosk);
 
   const solved = sheet.solve.status === 'solved';
   const hasObjects = trimmed.objects.some((o) => o.tier !== 'B');
@@ -250,7 +238,11 @@ export async function runKiosk(args: KioskArgs): Promise<KioskResult | null> {
     imageDataUri: `data:${mime};base64,${buf.toString('base64')}`,
     textSources: Object.fromEntries(coverage.sources),
     state,
-    styles: p.kiosk.switchableStyle && library ? styleNames(library) : undefined,
+    // Switching style means re-reading the library, which the server can do in
+    // a second. It means asking the model again when the words were written on
+    // the night, which it cannot — so there is nothing to offer there.
+    styles:
+      p.kiosk.switchableStyle && library && textSource !== 'ai' ? styleNames(library) : undefined,
     currentStyle: coverage.style ?? style,
     idleResetSec: p.kiosk.idleResetSec,
     hubUrl: args.chrome?.hubUrl,
@@ -277,6 +269,92 @@ export async function runKiosk(args: KioskArgs): Promise<KioskResult | null> {
     matchedTarget: coverage.matchedTarget,
   };
 }
+
+/**
+ * Precision over recall onsite: drop the incidental context objects and any
+ * B-class feature a human hasn't approved in the atlas.
+ *
+ * Shared with the re-render below, so a frame that comes back in another style
+ * is the same frame — same features, same numbers, different words.
+ */
+export function trimForKiosk(sheet: FactSheet, k: KioskConfig): FactSheet {
+  let objects = sheet.objects;
+  if (k.dropContext) objects = objects.filter((o) => o.role !== 'context' || o.tier === 'B');
+  if (k.requireAtlasForB) {
+    objects = objects.filter((o) => o.tier !== 'B' || o.detection_source === 'atlas');
+  }
+  if (k.maxFeatures) {
+    const a = objects.filter((o) => o.tier !== 'B');
+    const b = objects.filter((o) => o.tier === 'B').slice(0, k.maxFeatures);
+    objects = [...a, ...b];
+  }
+  return { ...sheet, objects };
+}
+
+/**
+ * The same frame, in another style.
+ *
+ * The expensive half of a frame — the solve and the catalogue query — is
+ * already on disk as `factsheet.json`, so a schools group and the public
+ * session after it are a second apart, not a minute. Nothing about the picture
+ * or the marks changes; only which layer the words come from.
+ *
+ * Returns null when this frame has nothing to re-read from, which is what a
+ * directory written by an older version looks like.
+ */
+export async function restyleFrame(opts: {
+  dir: string;
+  style: string;
+  lang: 'zh' | 'en';
+  chrome?: { hubUrl?: string; picker?: KioskPicker };
+}): Promise<string | null> {
+  const p = loadConfig();
+  let sheet: FactSheet;
+  try {
+    sheet = FactSheet.parse(JSON.parse(await readFile(join(opts.dir, 'factsheet.json'), 'utf8')));
+  } catch {
+    return null;
+  }
+  const trimmed = trimForKiosk(sheet, p.kiosk);
+  const library = await loadReadingLibraries(defaultReadingsPaths());
+  const { reading, coverage } = readingFromPredefined(trimmed, library, {
+    toolVersion: TOOL_VERSION,
+    displayLanguage: opts.lang,
+    imageSrc: sheet.image.src,
+    style: opts.style,
+    fallback: p.reading.fallback,
+  });
+
+  const bClass = trimmed.objects.filter((o) => o.tier === 'B').length;
+  const state: KioskState =
+    sheet.solve.status !== 'solved'
+      ? 'unsolved'
+      : bClass === 0
+        ? 'no_annotations'
+        : coverage.matchedTarget
+          ? 'ok'
+          : 'generic_only';
+
+  const imagePath = join(opts.dir, reading.image.src);
+  const buf = await readFile(imagePath);
+  const mime = extname(imagePath).toLowerCase() === '.png' ? 'image/png' : 'image/jpeg';
+  const html = generateKioskHtml(reading, {
+    imageDataUri: `data:${mime};base64,${buf.toString('base64')}`,
+    textSources: Object.fromEntries(coverage.sources),
+    state,
+    styles: p.kiosk.switchableStyle && library ? styleNames(library) : undefined,
+    currentStyle: coverage.style ?? opts.style,
+    idleResetSec: p.kiosk.idleResetSec,
+    hubUrl: opts.chrome?.hubUrl,
+    picker: opts.chrome?.picker,
+  });
+  // The frame on disk becomes the restyled one: the next plain visit to this
+  // id should show what is on the screen, not what it said before.
+  await writeFile(join(opts.dir, 'kiosk.html'), html, 'utf8');
+  await writeFile(join(opts.dir, 'reading.json'), JSON.stringify(reading, null, 2) + '\n', 'utf8');
+  return html;
+}
+
 
 /**
  * Every style anybody has written for, anywhere in the merged library.
