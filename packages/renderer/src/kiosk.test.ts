@@ -194,6 +194,30 @@ describe('the invitation', () => {
 
 // A reader saw "a shadow" over the dust lane: it was a neighbour's plate,
 // faded as a whole and still reading as a grey slab on the photograph.
+// The Carina Nebula is 3½° across and the picture covers under three: the
+// frame is a crop of it, so there is no boundary here to draw.
+describe('a subject wider than the frame', () => {
+  it('draws no ring and offers nothing to come near', () => {
+    const field = {
+      ...report,
+      features: [{ ...report.features[0]!, shape: 'field' as const }],
+    };
+    const html = generateKioskHtml(field, { imageDataUri: 'data:...' });
+    expect(html).not.toContain('class="k-mark"');
+    expect(html).not.toContain('class="k-geo"');
+  });
+
+  it('keeps its number and its name', () => {
+    const field = {
+      ...report,
+      features: [{ ...report.features[0]!, shape: 'field' as const }],
+    };
+    const html = generateKioskHtml(field, { imageDataUri: 'data:...' });
+    expect(html).toContain('class="k-badge"');
+    expect(html).toContain('class="k-label"');
+  });
+});
+
 describe('faded names', () => {
   it('fades the slab harder than the word standing on it', () => {
     const html = generateKioskHtml(report, { imageDataUri: 'data:...' });

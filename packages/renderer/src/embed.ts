@@ -36,11 +36,15 @@ export function generateEmbedHtml(report: Reading, opts: EmbedOptions): string {
       const bx = ax + f.badge.offset_x;
       const by = ay + f.badge.offset_y;
       const fs = f.badge.bubble_r * 1.1;
-      // A comet nucleus is a small filled dot; everything else a ring at circle.r.
+      // A comet nucleus is a small filled dot; everything else a ring at
+      // circle.r — except the subject the frame is a crop of, which gets no
+      // ring, since no ring in this picture could enclose it.
       const mark =
-        f.shape === 'dot'
-          ? `<circle class="al-circle" cx="${cx}" cy="${cy}" r="${strokeW * 2.5}" fill="${c.stroke}" stroke="none"/>`
-          : `<circle class="al-circle" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${c.stroke}" stroke-width="${strokeW}"/>`;
+        f.shape === 'field'
+          ? ''
+          : f.shape === 'dot'
+            ? `<circle class="al-circle" cx="${cx}" cy="${cy}" r="${strokeW * 2.5}" fill="${c.stroke}" stroke="none"/>`
+            : `<circle class="al-circle" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${c.stroke}" stroke-width="${strokeW}"/>`;
       return `<g class="al-feat" data-f="${esc(f.id)}">
   ${mark}
   <circle cx="${bx}" cy="${by}" r="${f.badge.bubble_r}" fill="${c.badge}" stroke="#0b0e14" stroke-width="${Math.max(1, strokeW / 2)}"/>

@@ -234,12 +234,24 @@ function buildReading(
   const starR = Math.max(20, Math.round(Math.min(width, height) / 60));
 
   const maxR = Math.min(width, height) * 0.2; // a circle shouldn't dominate the frame
+  /** Apparent radius in pixels, before any cap — null when the catalogue has no size. */
+  const trueRadius = (obj: FactObject): number | null =>
+    obj.size_arcmin && pixscale ? (obj.size_arcmin[0] * 60) / pixscale / 2 : null;
   const radiusFor = (obj: FactObject): number => {
-    if (obj.size_arcmin && pixscale) {
-      const r = (obj.size_arcmin[0] * 60) / pixscale / 2; // arcmin → arcsec → px → radius
-      return Math.max(starR, Math.min(maxR, Math.round(r)));
-    }
-    return starR;
+    const r = trueRadius(obj);
+    return r === null ? starR : Math.max(starR, Math.min(maxR, Math.round(r)));
+  };
+  /**
+   * Objects the frame is a crop of, rather than objects in the frame.
+   *
+   * The Carina Nebula is 3½° across and the picture covers under three; its
+   * ring would be larger than the image. Capping it does not help — a ring at a
+   * fifth of the frame says the nebula is that blob in the middle, which is a
+   * plain falsehood. Such a subject gets its name and no ring at all.
+   */
+  const fillsFrame = (obj: FactObject): boolean => {
+    const r = trueRadius(obj);
+    return r !== null && r > Math.min(width, height) * 0.5;
   };
 
   // A-class objects → solid circles. Class-B: a *shell* is marked with a small
@@ -270,8 +282,10 @@ function buildReading(
     let cy = base[1]!;
     const parentPix =
       isB && obj.parent_object_id ? byObjId.get(obj.parent_object_id)?.coord.pixel : null;
-    let shape: 'circle' | 'shell' | 'arrow' | 'arc' | 'dot' | 'polygon' | 'polyline' = !isB
-      ? 'circle'
+    let shape: 'circle' | 'shell' | 'arrow' | 'arc' | 'dot' | 'polygon' | 'polyline' | 'field' = !isB
+      ? fillsFrame(obj)
+        ? 'field'
+        : 'circle'
       : obj.feature_type === 'comet_coma' // the coma is a full circle, like an object
         ? 'circle'
         : obj.feature_type === 'comet_nucleus' // a point marker; badge clears the coma

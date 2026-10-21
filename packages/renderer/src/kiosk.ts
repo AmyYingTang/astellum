@@ -437,7 +437,9 @@ export function generateKioskHtml(report: Reading, opts: KioskOptions): string {
       const bx = ax + f.badge.offset_x;
       const by = ay + f.badge.offset_y;
       const shape =
-        f.shape === 'polygon' && f.polygon?.length
+        f.shape === 'field'
+          ? '' // the frame is a crop of it; no ring here could enclose it
+          : f.shape === 'polygon' && f.polygon?.length
           ? `<polygon class="k-mark" points="${f.polygon.map((p) => p.join(',')).join(' ')}" fill="none" stroke="${c.stroke}" stroke-width="${strokeW}"/>`
           : f.shape === 'polyline' && f.polygon?.length
             ? `<polyline class="k-mark" points="${f.polygon.map((p) => p.join(',')).join(' ')}" fill="none" stroke="${c.stroke}" stroke-width="${strokeW}"/>`
@@ -462,7 +464,9 @@ export function generateKioskHtml(report: Reading, opts: KioskOptions): string {
       const pts = f.polygon?.length ? f.polygon.map((q) => q.join(',')).join(' ') : '';
       const reach = `stroke="transparent" stroke-width="${hitR}" stroke-linejoin="round"`;
       const hit =
-        f.shape === 'polygon' && pts
+        f.shape === 'field'
+          ? '' // nothing to come near: it is the whole picture
+          : f.shape === 'polygon' && pts
           ? `<polygon class="k-geo" points="${pts}" fill="transparent" ${reach}/>`
           : f.shape === 'polyline' && pts
             ? `<polyline class="k-geo" points="${pts}" fill="none" ${reach}/>`

@@ -42,7 +42,13 @@ export const Feature = z.object({
   // 'polygon' = a soft closed outline (a Class-B morphology suggestion, e.g. a
   // pillar) drawn from `polygon`; an optional `arrow_to` adds the 迎光 arrow.
   // 'polyline' = an open thin line from `polygon` (a pillar's bright rim).
-  shape: z.enum(['circle', 'shell', 'arrow', 'arc', 'dot', 'polygon', 'polyline']).default('circle'),
+  /** 'field' is the subject the frame is a crop of — an object wider than the
+   *  picture itself. It carries a circle for anchoring its badge, but nothing
+   *  draws a ring for it: any ring would claim a boundary the frame does not
+   *  contain. */
+  shape: z
+    .enum(['circle', 'shell', 'arrow', 'arc', 'dot', 'polygon', 'polyline', 'field'])
+    .default('circle'),
   arrow_to: z.tuple([z.number(), z.number()]).optional(), // target point for shape 'arrow'
   /** Closed contour (shape 'polygon') or open line (shape 'polyline'), display px. */
   polygon: z.array(z.tuple([z.number(), z.number()])).optional(),

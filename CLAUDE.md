@@ -98,7 +98,7 @@ annotations themselves (drafts included), the **CLI** from the exported registry
 
 ```bash
 pnpm build          # tsc + all three clients (editor, atlas, viewer)
-pnpm test           # vitest, 195 tests
+pnpm test           # vitest, 200 tests
 pnpm lint           # eslint
 ./astellum help
 ```

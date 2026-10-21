@@ -73,8 +73,10 @@ export function buildOverlaySvg(report: Reading): string {
           `<polygon points="${ax},${ay} ${p2} ${p3}" fill="${color.stroke}"/>`,
         );
       }
-    } else {
+    } else if (f.shape !== 'field') {
       // A-class solid ring, or a Class-B shell sample (small dashed circle).
+      // 'field' is the subject the frame is a crop of: a ring around it would
+      // claim a boundary this picture does not contain, so it gets none.
       const dash = f.shape === 'shell' ? ` stroke-dasharray="${strokeW * 5} ${strokeW * 3}"` : '';
       parts.push(
         `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color.stroke}" stroke-width="${strokeW}"${dash}/>`,
