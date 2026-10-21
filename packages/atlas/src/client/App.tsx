@@ -783,6 +783,21 @@ export function App(): JSX.Element {
               {visibleTargets.length === 0 && <li className="muted-li">{t('noMatch')}</li>}
               {visibleTargets.map((x) => {
                 const done = x.status.approved > 0 && x.status.approved === x.annotations;
+                /*
+                 * One mark, answering one question: is there something for me
+                 * to do here? The quick win comes first — a target that is
+                 * reviewed but not exported is one click away, and it is the
+                 * one that silently leaves the kiosk showing last week's
+                 * shapes, so it should not hide behind the drafts.
+                 */
+                const mark: IconName | null =
+                  x.annotations === 0
+                    ? null
+                    : x.primary_id && stale.includes(x.primary_id)
+                      ? 'needsExport'
+                      : x.status.draft > 0 || x.status.in_review > 0
+                        ? 'todo'
+                        : 'exported';
                 return (
                   <li
                     key={x.key}
@@ -805,35 +820,25 @@ export function App(): JSX.Element {
                     <span className={x.has_image ? 'img-dot on' : 'img-dot'}>
                       <Icon name="image" title={t('hasImage')} />
                     </span>
-                    {x.primary_id && stale.includes(x.primary_id) && (
-                      <span className="stale-dot">
-                        <Icon name="stale" title={t('staleOne')} />
-                      </span>
-                    )}
                     <span className="target-counts">
-                      {x.annotations === 0 ? (
-                        <span className="none-yet">—</span>
+                      {mark === null ? (
+                        <span className="none-yet" title={t('markNone')}>
+                          —
+                        </span>
                       ) : (
-                        <>
-                          {x.status.approved > 0 && (
-                            <b className="ok">
-                              {x.status.approved}
-                              <Icon name="approved" title={t('legApproved')} />
-                            </b>
-                          )}
-                          {x.status.in_review > 0 && (
-                            <b className="rev">
-                              {x.status.in_review}
-                              <Icon name="review" title={t('legReview')} />
-                            </b>
-                          )}
-                          {x.status.draft > 0 && (
-                            <b className="dft">
-                              {x.status.draft}
-                              <Icon name="draft" title={t('legDraft')} />
-                            </b>
-                          )}
-                        </>
+                        <b className={`mark mark-${mark}`}>
+                          {x.annotations}
+                          <Icon
+                            name={mark}
+                            title={t(
+                              mark === 'exported'
+                                ? 'markExported'
+                                : mark === 'needsExport'
+                                  ? 'markNeedsExport'
+                                  : 'markTodo',
+                            )}
+                          />
+                        </b>
                       )}
                     </span>
                   </li>
@@ -847,11 +852,10 @@ export function App(): JSX.Element {
               {(
                 [
                   ['image', 'legImage'],
-                  ['approved', 'legApproved'],
-                  ['review', 'legReview'],
-                  ['draft', 'legDraft'],
-                  ['stale', 'legStale'],
-                ] as [IconName, 'legImage' | 'legApproved' | 'legReview' | 'legDraft' | 'legStale'][]
+                  ['exported', 'legExported'],
+                  ['needsExport', 'legNeedsExport'],
+                  ['todo', 'legTodo'],
+                ] as [IconName, 'legImage' | 'legExported' | 'legNeedsExport' | 'legTodo'][]
               ).map(([icon, key]) => (
                 <div key={icon} className={`leg leg-${icon}`}>
                   <dt>
@@ -870,7 +874,7 @@ export function App(): JSX.Element {
             <button onClick={() => void doExport()}>{t('exportRegistry')}</button>
             {stale.length > 0 && (
               <p className="stale" title={t('staleWhy')}>
-                <Icon name="stale" />
+                <Icon name="needsExport" />
                 {stale.length} {t('staleSome')}
               </p>
             )}

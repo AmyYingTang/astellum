@@ -1,17 +1,20 @@
 /**
- * The target list's markers.
+ * The target list's marks.
  *
- * They used to be typographic — ▣, ✓, ⏳, a bare number — which rendered at
- * four different weights depending on the font that answered, and said nothing
- * about themselves. These are one family at one size, drawn from `currentColor`
- * so the colour stays where it belongs (in the CSS), and every one of them
- * appears in the legend under the list.
+ * One per target, and it answers one question: do I have to do something
+ * about this? Not a census of annotation states — the filter chips above the
+ * list already give that, and a row scanned down a list of ninety-eight is
+ * read, not studied. The reference image is the exception: it is about whether
+ * the target can be worked on at all, so it has a column of its own.
+ *
+ * Drawings rather than glyphs (▣ ✓ ⏳) so they share a size and a baseline
+ * whatever font answers, and they take their colour from the row.
  */
 
-export type IconName = 'image' | 'approved' | 'review' | 'draft' | 'stale';
+export type IconName = 'image' | 'exported' | 'needsExport' | 'todo';
 
 const PATHS: Record<IconName, JSX.Element> = {
-  // A reference image exists: a picture, with a horizon and a sun in it.
+  // There is a reference image: a picture, with a horizon and a sun in it.
   image: (
     <>
       <rect x="1.5" y="2.5" width="11" height="9" rx="1.6" />
@@ -19,29 +22,22 @@ const PATHS: Record<IconName, JSX.Element> = {
       <path d="M2.4 10.2 6 7.4l2.1 1.7 2-1.6 1.2 1" />
     </>
   ),
-  // Reviewed and standing: a tick.
-  approved: (
+  // Reviewed and handed over: a tick. Nothing to do.
+  exported: (
     <>
       <circle cx="7" cy="7" r="5.2" />
       <path d="M4.6 7.2 6.3 9l3.2-3.6" />
     </>
   ),
-  // Waiting for someone to look at it: a half-turned dial.
-  review: (
-    <>
-      <circle cx="7" cy="7" r="5.2" />
-      <path d="M7 4.1V7l2 1.5" />
-    </>
-  ),
-  // Drawn, not yet judged: an outline with nothing in it.
-  draft: <circle cx="7" cy="7" r="5.2" strokeDasharray="2.2 1.8" />,
-  // Approved but not handed to the runtime: an arrow that has not left.
-  stale: (
+  // Approved, still sitting here: an arrow that has not left. One click.
+  needsExport: (
     <>
       <circle cx="7" cy="7" r="5.2" />
       <path d="M7 9.6V4.6M4.9 6.6 7 4.4l2.1 2.2" />
     </>
   ),
+  // Drafts or things waiting to be looked at: an unfinished ring. An evening.
+  todo: <circle cx="7" cy="7" r="5.2" strokeDasharray="2.2 1.8" />,
 };
 
 export function Icon({ name, title }: { name: IconName; title?: string }): JSX.Element {

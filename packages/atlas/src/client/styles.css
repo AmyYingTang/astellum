@@ -288,17 +288,6 @@ body {
   color: #e0af68;
   cursor: help;
 }
-.stale-dot {
-  flex: none;
-  display: flex;
-  margin-left: auto;
-  color: #e0af68;
-  cursor: help;
-}
-/* The counts keep the right edge; the arrow sits just before them. */
-.stale-dot + .target-counts {
-  margin-left: 7px;
-}
 
 /* Existing-entry flow: identity collapses to one line so the annotation list
    (where all the review work happens) gets the height instead. */
@@ -673,14 +662,19 @@ button.link {
 .target-counts .none-yet {
   color: var(--muted);
 }
-.target-counts .ok {
+/* One mark per row, coloured by what it asks of you: nothing, one click, or
+   an evening. */
+.target-counts .mark-exported {
   color: #9ece6a;
 }
-.target-counts .rev {
+.target-counts .mark-needsExport {
   color: #e0af68;
 }
-.target-counts .dft {
+.target-counts .mark-todo {
   color: var(--muted);
+}
+.target-counts b {
+  cursor: help;
 }
 .target-desig {
   flex: none;
@@ -733,13 +727,10 @@ button.link {
 .legend .leg-image dt {
   color: var(--accent);
 }
-.legend .leg-approved dt {
+.legend .leg-exported dt {
   color: #9ece6a;
 }
-.legend .leg-review dt {
-  color: #e0af68;
-}
-.legend .leg-stale dt {
+.legend .leg-needsExport dt {
   color: #e0af68;
 }
 
