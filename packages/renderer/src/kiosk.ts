@@ -614,13 +614,20 @@ export function generateKioskHtml(report: Reading, opts: KioskOptions): string {
             : `<circle class="k-geo" cx="${cx}" cy="${cy}" r="${r}" ${reach} fill="${
                 r <= Math.min(width, height) * 0.12 ? 'transparent' : 'none'
               }"/>`;
+      // The outline belongs to the photograph and scales with it; the number
+      // and the name are the page talking about the photograph, and are held at
+      // their drawn size however far in the picture is zoomed — otherwise
+      // examining a structure buries it under the label that names it. They are
+      // wrapped together so the gap between a number and its name is held too.
       return `<g class="k-feat" data-f="${esc(f.id)}" tabindex="0" role="button">
   ${shape}
-  <circle class="k-badge" cx="${bx}" cy="${by}" r="${drawnR}" fill="${c.badge}" stroke="#0b0e14" stroke-width="${Math.max(1, strokeW / 2)}"/>
-  <text class="k-num" x="${bx}" y="${by}" font-size="${drawnR * 1.15}" font-weight="700" fill="#0b0e14" text-anchor="middle" dominant-baseline="central">${esc(f.badge.num)}</text>
-  ${name}
   ${hit}
-  <circle class="k-hit" cx="${bx}" cy="${by}" r="${Math.max(hitR, bR * 2)}" fill="transparent"/>
+  <g class="k-pin" data-px="${bx}" data-py="${by}">
+    <circle class="k-badge" cx="${bx}" cy="${by}" r="${drawnR}" fill="${c.badge}" stroke="#0b0e14" stroke-width="${Math.max(1, strokeW / 2)}"/>
+    <text class="k-num" x="${bx}" y="${by}" font-size="${drawnR * 1.15}" font-weight="700" fill="#0b0e14" text-anchor="middle" dominant-baseline="central">${esc(f.badge.num)}</text>
+    ${name}
+    <circle class="k-hit" cx="${bx}" cy="${by}" r="${Math.max(hitR, bR * 2)}" fill="transparent"/>
+  </g>
 </g>`;
     })
     .join('\n');
@@ -1020,12 +1027,21 @@ ${chromeScript(opts.picker)}
   var zoom=1, panX=0, panY=0;
   var ZMIN=1, ZMAX=6;
 
+  var pins=[].slice.call(document.querySelectorAll('.k-pin'));
   function applyZoom(){
     var r=stage.getBoundingClientRect();
     var maxX=r.width*(zoom-1), maxY=r.height*(zoom-1);
     panX=Math.min(0, Math.max(-maxX, panX));
     panY=Math.min(0, Math.max(-maxY, panY));
     zoomWrap.style.transform='translate('+panX+'px,'+panY+'px) scale('+zoom+')';
+    // Undo that scale for each number and name, about the point it marks: the
+    // mark stays where it is on the sky and the same size on the screen, so
+    // zooming in reveals the picture instead of the labels.
+    for(var i=0;i<pins.length;i++){
+      var g=pins[i], px=g.getAttribute('data-px'), py=g.getAttribute('data-py');
+      g.setAttribute('transform', zoom===1 ? '' :
+        'translate('+px+','+py+') scale('+(1/zoom)+') translate('+(-px)+','+(-py)+')');
+    }
     document.getElementById('k-zr').disabled = zoom<=ZMIN+0.001;
   }
 

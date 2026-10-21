@@ -405,3 +405,26 @@ describe('the poster control', () => {
     }
   });
 });
+
+/*
+ * Zooming is for examining the photograph. If the numbers and names grew with
+ * it, a structure would end up buried under the label that names it — which is
+ * what happened the first time a reader zoomed in.
+ */
+describe('marks under zoom', () => {
+  const html = generateKioskHtml(report, { imageDataUri: 'data:...' });
+
+  it('wraps each number and its name in one pin, anchored where it points', () => {
+    expect(html).toMatch(/<g class="k-pin" data-px="[\d.]+" data-py="[\d.]+">/);
+  });
+
+  it('undoes the zoom on the pins, about that anchor', () => {
+    expect(html).toContain("scale('+(1/zoom)+')");
+    expect(html).toContain("'translate('+px+','+py+')");
+  });
+
+  it('leaves the outline alone — it belongs to the picture', () => {
+    const pin = html.slice(html.indexOf('<g class="k-pin"'));
+    expect(pin.slice(0, pin.indexOf('</g>'))).not.toContain('k-mark');
+  });
+});
