@@ -276,6 +276,22 @@ body {
 .export button {
   width: 100%;
 }
+/* How far behind the runtime is. Amber rather than red: nothing is broken,
+   something is merely not handed over yet. */
+.export .stale {
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #e0af68;
+  cursor: help;
+}
+.stale-dot {
+  flex: none;
+  margin-left: 4px;
+  font-size: 9px;
+  color: #e0af68;
+  cursor: help;
+}
 
 /* Existing-entry flow: identity collapses to one line so the annotation list
    (where all the review work happens) gets the height instead. */

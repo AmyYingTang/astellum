@@ -1,6 +1,7 @@
 import type {
   EntryResponse,
   ExportRegistryResponse,
+  RegistryStatusResponse,
   ObjectsResponse,
   SaveEntryRequest,
   SaveEntryResponse,
@@ -65,6 +66,12 @@ export async function getObject(id: string): Promise<EntryResponse> {
 
 export function saveObject(id: string, body: SaveEntryRequest): Promise<SaveEntryResponse> {
   return jsonPost<SaveEntryResponse>(`/api/object/${encodeURIComponent(id)}`, body);
+}
+
+/** Which targets have approved work the exported registry does not carry. */
+export async function registryStatus(): Promise<RegistryStatusResponse> {
+  const r = await fetch('/api/registry-status');
+  return (await r.json()) as RegistryStatusResponse;
 }
 
 export async function exportRegistry(): Promise<ExportRegistryResponse> {

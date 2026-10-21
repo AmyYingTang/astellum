@@ -12,6 +12,7 @@ import {
   getObject,
   saveObject,
   exportRegistry,
+  registryStatus,
 } from './api.js';
 import type { FeatureType, Geometry } from '../featureTypes.js';
 import type { Annotation, AnnoStatus, AtlasEntry } from '../atlas.js';
@@ -141,6 +142,10 @@ export function App(): JSX.Element {
   const [filter, setFilter] = useState<'all' | 'none' | 'noimg' | 'draft' | 'review' | 'approved'>('all');
   const [saveMsg, setSaveMsg] = useState('');
   const [exportMsg, setExportMsg] = useState('');
+  // Targets whose approved work the exported registry does not carry. Approving
+  // is the judgement; exporting is the step that gets forgotten, and until it
+  // happens the kiosk is still showing the last export.
+  const [stale, setStale] = useState<string[]>([]);
   const [solverInfo, setSolverInfo] = useState<{ solver: string; localSolver: boolean; hubUrl?: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const previewFileRef = useRef<HTMLInputElement>(null);
@@ -216,6 +221,7 @@ export function App(): JSX.Element {
     });
     void fetchConfig().then(setSolverInfo).catch(() => setSolverInfo(null));
     void refreshTargets();
+    void refreshStale();
   }, []);
 
   const refreshTargets = async (): Promise<void> => {
@@ -401,10 +407,21 @@ export function App(): JSX.Element {
     );
   };
 
+  const refreshStale = async (): Promise<void> => {
+    const r = await registryStatus();
+    if (r.ok) setStale(r.stale);
+  };
+
   const doExport = async (): Promise<void> => {
     const r = await exportRegistry();
     setExportMsg(r.ok ? `${t('exported')}: ${r.objects} · ${r.annotations}` : `⚠ ${r.error ?? ''}`);
+    void refreshStale();
     setTimeout(() => setExportMsg(''), 4000);
+  };
+
+  /** Finish a target: write it down and hand it to the runtime in one move. */
+  const saveAndExport = async (): Promise<void> => {
+    if (await save()) await doExport();
   };
 
   const exitCheck = (): void => {
@@ -481,8 +498,8 @@ export function App(): JSX.Element {
     }
   };
 
-  const save = async (): Promise<void> => {
-    if (!session || !primaryId.trim()) return;
+  const save = async (): Promise<boolean> => {
+    if (!session || !primaryId.trim()) return false;
     const entry: AtlasEntry = {
       primary_id: primaryId.trim(),
       aliases: aliasesText.split(',').map((s) => s.trim()).filter(Boolean),
@@ -504,14 +521,16 @@ export function App(): JSX.Element {
     if (r.conflict) {
       // Stale page: keep their edits on screen but make it clear a reload is needed.
       setSaveMsg(`⚠ ${t('saveConflict')}`);
-      return; // no auto-clear — this one must be read
+      return false; // no auto-clear — this one must be read
     }
     setSaveMsg(r.ok ? t('saved') : `⚠ ${r.error ?? ''}`);
     if (r.ok) {
       setEntryRev(r.rev ?? entryRev + 1);
       void refreshTargets();
+      void refreshStale();
     }
     setTimeout(() => setSaveMsg(''), 2500);
+    return r.ok;
   };
 
   // Render saved annotations onto the current image (sky → px).
@@ -673,8 +692,13 @@ export function App(): JSX.Element {
   const saveBlock = (n: number): JSX.Element => (
     <section>
       <StepHead n={n} title={t('stepSave')} />
-      <button className="primary" disabled={!primaryId.trim()} onClick={save}>
-        {t('save')} ({annotations.length})
+      <button className="primary" disabled={!primaryId.trim()} onClick={() => void saveAndExport()}>
+        {t('saveAndExport')} ({annotations.length})
+      </button>
+      {/* Saving without exporting is still allowed — half-reviewed work has no
+          business in the registry — but it is no longer the obvious button. */}
+      <button disabled={!primaryId.trim()} onClick={() => void save()}>
+        {t('save')}
       </button>
       {!primaryId.trim() && <p className="hint">⚠ {t('needId')}</p>}
       {saveMsg && <p className="status">{saveMsg}</p>}
@@ -780,6 +804,11 @@ export function App(): JSX.Element {
                     <span className={x.has_image ? 'img-dot on' : 'img-dot'} title={t('hasImage')}>
                       ▣
                     </span>
+                    {x.primary_id && stale.includes(x.primary_id) && (
+                      <span className="stale-dot" title={t('staleOne')}>
+                        ●
+                      </span>
+                    )}
                     <span className="target-counts">
                       {x.annotations === 0 ? (
                         '0'
@@ -797,9 +826,16 @@ export function App(): JSX.Element {
             </ul>
           </section>
 
-          {/* Export is the end of the whole workflow — bottom, out of the way. */}
+          {/* Exporting everything is still here, for a batch of targets or to
+              rebuild the file. One target at a time is finished on the right,
+              where the reviewing happens. */}
           <section className="export">
-            <button onClick={doExport}>{t('exportRegistry')}</button>
+            <button onClick={() => void doExport()}>{t('exportRegistry')}</button>
+            {stale.length > 0 && (
+              <p className="stale" title={t('staleWhy')}>
+                ● {stale.length} {t('staleSome')}
+              </p>
+            )}
             {exportMsg && <p className="status">{exportMsg}</p>}
           </section>
         </aside>

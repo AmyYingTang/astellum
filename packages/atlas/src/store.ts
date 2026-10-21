@@ -21,6 +21,8 @@ export interface AtlasStore {
   getRefImage(key: string): Promise<Buffer>;
   /** Write the read-optimized approved-only registry (the apply-side artifact). */
   saveRegistry(registry: unknown): Promise<void>;
+  /** Read it back, to tell whether it still matches what has been approved. */
+  loadRegistry(): Promise<unknown | null>;
   /** Predefined readings, stored beside the annotations they belong to. */
   loadReadings(): Promise<PredefinedLibrary>;
   saveReadings(library: PredefinedLibrary): Promise<void>;
@@ -75,6 +77,16 @@ export class LocalAtlasStore implements AtlasStore {
 
   async getRefImage(key: string): Promise<Buffer> {
     return readFile(this.safePath(key));
+  }
+
+  /** What was exported last, or null if nothing ever was. */
+  async loadRegistry(): Promise<unknown | null> {
+    try {
+      return JSON.parse(await readFile(this.registryPath, 'utf8')) as unknown;
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code === 'ENOENT') return null;
+      throw e;
+    }
   }
 
   async saveRegistry(registry: unknown): Promise<void> {

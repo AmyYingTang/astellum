@@ -92,6 +92,12 @@ mappings — data-ifying them trades a compile error for a runtime one.
 
 Annotate → draft the text → review shape and words **together** → export.
 
+Export is a separate step because it is what the runtime reads, and that is
+also the one thing a curator forgets — so the atlas compares the two files and
+says which targets are behind, and the save step on the right exports as it
+saves. Nothing exports by itself: the registry is a tracked file, and it should
+only change when somebody meant it to.
+
 Text is keyed by an annotation id that is stable from the moment a shape is
 drawn, so writing before approval is safe and keeps review to one pass. Export
 is last because it is what the runtime reads, not what drafting needs.
@@ -104,7 +110,7 @@ annotations themselves (drafts included), the **CLI** from the exported registry
 
 ```bash
 pnpm build          # tsc + all three clients (editor, atlas, viewer)
-pnpm test           # vitest, 211 tests
+pnpm test           # vitest, 226 tests
 pnpm lint           # eslint
 ./astellum help
 ```

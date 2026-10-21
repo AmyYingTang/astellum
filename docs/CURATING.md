@@ -26,6 +26,19 @@ id nothing looks up — harmless.
 **Export is last** because it is what the kiosk and studio read at runtime, not
 something drafting needs.
 
+Finishing one target is one button: **保存并导出 / Save and export**, in the save
+step on the right, writes the target down and hands it to the runtime in the
+same move. **导出全部 / Export all**, bottom left, is the same export triggered
+differently — it always rebuilds the whole file from everything approved — and
+is there for a batch of targets or to rebuild after pulling a release. Plain
+**Save** is still there for work that is not ready to be read by anything.
+
+Whenever the exported registry is behind what has been approved, the atlas says
+so: an amber dot on the target in the list, and a count under the export
+button. That is the one failure this workflow actually produces — approve,
+walk away, and the kiosk quietly keeps showing the shapes from the last
+export.
+
 One asymmetry worth knowing: the **atlas** drafts from the annotations
 themselves, so drafts count. The **command line** (`readings-draft`) reads the
 *exported registry*, which contains only approved annotations — so a target with
@@ -275,6 +288,6 @@ release.
 | "Save to atlas" stays greyed out | the **primary ID** is required |
 | "Someone else changed this entry" | expected concurrency guard — reload and redo |
 | Upload fails / "could not decode image" | the atlas takes JPG/PNG only; FITS works in the kiosk path |
-| Annotations do not show on a user's image | only **approved** ones are exported; re-run **Export registry** |
+| Annotations do not show on a user's image | only **approved** ones are exported, and only once exported — look for the amber dot in the target list, then **保存并导出** or **导出全部** |
 | Per-target reading text is ignored | the registry was exported before annotation ids were carried — re-export |
 | `draft` says a target is not annotated | it has no approved annotations, so it is not in the registry — approve and re-export first |

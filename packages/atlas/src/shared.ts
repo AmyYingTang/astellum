@@ -104,6 +104,13 @@ export interface TargetsResponse {
   targets: TargetRow[];
 }
 
+/** Which targets have approved work the exported registry does not carry. */
+export interface RegistryStatusResponse {
+  ok: boolean;
+  stale: string[];
+  error?: string;
+}
+
 export interface ExportRegistryResponse {
   ok: boolean;
   objects?: number;

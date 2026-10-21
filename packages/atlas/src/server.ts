@@ -25,12 +25,14 @@ import { draftPredefinedStyle } from '@astellum/reader';
 import { AtlasEntry, AtlasFile, findEntry, normalizeId } from './atlas.js';
 import { LocalAtlasStore, type AtlasStore } from './store.js';
 import { FEATURE_TYPES } from './featureTypes.js';
+import { buildRegistry, staleTargets } from './registryExport.js';
 import { SEED_TARGETS } from './seedTargets.js';
 import type {
   ObjectsResponse,
   ObjectSummary,
   EntryResponse,
   ExportRegistryResponse,
+  RegistryStatusResponse,
   SaveEntryRequest,
   SaveEntryResponse,
   SolveJob,
@@ -489,31 +491,35 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
   // Slim: only what apply needs (id + aliases + feature_type + geometry + label).
   app.post('/api/export-registry', async (_req, res) => {
     try {
-      const atlas = await store.loadAtlas();
-      const objects = atlas.objects
-        .map((o) => ({
-          primary_id: o.primary_id,
-          aliases: o.aliases,
-          annotations: o.annotations
-            .filter((a) => a.status === 'approved')
-            .map((a) => ({
-              // Carried so predefined readings can attach text to this exact
-              // annotation (stable across re-exports).
-              id: a.id,
-              feature_type: a.feature_type,
-              geometry: a.geometry,
-              label: a.label,
-              ...(a.label_anchor ? { label_anchor: a.label_anchor } : {}),
-              ...(a.note ? { note: a.note } : {}),
-            })),
-        }))
-        .filter((o) => o.annotations.length > 0);
-      const registry = { schema_version: 1 as const, objects };
+      const registry = buildRegistry(await store.loadAtlas());
       await store.saveRegistry(registry);
-      const annotations = objects.reduce((n, o) => n + o.annotations.length, 0);
-      res.json({ ok: true, objects: objects.length, annotations } satisfies ExportRegistryResponse);
+      const annotations = registry.objects.reduce((n, o) => n + o.annotations.length, 0);
+      res.json({
+        ok: true,
+        objects: registry.objects.length,
+        annotations,
+      } satisfies ExportRegistryResponse);
     } catch (e) {
       res.status(500).json({ ok: false, error: (e as Error).message } satisfies ExportRegistryResponse);
+    }
+  });
+
+  /**
+   * Whether the runtime would read something out of date.
+   *
+   * The interface asks after every save and every export, because approving is
+   * a judgement a curator makes and exporting is the mechanical step they
+   * forget — and a kiosk that quietly shows last week's shapes is a bad way to
+   * find out.
+   */
+  app.get('/api/registry-status', async (_req, res) => {
+    try {
+      const [atlas, registry] = await Promise.all([store.loadAtlas(), store.loadRegistry()]);
+      res.json({ ok: true, stale: staleTargets(atlas, registry) } satisfies RegistryStatusResponse);
+    } catch (e) {
+      res
+        .status(500)
+        .json({ ok: false, stale: [], error: (e as Error).message } satisfies RegistryStatusResponse);
     }
   });
 
