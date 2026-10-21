@@ -783,13 +783,31 @@ ${chromeScript(opts.picker)}
    * have — the ratio normally holds, but a dragged divider can clamp the box
    * and the two would quietly disagree.
    */
+  /**
+   * An outline drawn by hand rarely lands back on its first point, and the
+   * atlas stores what was drawn. A line whose ends all but meet is an outline,
+   * not a ridge: lighting only a band along it leaves a dark stripe down the
+   * middle of the very thing being shown.
+   */
+  function nearlyClosed(pts){
+    if(pts.length<4) return false;
+    var a=pts[0], b=pts[pts.length-1];
+    var xs=pts.map(function(q){return q[0];}), ys=pts.map(function(q){return q[1];});
+    var span=Math.max(Math.max.apply(null,xs)-Math.min.apply(null,xs),
+                      Math.max.apply(null,ys)-Math.min.apply(null,ys));
+    return Math.sqrt((a[0]-b[0])*(a[0]-b[0])+(a[1]-b[1])*(a[1]-b[1])) <= span*0.08;
+  }
+
   function showLoupe(id){
     if(!id){ loupe.classList.remove('show'); return; }
     var crop=null, geo=null, i;
     for(i=0;i<CROPS.length;i++){ if(CROPS[i].id===id){ crop=CROPS[i]; break; } }
     for(i=0;i<GEO.length;i++){ if(GEO[i].id===id){ geo=GEO[i]; break; } }
     var box=photo.getBoundingClientRect();
-    if(!crop || !box.width){ loupe.classList.remove('show'); return; }
+    // A subject the frame is a crop of has no region to magnify: the answer to
+    // "show me that part" is the picture already on screen.
+    var hasShape = geo && (geo.pts || geo.r!==undefined);
+    if(!crop || !box.width || !hasShape){ loupe.classList.remove('show'); return; }
     var disp=box.width/IMG_W;                       // image px -> CSS px on screen
     var side=Math.round(Math.min(box.width, box.height)*0.33);
     // Fill most of the loupe with the feature, but stay inside a sane range:
@@ -810,7 +828,7 @@ ${chromeScript(opts.picker)}
     if(geo && geo.pts){
       var pts=geo.pts.map(function(q){ return q[0]+','+q[1]; }).join(' ');
       // Black in a mask hides what it covers, so the region keeps the picture.
-      hole = geo.closed
+      hole = (geo.closed || nearlyClosed(geo.pts))
         ? '<polygon points="'+pts+'" fill="#000"/>'
         : '<polyline points="'+pts+'" fill="none" stroke="#000" stroke-width="'+(band*2)+
           '" stroke-linejoin="round" stroke-linecap="round"/>';

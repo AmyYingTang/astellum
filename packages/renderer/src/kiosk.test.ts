@@ -196,6 +196,21 @@ describe('the invitation', () => {
 // faded as a whole and still reading as a grey slab on the photograph.
 // The Carina Nebula is 3½° across and the picture covers under three: the
 // frame is a crop of it, so there is no boundary here to draw.
+// Both reported from a real frame: a dust lane came up with a dark stripe down
+// its middle, and Carina's crop came up black.
+describe('what the crop lights', () => {
+  it('treats an outline that all but closes as the region it encloses', () => {
+    const html = generateKioskHtml(report, { imageDataUri: 'data:...' });
+    expect(html).toContain('function nearlyClosed(pts)');
+    expect(html).toMatch(/\(geo\.closed \|\| nearlyClosed\(geo\.pts\)\)/);
+  });
+
+  it('shows no crop for a subject with no region of its own', () => {
+    const html = generateKioskHtml(report, { imageDataUri: 'data:...' });
+    expect(html).toMatch(/var hasShape = geo && \(geo\.pts \|\| geo\.r!==undefined\)/);
+  });
+});
+
 describe('a subject wider than the frame', () => {
   it('draws no ring and offers nothing to come near', () => {
     const field = {
