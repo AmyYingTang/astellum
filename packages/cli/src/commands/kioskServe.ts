@@ -42,7 +42,15 @@ export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
   const port = args.port ?? 3200;
   const workdir = resolve(args.workdir ?? join(tmpdir(), 'astellum-kiosk'));
   await mkdir(workdir, { recursive: true });
-  const cfg = loadConfig();
+  // Read per request, never cached.
+  //
+  // This used to be one `loadConfig()` at startup, which meant a setting
+  // changed on the settings page did nothing here until somebody restarted the
+  // process — and worse, did it *halfway*: `runKiosk` loads the config itself
+  // on every frame, so switching `readingSource` to `ai` without a restart
+  // produced frames the model wrote while this picker went on asking the
+  // offline question. Config reads are a file read of a small JSON; a kiosk
+  // serves a handful of requests a night.
 
   const app = express();
   app.use(express.json({ limit: '256mb' })); // a FITS master is not small
@@ -68,7 +76,7 @@ export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
     // written was `general` and one is not "more than one". A role is a style
     // key now, so the roles exist whether or not somebody has written for them
     // and the form can always ask.
-    const ai = cfg.kiosk.readingSource === 'ai';
+    const ai = loadConfig().kiosk.readingSource === 'ai';
     return {
       hubUrl: process.env.ASTELLUM_HUB_URL || undefined,
       picker: {
@@ -119,7 +127,7 @@ export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
         // One answer, two uses: the style key offline, the model's reader on
         // the night. runKiosk decides which, from the source below.
         role: body.role,
-        ...(cfg.kiosk.readingSource === 'ai' ? { source: 'ai' as const } : {}),
+        ...(loadConfig().kiosk.readingSource === 'ai' ? { source: 'ai' as const } : {}),
         out: dir,
         open: false,
         // The frame carries the same chrome as the shell it replaces, so the

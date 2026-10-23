@@ -143,9 +143,12 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
   // A stacked FITS master runs far past what a JPEG needs.
   app.use(express.json({ limit: '256mb' }));
 
-  // The control file: which profile is in force and every knob it resolves to.
-  // The settings UI reads this; the kiosk reads only `profile.reading` from it.
-  const config = loadConfig();
+  // The control file is read per request, never cached.
+  //
+  // It used to be one `loadConfig()` here, which meant a change made on the
+  // settings page did nothing in this process until somebody restarted it —
+  // and nothing said so. `loadConfig` is a small JSON file read; the studio
+  // handles a request when a person clicks something.
 
   /** Can this machine actually do what the active profile promises? */
   const readiness = async (): Promise<{
@@ -154,6 +157,7 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
     readingTargets: number;
     readingsCovered: number;
   }> => {
+    const config = loadConfig();
     const status = await offlineCatalogStatus();
     const library = await loadReadingLibraries(defaultReadingsPaths()).catch(() => null);
     const registry = await loadRegistries(defaultRegistryPaths()).catch(() => null);
@@ -173,6 +177,7 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
   };
 
   app.get('/api/config', async (_req, res) => {
+    const config = loadConfig();
     res.json({
       solver: config.solve.mode === 'local' ? 'local astrometry.net' : 'nova',
       localSolver: config.solve.mode === 'local',
@@ -227,6 +232,7 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
   // The nova key is only needed for the nova solver; the local astrometry.net
   // solver (ASTELLUM_SOLVER=local) needs no key.
   const requireApiKey = (): string | undefined => {
+    const config = loadConfig();
     const apiKey = process.env.ASTROMETRY_API_KEY;
     // The local solver needs no key — and the active profile, not just the env
     // var, is what decides which solver runs. `isLocalSolver` reads the profile
@@ -256,6 +262,7 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
       role?: string;
     },
   ): Promise<void> => {
+    const config = loadConfig();
     try {
       const factsheet = await identify(
         {
@@ -451,6 +458,7 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
     try {
       const slug = req.params.slug;
       const dir = projectDir(slug);
+      const config = loadConfig();
       const { role } = (req.body ?? {}) as { role?: string };
       if (!isRoleId(role)) throw new Error(`Not a role: ${role ?? '(none)'}`);
       const factsheet = await loadFactsheet(slug);

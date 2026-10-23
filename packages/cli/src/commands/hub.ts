@@ -258,6 +258,27 @@ function settingsPage(o: {
     'Environment variables (.env) still win, so anything set there will not take effect here.',
   )}</p>
 <form id="f">
+  <!-- The four knobs that decide what this machine can still do unplugged
+       live in four different sections below, next to the things they belong
+       with — the index downloads belong beside the solver, not here. What was
+       missing is the one place that answers "so can it run unplugged or not",
+       which is a question about all four at once. This reads them live rather
+       than storing a fifth setting of its own. -->
+  <fieldset id="offline"><legend>${t('断网能力 Offline', 'Offline capability')}</legend>
+    <table id="offline-rows">
+      <tr data-sel="solve.mode" data-off="local"><td>${t('解析', 'Plate solving')}</td><td></td></tr>
+      <tr data-sel="catalog.preset" data-off="offline"><td>${t('星表', 'Catalogues')}</td><td></td></tr>
+      <tr data-sel="reading.mode" data-off="predefined"><td>${t('工作台文字', "The studio's text")}</td><td></td></tr>
+      <tr data-sel="kiosk.readingSource" data-off="predefined"><td>${t('现场文字', "The kiosk's text")}</td><td></td></tr>
+    </table>
+    <p class="status" id="offline-note"></p>
+    <button type="button" id="offline-all">${t('全部设为离线', 'Set all four to offline')}</button>
+    <p class="hint">${t(
+      '这四项各自独立,改哪一项都行 —— 上面只是把它们放在一起看。按钮只是替你把下面四个选项改好,还是要点保存。',
+      'The four are independent and any of them can be set on its own — this only puts them side by side. The button just sets the four controls below for you; you still press Save.',
+    )}</p>
+  </fieldset>
+
   <fieldset><legend>${t('解析 Plate solving', 'Plate solving')}</legend>
     <label>${t('解析器', 'Solver')}
       <select name="solve.mode">
@@ -378,9 +399,52 @@ var IDX_T = ${JSON.stringify({
     existed: t(',已存在', ', already present'),
     failed: t(',失败', ', failed'),
     saving: t('保存中…', 'Saving…'),
-    saved: t('已保存。重启相关页面后生效。', 'Saved. Restart the affected page to pick it up.'),
+    // No server caches the control file any more — each request reads it — so
+    // this no longer has to tell people to restart something.
+    saved: t('已保存。刷新相关页面即生效。', 'Saved. Reload the affected page and it is in force.'),
     failedSave: t('保存失败', 'Save failed'),
   })};
+
+// --- offline capability ----------------------------------------------------
+// Reads the four controls rather than storing anything of its own, so it
+// cannot drift from them and updates while you are still deciding.
+var OFF_T = ${JSON.stringify({
+    offline: t('离线', 'offline'),
+    online: t('需要联网', 'needs a network'),
+    allOff: t('这台机器可以断网跑。', 'This machine can run unplugged.'),
+    allOn: t('这台机器按联网配置 —— 四项都要网。', 'Configured for a network — all four need one.'),
+    mixed: t('断网之后这些会失败:', 'Unplugged, these will fail: '),
+  })};
+function offlineRefresh(){
+  var need=[];
+  document.querySelectorAll('#offline-rows tr').forEach(function(tr){
+    var sel=document.querySelector('[name="'+tr.getAttribute('data-sel')+'"]');
+    var off = !!sel && sel.value===tr.getAttribute('data-off');
+    tr.cells[1].innerHTML='<span class="badge '+(off?'ok':'warn')+'">'
+      +(off?OFF_T.offline:OFF_T.online)+'</span>';
+    if(!off) need.push(tr.cells[0].textContent);
+  });
+  var note=document.getElementById('offline-note');
+  if(!need.length){ note.className='status ok'; note.textContent=OFF_T.allOff; }
+  else if(need.length===4){ note.className='status'; note.textContent=OFF_T.allOn; }
+  else { note.className='status err'; note.textContent=OFF_T.mixed+need.join('、'); }
+}
+document.querySelectorAll('#offline-rows tr').forEach(function(tr){
+  var sel=document.querySelector('[name="'+tr.getAttribute('data-sel')+'"]');
+  if(sel) sel.addEventListener('change', offlineRefresh);
+});
+document.getElementById('offline-all').addEventListener('click', function(){
+  document.querySelectorAll('#offline-rows tr').forEach(function(tr){
+    var sel=document.querySelector('[name="'+tr.getAttribute('data-sel')+'"]');
+    if(!sel || sel.value===tr.getAttribute('data-off')) return;
+    sel.value=tr.getAttribute('data-off');
+    // Dispatched, not just assigned: the indexes section listens for this and
+    // is exactly what somebody switching to local solving needs next.
+    sel.dispatchEvent(new Event('change'));
+  });
+  offlineRefresh();
+});
+offlineRefresh();
 
 // Fold-away reference panels.
 document.querySelectorAll('.info-dot').forEach(function(b){
