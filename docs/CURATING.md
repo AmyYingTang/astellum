@@ -223,9 +223,27 @@ What gets one:
 - **At most three**, smallest first, and neighbours already inside somebody's
   crop don't get one of their own: three pillars in a row are one subject.
 
+Panels sit out at the frame's edge. The middle of an astrophoto is the
+photograph, and a panel there covers the subject even where no *mark* happens
+to be under it. An edge with something on it is already occupied, so the search
+passes over it without needing to be told.
+
+Inside a panel the surround is **held back, not blacked out** — the same wash
+the kiosk puts under your finger. The region being named keeps the picture; the
+sky around it is dimmed so the eye goes to the shape. It is still a crop of a
+photograph, which is what makes naming it mean anything.
+
 If a frame is busy enough that a panel would have to cover another mark, it is
-left out instead. Nothing you can set changes this yet — moving or resizing the
-annotation is the only lever, since the panel follows the shape.
+left out instead.
+
+**Two things you can change**, both in the studio and both saved with the
+reading:
+
+- **Drag a panel** to put it where you want it. It stays there; the automatic
+  ones flow around it.
+- **Uncheck 放大框 / Magnify** on a feature to refuse its panel. Reversibly —
+  tick it again and it comes back. Refusing one frees its place, so the next
+  mark down the list may take it.
 
 ## 3. Wording you can change without rebuilding
 

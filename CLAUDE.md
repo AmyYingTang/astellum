@@ -106,8 +106,13 @@ schema, beside `badgeAnchor`, because four surfaces have to agree on the
 answer) picks up to three marks too small to read and finds empty space for a
 panel. Only drawn contours qualify — a catalogue ring enlarged is the same ring
 — and a frame with no free space gets none rather than one laid over another
-mark. The kiosk does not draw them: it already solves this with the pointer,
-and a fixed panel would fight the live one for the same screen.
+mark. Panels go to the frame's edge, and inside one the surround is dimmed the
+way the kiosk's magnifier dims it — the region keeps the picture, the sky around
+it is held back. A curator can refuse a panel (`feature.callout.off`,
+reversible) or drag it (`callout.x`/`y`, absolute, because the automatic
+position moves whenever anything else does). The kiosk draws none of this: it
+already solves the problem with the pointer, and a fixed panel would fight the
+live one for the same screen.
 
 ## Order of work that matters
 
@@ -149,9 +154,10 @@ for a while, so interface changes there appeared not to take effect.
   has not been observed firing.
 - No genuine network-unplugged rehearsal yet.
 - The atlas upload takes JPG/PNG only; the studio and kiosk take FITS.
-- A magnified inset cannot be turned off or moved by hand — the only lever is
-  moving the annotation it follows. No one has needed one yet; a `callout`
-  section in config is the obvious place if they do.
+- Magnified insets have no machine-level knobs (count, threshold, size). The
+  per-reading levers — `feature.callout.off` and a dragged `x`/`y` — cover what
+  has been asked for; a `callout` config section is the obvious place if the
+  defaults themselves ever need changing.
 - The studio's 「生成解读」 button ignores `reading.mode`: it shows and calls the
   model even where settings say `predefined`, so offline it just fails. The
   comment on `ReadingConfig.mode` claims the studio stops offering what it

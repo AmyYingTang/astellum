@@ -61,6 +61,25 @@ export const Feature = z.object({
   /** false → listed in the Facts panel but not drawn on the image (e.g. a shell
    * coincident with its parent nebula — drawing a duplicate ring is clutter). */
   draw: z.boolean().default(true),
+  /**
+   * The curator's say over this feature's magnified inset.
+   *
+   * Absent is the normal state: `planCallouts` decides whether this mark needs
+   * one and where it goes. `off` refuses it — reversibly, which is the whole
+   * reason it is a flag and not a deletion — and `x`/`y` pin the panel where
+   * somebody dragged it.
+   *
+   * Pinned as an absolute position rather than an offset from the automatic
+   * one: the automatic one moves when anything else on the frame moves, and an
+   * offset from a moving origin is a panel that wanders after it is placed.
+   */
+  callout: z
+    .object({
+      off: z.boolean().optional(),
+      x: z.number().optional(),
+      y: z.number().optional(),
+    })
+    .optional(),
   badge: Badge,
   explanation: LocalizedString, // 2-3 sentences, plain language
   physics: LocalizedString.optional(), // mechanism / formation

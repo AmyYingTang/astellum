@@ -94,6 +94,41 @@ function featureShape(f: Feature, strokeW: number): string[] {
 }
 
 /**
+ * The region to leave at full brightness inside an inset, as mask black.
+ *
+ * A closed contour is the area it encloses. An open one — a rim, an arc —
+ * encloses nothing, so it gets a band along the line instead: the same choice
+ * the kiosk's magnifier makes, and for the same reason. Black in a mask hides
+ * what covers it, which is how the region keeps the picture.
+ */
+function shapeHole(f: Feature, shortEdge: number): string {
+  const band = Math.max(6, Math.round(shortEdge / 100));
+  if (f.shape === 'polygon' && f.polygon?.length) {
+    return `<polygon points="${f.polygon.map(([x, y]) => `${x},${y}`).join(' ')}" fill="#000"/>`;
+  }
+  if (f.shape === 'polyline' && f.polygon?.length) {
+    return (
+      `<polyline points="${f.polygon.map(([x, y]) => `${x},${y}`).join(' ')}" fill="none" ` +
+      `stroke="#000" stroke-width="${band * 2}" stroke-linejoin="round" stroke-linecap="round"/>`
+    );
+  }
+  if (f.shape === 'arc' && f.arc) {
+    const { cx, cy, r, a0, a1 } = f.arc;
+    const x0 = (cx + r * Math.cos(a0)).toFixed(1);
+    const y0 = (cy + r * Math.sin(a0)).toFixed(1);
+    const x1 = (cx + r * Math.cos(a1)).toFixed(1);
+    const y1 = (cy + r * Math.sin(a1)).toFixed(1);
+    const large = a1 - a0 > Math.PI ? 1 : 0;
+    return (
+      `<path d="M ${x0} ${y0} A ${r.toFixed(1)} ${r.toFixed(1)} 0 ${large} 1 ${x1} ${y1}" fill="none" ` +
+      `stroke="#000" stroke-width="${band * 2}" stroke-linecap="round"/>`
+    );
+  }
+  const { cx, cy, r } = f.circle;
+  return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#000"/>`;
+}
+
+/**
  * One magnified inset: the patch enlarged, framed, and tied back to its mark.
  *
  * `imageHref` is how the enlarged pixels get in, and only one of the two hosts
@@ -139,6 +174,19 @@ function calloutMarkup(
       `<g transform="${tf}"><image href="${imageHref}" x="0" y="0" width="${frameW}" height="${frameH}" preserveAspectRatio="none"/></g>`,
     );
   }
+  // Hold the surround back, the way the kiosk's magnifier does: a wash over
+  // everything in the panel except the region being named. Not blacked out —
+  // this is a crop of a photograph, and the region has to sit in the sky
+  // around it for naming it to mean anything.
+  const maskId = `${clipId}-m`;
+  parts.push(
+    `<mask id="${escapeXml(maskId)}" maskUnits="userSpaceOnUse" x="${x}" y="${y}" width="${w}" height="${h}">` +
+      `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff"/>` +
+      `<g transform="${tf}">${shapeHole(f, Math.min(frameW, frameH))}</g>` +
+      `</mask>`,
+    `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="rgba(3,5,10,.4)" mask="url(#${escapeXml(maskId)})"/>`,
+  );
+
   // The contour again, at the inset's scale. Stroke divided by the scale so it
   // lands at the same visual weight as the one on the picture — the inset is a
   // closer look at the subject, not a heavier drawing of it.

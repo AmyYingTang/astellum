@@ -23,6 +23,8 @@ export interface Strings {
   generate: string;
   generating: string;
   styleLabel: string;
+  calloutLabel: string;
+  calloutHint: string;
   roleLabel: string;
   /** Prefix, with its own separator: '当前角色:' / 'Writing for: '. */
   roleInEffect: string;
@@ -116,6 +118,8 @@ const STRINGS: Record<UiLang, Strings> = {
     generate: '生成读图',
     generating: '识别中…',
     styleLabel: '风格(可选)',
+    calloutLabel: '放大框',
+    calloutHint: '太小看不清时,在画面空处放一个放大图。最多三个,拖动框可以换位置。',
     roleLabel: '角色',
     roleInEffect: '当前角色:',
     switchingRole: '切换角色中…',
@@ -207,6 +211,9 @@ const STRINGS: Record<UiLang, Strings> = {
     generate: 'Generate',
     generating: 'Reading…',
     styleLabel: 'Style (optional)',
+    calloutLabel: 'Magnify',
+    calloutHint:
+      'When it is too small to read, show the patch enlarged in an empty part of the frame. Three at most; drag the panel to move it.',
     roleLabel: 'Role',
     roleInEffect: 'Writing for: ',
     switchingRole: 'Switching role…',

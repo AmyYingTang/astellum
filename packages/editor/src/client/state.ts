@@ -15,6 +15,8 @@ export type Action =
   | { type: 'beginChange' } // snapshot current report for undo, before transient edits
   | { type: 'setCircle'; id: string; circle: Circle; commit?: boolean }
   | { type: 'setBadgeOffset'; id: string; offset_x: number; offset_y: number; commit?: boolean }
+  | { type: 'setCalloutPos'; id: string; x: number; y: number; commit?: boolean }
+  | { type: 'setCalloutOff'; id: string; off: boolean }
   | { type: 'nudge'; id: string; dx: number; dy: number }
   | { type: 'setLabel'; id: string; lang: Lang; value: string; commit?: boolean }
   | { type: 'setFeatureBody'; id: string; lang: Lang; value: string; commit?: boolean }
@@ -78,6 +80,33 @@ export function reducer(state: EditorState, action: Action): EditorState {
           badge: { ...f.badge, offset_x: action.offset_x, offset_y: action.offset_y },
         })),
         action.commit ?? true,
+      );
+
+    // Pinning a panel where somebody dragged it. Absolute, not an offset from
+    // where the planner put it: that origin moves whenever anything else on
+    // the frame moves, and a panel measured from a moving origin wanders after
+    // it has been placed.
+    case 'setCalloutPos':
+      return change(
+        state,
+        mapFeature(state.report, action.id, (f) => ({
+          ...f,
+          callout: { ...f.callout, x: action.x, y: action.y },
+        })),
+        action.commit ?? true,
+      );
+
+    // Refusing a panel, reversibly — which is why it is a flag and not a
+    // deletion. Turning one off frees its place, so the next candidate down
+    // may take it; turning it back on puts this one back in the queue.
+    case 'setCalloutOff':
+      return change(
+        state,
+        mapFeature(state.report, action.id, (f) => ({
+          ...f,
+          callout: { ...f.callout, off: action.off },
+        })),
+        true,
       );
 
     case 'nudge':

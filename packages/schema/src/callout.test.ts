@@ -172,3 +172,111 @@ describe('insetEdgePoint', () => {
     expect(insetEdgePoint(inset, { x: 200, y: 200 })).toEqual({ x: 200, y: 200 });
   });
 });
+
+/**
+ * The curator's two levers. Both live on the feature, so they survive a save
+ * and travel with the reading rather than with the session that set them.
+ */
+describe("what the curator says about an inset", () => {
+  const two = [pillar(1200, 900, 60), pillar(2800, 2100, 80)];
+
+  it('refuses one, and gives its place to the next mark down', () => {
+    const all = planCallouts(frame(two));
+    expect(all.map((c) => c.id)).toEqual(['f0', 'f1']);
+
+    const off = frame([{ ...(two[0] as object), callout: { off: true } }, two[1]]);
+    expect(planCallouts(off).map((c) => c.id)).toEqual(['f1']);
+  });
+
+  /*
+   * Reversible is the point: `off` is a flag, not a deletion, so the panel
+   * comes back exactly as it was rather than having to be recreated.
+   */
+  it('gives it back when the refusal is lifted', () => {
+    const on = frame([{ ...(two[0] as object), callout: { off: false } }, two[1]]);
+    expect(planCallouts(on).map((c) => c.id)).toEqual(['f0', 'f1']);
+  });
+
+  it('puts a panel where it was dragged, not where it would have chosen', () => {
+    const pinned = frame([{ ...(two[0] as object), callout: { x: 3100, y: 2000 } }, two[1]]);
+    const [c] = planCallouts(pinned);
+    expect(c!.inset.x).toBe(3100);
+    expect(c!.inset.y).toBe(2000);
+  });
+
+  /*
+   * A drag can put a panel half off the picture; the automatic placement
+   * cannot. So the pin is honoured but still held inside the frame.
+   */
+  it('holds a dragged panel inside the frame', () => {
+    const r = frame([{ ...(two[0] as object), callout: { x: -500, y: 99999 } }, two[1]]);
+    const [c] = planCallouts(r);
+    expect(c!.inset.x).toBe(0);
+    expect(c!.inset.y).toBe(r.image.height - c!.inset.h);
+  });
+
+  it('keeps a hand-placed panel when the cap bites, over an automatic one', () => {
+    const crowd = [0, 1, 2, 3].map((i) => pillar(600 + i * 900, 600 + i * 600, 60));
+    const withPin = [
+      ...crowd.slice(0, 3),
+      { ...(crowd[3] as object), callout: { x: 3200, y: 2600 } },
+    ];
+    const out = planCallouts(frame(withPin), { max: 1 });
+    expect(out.map((c) => c.id)).toEqual(['f3']);
+  });
+});
+
+/**
+ * Out at the edge, because the middle of an astrophoto is the photograph. The
+ * "unless there is something there" half needs no special case: an occupied
+ * edge is already excluded by the search.
+ */
+describe('how far out the inset sits', () => {
+  /*
+   * "At the edge" is a band, not a line: positions within a third of the
+   * inset's own size of the margin all count as edge, and which of them is
+   * taken is then decided by how near the mark it is. Exact comparison made a
+   * position two pixels further in lose to one that was worse in every other
+   * way.
+   */
+  it('goes to an edge when an edge is free', () => {
+    const r = frame([pillar(2000, 1500, 60)]);
+    const [c] = planCallouts(r);
+    const edge = Math.min(
+      c!.inset.x,
+      c!.inset.y,
+      r.image.width - (c!.inset.x + c!.inset.w),
+      r.image.height - (c!.inset.y + c!.inset.h),
+    );
+    const margin = Math.round(0.02 * Math.min(r.image.width, r.image.height));
+    expect(edge).toBeLessThanOrEqual(margin + c!.inset.w / 3);
+    // And nowhere near the middle, which is the whole point.
+    expect(edge).toBeLessThan(Math.min(r.image.width, r.image.height) / 4);
+  });
+
+  /*
+   * The far margins have to be in the search. Walked from the near edge with a
+   * fixed step it stopped short of them, so the bottom and right of every
+   * frame scored as inland and panels piled onto the two edges the walk
+   * reached.
+   */
+  it('will use the far edges, not only the two it starts from', () => {
+    const r = frame([ring(400, 400, 350), ring(400, 2600, 350), pillar(3600, 1500, 60)]);
+    const [c] = planCallouts(r);
+    expect(c!.inset.x + c!.inset.w).toBeGreaterThan(r.image.width * 0.6);
+  });
+
+  /*
+   * 'field' is the subject the frame is a crop of and nothing is drawn for it.
+   * Reserving its circle walled off the middle 40% of the frame and pushed
+   * panels to the far side, giving them connectors across the whole picture.
+   */
+  it('is not kept away by the subject, which draws nothing', () => {
+    const open = planCallouts(frame([pillar(2000, 1500, 60)]));
+    const withField = planCallouts(
+      frame([pillar(2000, 1500, 60), { shape: 'field', circle: { cx: 2000, cy: 1500, r: 1200 } }]),
+    );
+    expect(withField).toHaveLength(1);
+    expect(withField[0]!.inset).toEqual(open[0]!.inset);
+  });
+});

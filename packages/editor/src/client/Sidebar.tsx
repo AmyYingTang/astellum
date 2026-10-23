@@ -14,6 +14,9 @@ interface Props {
   style?: React.CSSProperties;
 }
 
+/** The shapes `planCallouts` will consider; see its MAGNIFIABLE. */
+const CALLOUT_SHAPES = new Set(['polygon', 'polyline', 'arc']);
+
 export function Sidebar({
   report,
   imageName,
@@ -158,6 +161,24 @@ export function Sidebar({
                       }
                     />
                   </div>
+
+                  {/* Only the shapes that can get a magnified inset are asked
+                      about one. A ring never gets one however small it is, so
+                      offering the switch there would be a control that does
+                      nothing. Unchecking frees the slot for the next mark down
+                      the list; checking puts this one back in the queue. */}
+                  {CALLOUT_SHAPES.has(f.shape) && (
+                    <label className="feature-check" title={t.calloutHint}>
+                      <input
+                        type="checkbox"
+                        checked={!f.callout?.off}
+                        onChange={(e) =>
+                          dispatch({ type: 'setCalloutOff', id: f.id, off: !e.target.checked })
+                        }
+                      />
+                      <span>{t.calloutLabel}</span>
+                    </label>
+                  )}
 
                   <textarea
                     className="explanation"

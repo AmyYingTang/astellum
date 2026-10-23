@@ -73,6 +73,40 @@ function overlap(a: Box, b: Box): number {
  */
 const MAGNIFIABLE = new Set(['polygon', 'polyline', 'arc']);
 
+/**
+ * What a feature actually covers, for the purpose of keeping out of its way.
+ *
+ * An area — a ring, a pillar's closed contour — is its bounding box. An open
+ * line is not: a bright rim wandering across a third of the frame has a huge
+ * bounding box and occupies almost none of it, and treating the box as full
+ * pushed insets to the far side of the picture to avoid a stroke they would
+ * never have touched. So a line reserves a band along itself, segment by
+ * segment, which is what it actually covers.
+ */
+function occupiedBy(f: Feature, shortEdge: number): Box[] {
+  // 'field' is the subject the frame is a crop of. Nothing is drawn for it —
+  // a ring would claim a boundary the picture does not contain — so there is
+  // nothing to keep out of the way of. Reserving its circle instead walled off
+  // the middle 40% of the frame and pushed insets to the far edge, giving them
+  // connectors that crossed the whole photograph. Its badge still counts; that
+  // is added by the caller.
+  if (f.shape === 'field') return [];
+  if (f.shape !== 'polyline' || !f.polygon || f.polygon.length < 2) return [featureBounds(f)];
+  const band = Math.max(4, shortEdge / 120);
+  const out: Box[] = [];
+  for (let i = 1; i < f.polygon.length; i++) {
+    const a = f.polygon[i - 1]!;
+    const b = f.polygon[i]!;
+    out.push({
+      x0: Math.min(a[0], b[0]) - band,
+      y0: Math.min(a[1], b[1]) - band,
+      x1: Math.max(a[0], b[0]) + band,
+      y1: Math.max(a[1], b[1]) + band,
+    });
+  }
+  return out;
+}
+
 export interface CalloutOptions {
   /** Hard cap. Each inset costs a piece of the picture. */
   max?: number;
@@ -134,7 +168,7 @@ export function planCallouts(report: Reading, opts: CalloutOptions = {}): Callou
   // font, so this reserves a block rather than pretending to measure one.
   const occupied: Box[] = [];
   for (const f of drawn) {
-    occupied.push(featureBounds(f));
+    occupied.push(...occupiedBy(f, short));
     const br = f.badge.bubble_r;
     const [ax, ay] = badgeAnchor(f, br);
     const bx = ax + f.badge.offset_x;
@@ -150,9 +184,18 @@ export function planCallouts(report: Reading, opts: CalloutOptions = {}): Callou
 
   const tooSmall = o.maxShare * short;
   const candidates = drawn
-    .filter((f) => MAGNIFIABLE.has(f.shape) && longerSide(featureBounds(f)) < tooSmall)
+    .filter(
+      (f) =>
+        !f.callout?.off && MAGNIFIABLE.has(f.shape) && longerSide(featureBounds(f)) < tooSmall,
+    )
     .map((f) => ({ f, bounds: featureBounds(f) }))
-    .sort((a, b) => longerSide(a.bounds) - longerSide(b.bounds));
+    // A panel somebody placed by hand keeps its place in the queue: it exists
+    // because they wanted it, so it is not the one to drop when the cap bites.
+    .sort(
+      (a, b) =>
+        Number(!a.f.callout) - Number(!b.f.callout) ||
+        longerSide(a.bounds) - longerSide(b.bounds),
+    );
 
   const insetSize = Math.round(o.insetShare * short);
   const margin = Math.round(o.marginShare * short);
@@ -183,7 +226,18 @@ export function planCallouts(report: Reading, opts: CalloutOptions = {}): Callou
     );
     if (alreadyShown) continue;
 
-    const inset = placeInset(insetSize, c, { width, height, margin }, occupied);
+    // Where somebody dragged it wins over anywhere this would choose, and is
+    // only held inside the frame — a panel half off the picture is a mistake
+    // the automatic placement cannot make but a drag can.
+    const pinned = f.callout?.x !== undefined && f.callout.y !== undefined;
+    const inset = pinned
+      ? {
+          x: Math.round(Math.max(0, Math.min(width - insetSize, f.callout!.x!))),
+          y: Math.round(Math.max(0, Math.min(height - insetSize, f.callout!.y!))),
+          w: insetSize,
+          h: insetSize,
+        }
+      : placeInset(insetSize, c, { width, height, margin }, occupied);
     if (!inset) continue; // nowhere free — better no inset than one over a mark
 
     out.push({
@@ -202,13 +256,19 @@ export function planCallouts(report: Reading, opts: CalloutOptions = {}): Callou
 }
 
 /**
- * Somewhere the inset covers nothing.
+ * Somewhere the inset covers nothing, as near the frame's edge as that allows.
  *
- * Walks a coarse grid and takes the emptiest spot, nearest the mark among the
- * equally empty ones — close enough that the connector is short, never so close
- * that it sits on what it is magnifying. Returns null when every position
- * covers something: a frame can be full, and an inset over another mark trades
- * one unreadable feature for two.
+ * Walks a coarse grid, keeps only the positions that cover nothing, and among
+ * those prefers the one closest to an edge, then the one closest to the mark.
+ *
+ * Out at the edge for the same reason a caption is: the middle of an
+ * astrophoto is the photograph, and a panel there covers the subject even when
+ * no *mark* happens to be under it. "Unless there is something at the edge" is
+ * not a special case — an edge with a mark on it is already occupied, so the
+ * search passes over it on its own.
+ *
+ * Returns null when every position covers something: a frame can be full, and
+ * an inset over another mark trades one unreadable feature for two.
  */
 function placeInset(
   size: number,
@@ -219,24 +279,45 @@ function placeInset(
   const { width, height, margin } = frame;
   if (size + 2 * margin > width || size + 2 * margin > height) return null;
   const step = Math.max(8, Math.round(size / 4));
-  let best: { x: number; y: number; cost: number; dist: number } | null = null;
+  // The far margins are included explicitly, not left to wherever the step
+  // happens to land: a grid walked from the near edge stops short of the far
+  // one, which made the bottom and right of every frame score as "inland" and
+  // sent panels to the two edges the walk did reach.
+  const ticks = (limit: number): number[] => {
+    const out: number[] = [];
+    for (let v = margin; v < limit; v += step) out.push(v);
+    out.push(limit);
+    return out;
+  };
+  const xs = ticks(width - size - margin);
+  const ys = ticks(height - size - margin);
+  // How close to an edge counts as "at the edge". Without this the comparison
+  // is exact, and a position two pixels further in loses to one that is worse
+  // in every other way.
+  const band = Math.max(1, size / 3);
+  let best: { x: number; y: number; edge: number; dist: number } | null = null;
 
-  for (let y = margin; y <= height - size - margin; y += step) {
-    for (let x = margin; x <= width - size - margin; x += step) {
+  for (const y of ys) {
+    for (const x of xs) {
       const box: Box = { x0: x, y0: y, x1: x + size, y1: y + size };
       let cost = 0;
       for (const b of occupied) cost += overlap(box, b);
+      if (cost > 0) continue;
       const cx = x + size / 2;
       const cy = y + size / 2;
       const dist = Math.hypot(cx - from.x, cy - from.y);
       // Never on top of the thing it magnifies, however empty the rest is.
       if (dist < size * 0.75) continue;
-      if (!best || cost < best.cost || (cost === best.cost && dist < best.dist)) {
-        best = { x, y, cost, dist };
+      const edge = Math.floor(
+        Math.min(x - margin, y - margin, width - margin - (x + size), height - margin - (y + size)) /
+          band,
+      );
+      if (!best || edge < best.edge || (edge === best.edge && dist < best.dist)) {
+        best = { x, y, edge, dist };
       }
     }
   }
-  if (!best || best.cost > 0) return null;
+  if (!best) return null;
   return { x: best.x, y: best.y, w: size, h: size };
 }
 

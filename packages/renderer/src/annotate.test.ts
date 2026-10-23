@@ -129,3 +129,49 @@ describe('magnified insets', () => {
     expect(svg).not.toContain('clipPath');
   });
 });
+
+/*
+ * The surround inside an inset is held back, not blacked out — the same thing
+ * the kiosk's magnifier does under a finger. This is a crop of a photograph,
+ * and the region being named has to sit in the sky around it for naming it to
+ * mean anything.
+ */
+describe('holding the surround back', () => {
+  const withShape = (shape: string, extra: object): Reading =>
+    ({
+      ...report,
+      features: [
+        {
+          id: 'g1',
+          fact_ref: null,
+          label: { zh: 'x', en: 'x' },
+          color_key: 'pillar',
+          shape,
+          circle: { cx: 800, cy: 650, r: 15 },
+          badge: { num: '9', offset_x: 0, offset_y: 0, bubble_r: 30 },
+          explanation: { zh: 'z', en: 'z' },
+          needs_human_review: false,
+          ...extra,
+        },
+      ],
+    }) as unknown as Reading;
+
+  const tri: [number, number][] = [
+    [785, 635],
+    [815, 635],
+    [815, 665],
+  ];
+
+  it('washes the panel and cuts the region out of the wash', () => {
+    const svg = buildOverlaySvg(withShape('polygon', { polygon: tri }));
+    expect(svg).toContain('mask id="k-cal-g1-m"');
+    expect(svg).toContain('fill="rgba(3,5,10,.4)"');
+    expect(svg).toContain('<polygon points="785,635 815,635 815,665" fill="#000"/>');
+  });
+
+  /* An open line encloses nothing, so it gets a band along itself instead. */
+  it('gives an open line a band rather than an area', () => {
+    const svg = buildOverlaySvg(withShape('polyline', { polygon: tri }));
+    expect(svg).toMatch(/<polyline points="785,635 815,635 815,665" fill="none" stroke="#000"/);
+  });
+});

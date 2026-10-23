@@ -430,8 +430,8 @@ export function Canvas({
         </Layer>
         {/* Over the marks: an inset is a panel laid on the picture, and a mark
             drawn across one would read as part of what it shows. */}
-        <Layer listening={false}>
-          <Callouts report={report} callouts={callouts} image={img} px={px} />
+        <Layer>
+          <Callouts report={report} callouts={callouts} image={img} px={px} dispatch={dispatch} />
         </Layer>
       </Stage>
     </div>
