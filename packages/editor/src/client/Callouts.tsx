@@ -3,7 +3,10 @@ import type Konva from 'konva';
 import { Circle as KCircle, Group, Line, Rect, Shape, Text } from 'react-konva';
 import {
   COLOR_PALETTE,
+  LIFT,
   insetEdgePoint,
+  raisedCrop,
+  raisedPoint,
   type Callout,
   type Feature,
   type Reading,
@@ -29,14 +32,49 @@ const into = (c: Callout, x: number, y: number): [number, number] => [
   c.inset.y + (y - c.crop.y) * c.scale,
 ];
 
+/** The same point, on the raised piece. */
+const intoRaised = (c: Callout, f: Feature, x: number, y: number): [number, number] => {
+  const [rx, ry] = raisedPoint(f, x, y);
+  return into(c, rx, ry);
+};
+
+/** Trace the named region, in the inset's own pixels, as a canvas path. */
+function tracePiece(ctx: CanvasRenderingContext2D, c: Callout, f: Feature, band: number): void {
+  ctx.beginPath();
+  if (f.polygon?.length && (f.shape === 'polygon' || f.shape === 'polyline')) {
+    f.polygon.forEach((p, i) => {
+      const [px, py] = intoRaised(c, f, p[0], p[1]);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    });
+    if (f.shape === 'polygon') ctx.closePath();
+    return;
+  }
+  if (f.shape === 'arc' && f.arc) {
+    const [ax, ay] = intoRaised(c, f, f.arc.cx, f.arc.cy);
+    const [ex] = intoRaised(c, f, f.arc.cx + f.arc.r, f.arc.cy);
+    ctx.arc(ax, ay, Math.abs(ex - ax), f.arc.a0, f.arc.a1);
+    return;
+  }
+  const [ax, ay] = intoRaised(c, f, f.circle.cx, f.circle.cy);
+  const [ex] = intoRaised(c, f, f.circle.cx + f.circle.r, f.circle.cy);
+  ctx.arc(ax, ay, Math.abs(ex - ax), 0, Math.PI * 2);
+  void band;
+}
+
+/** An open line encloses nothing, so its region is a band along it. */
+const isBand = (f: Feature): boolean => f.shape === 'polyline' || f.shape === 'arc';
+
 /**
- * The enlarged patch, with the surround held back.
+ * The panel's pixels: the patch, dimmed, with the named region raised out of
+ * it — a shadow on the dimmed sky and the piece itself drawn a little larger,
+ * as a thing held nearer the eye is.
  *
- * Hand-drawn on a canvas context because the effect is a composite one: dim
- * the panel, punch the named region out of the dimming, then slide the photo
- * in behind both. Konva has no mask, and `destination-out` on a shared canvas
- * would erase whatever else had been drawn there — so this lives on the
- * callout layer, which is its own canvas and holds nothing it could damage.
+ * Hand-drawn on a canvas context because the effect is an ordering one, and
+ * Konva has no mask. Everything is plain source-over painting: patch, wash,
+ * shadow, then the piece over the top of all three. An earlier version reached
+ * for `destination-out` and had to reason about what else was on the layer;
+ * this needs no such care.
  */
 function patchSceneFunc(
   c: Callout,
@@ -47,52 +85,64 @@ function patchSceneFunc(
   return (ctx) => {
     const { x, y, w, h } = c.inset;
     const raw = ctx as unknown as CanvasRenderingContext2D;
+    const lift = Math.max(3, Math.min(w, h) * LIFT.offsetShare);
+    const blur = Math.max(2, Math.min(w, h) * LIFT.blurShare);
+    const stroke = band * 2 * c.scale * LIFT.scale;
 
     raw.save();
     raw.beginPath();
     raw.rect(x, y, w, h);
     raw.clip();
 
-    raw.fillStyle = 'rgba(3,5,10,.4)';
+    raw.drawImage(image, c.crop.x, c.crop.y, c.crop.w, c.crop.h, x, y, w, h);
+    raw.fillStyle = `rgba(3,5,10,${LIFT.wash})`;
     raw.fillRect(x, y, w, h);
 
-    // The region keeps the picture; everything else keeps the wash.
-    raw.globalCompositeOperation = 'destination-out';
-    raw.beginPath();
-    if (f.polygon?.length && (f.shape === 'polygon' || f.shape === 'polyline')) {
-      f.polygon.forEach((p, i) => {
-        const [px, py] = into(c, p[0], p[1]);
-        if (i === 0) raw.moveTo(px, py);
-        else raw.lineTo(px, py);
-      });
-      if (f.shape === 'polygon') {
-        raw.closePath();
-        raw.fillStyle = '#000';
-        raw.fill();
-      } else {
-        raw.strokeStyle = '#000';
-        raw.lineWidth = band * 2 * c.scale;
-        raw.lineJoin = 'round';
-        raw.lineCap = 'round';
-        raw.stroke();
-      }
-    } else if (f.shape === 'arc' && f.arc) {
-      const [ax, ay] = into(c, f.arc.cx, f.arc.cy);
-      raw.arc(ax, ay, f.arc.r * c.scale, f.arc.a0, f.arc.a1);
-      raw.strokeStyle = '#000';
-      raw.lineWidth = band * 2 * c.scale;
-      raw.lineCap = 'round';
-      raw.stroke();
-    } else {
-      const [ax, ay] = into(c, f.circle.cx, f.circle.cy);
-      raw.arc(ax, ay, f.circle.r * c.scale, 0, Math.PI * 2);
-      raw.fillStyle = '#000';
-      raw.fill();
+    // The shadow. The shape is painted solid only so that it casts one; the
+    // piece lands on top of it a moment later.
+    raw.save();
+    raw.shadowColor = `rgba(0,0,0,${LIFT.shadowOpacity})`;
+    raw.shadowBlur = blur;
+    raw.shadowOffsetX = lift;
+    raw.shadowOffsetY = lift;
+    raw.fillStyle = '#05070c';
+    raw.strokeStyle = '#05070c';
+    raw.lineWidth = stroke;
+    raw.lineJoin = 'round';
+    raw.lineCap = 'round';
+    tracePiece(raw, c, f, band);
+    if (isBand(f)) raw.stroke();
+    else raw.fill();
+    raw.restore();
+
+    // The piece: the same patch again, from a window smaller by exactly the
+    // lift, so it comes out larger and still centred on the feature.
+    //
+    // Cut on a canvas of its own. `clip()` takes a path, and an open line
+    // encloses no area — a rim or an arc would clip to nothing — so the region
+    // is cut with `destination-in` instead, which works for a stroked band and
+    // a filled contour alike. Offscreen, so that compositing mode has nothing
+    // but this piece to act on.
+    const r = raisedCrop(c, f);
+    const cut = document.createElement('canvas');
+    cut.width = Math.max(1, Math.round(w));
+    cut.height = Math.max(1, Math.round(h));
+    const cx = cut.getContext('2d');
+    if (cx) {
+      cx.drawImage(image, r.x, r.y, r.w, r.h, 0, 0, cut.width, cut.height);
+      cx.globalCompositeOperation = 'destination-in';
+      cx.translate(-x, -y); // the tracer speaks in the frame's coordinates
+      cx.lineWidth = stroke;
+      cx.lineJoin = 'round';
+      cx.lineCap = 'round';
+      cx.fillStyle = '#000';
+      cx.strokeStyle = '#000';
+      tracePiece(cx, c, f, band);
+      if (isBand(f)) cx.stroke();
+      else cx.fill();
+      raw.drawImage(cut, x, y);
     }
 
-    // Behind both, so the hole shows the photograph rather than nothing.
-    raw.globalCompositeOperation = 'destination-over';
-    raw.drawImage(image, c.crop.x, c.crop.y, c.crop.w, c.crop.h, x, y, w, h);
     raw.restore();
   };
 }

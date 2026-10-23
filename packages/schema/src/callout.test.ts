@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { Reading } from './reading.js';
-import { featureBounds, insetEdgePoint, planCallouts, type Box } from './callout.js';
+import {
+  LIFT,
+  featureBounds,
+  insetEdgePoint,
+  planCallouts,
+  raisedCrop,
+  raisedPoint,
+  type Box,
+} from './callout.js';
 
 /**
  * A frame with whatever marks a test needs on it.
@@ -278,5 +286,40 @@ describe('how far out the inset sits', () => {
     );
     expect(withField).toHaveLength(1);
     expect(withField[0]!.inset).toEqual(open[0]!.inset);
+  });
+});
+
+/**
+ * The raised piece. Three surfaces draw it — an SVG transform, a sharp crop, a
+ * canvas path — so the geometry is settled here and they all read it off.
+ */
+describe('raising the piece', () => {
+  const report = frame([pillar(2000, 1500, 60)]);
+  const f = report.features[0]!;
+  const [c] = planCallouts(report);
+
+  it('scales about the feature, which therefore does not move', () => {
+    expect(raisedPoint(f, 2000, 1500)).toEqual([2000, 1500]);
+    const [x] = raisedPoint(f, 2030, 1500);
+    expect(x).toBeCloseTo(2000 + 30 * LIFT.scale, 6);
+  });
+
+  /*
+   * The point of the smaller window: blown up to the same panel it comes out
+   * larger, and the feature lands in the same place as in the ordinary crop.
+   * A window that was merely smaller would put the piece beside the hole it
+   * came out of.
+   */
+  it('reads a window smaller by exactly the lift', () => {
+    const r = raisedCrop(c!, f);
+    expect(r.w).toBeCloseTo(c!.crop.w / LIFT.scale, 6);
+    expect(r.h).toBeCloseTo(c!.crop.h / LIFT.scale, 6);
+  });
+
+  it('puts the feature where the ordinary crop puts it', () => {
+    const r = raisedCrop(c!, f);
+    const inOrdinary = (2000 - c!.crop.x) / c!.crop.w;
+    const inRaised = (2000 - r.x) / r.w;
+    expect(inRaised).toBeCloseTo(inOrdinary, 6);
   });
 });

@@ -2,8 +2,12 @@ import sharp from 'sharp';
 import {
   COLOR_PALETTE,
   badgeAnchor,
+  LIFT,
+  featureBounds,
   insetEdgePoint,
   planCallouts,
+  raisedCrop,
+  raisedPoint,
   type Callout,
   type Feature,
   type Reading,
@@ -93,6 +97,14 @@ function featureShape(f: Feature, strokeW: number): string[] {
   return parts;
 }
 
+/** The transform that raises a feature: scaled about its own centre. */
+function raisedTransform(f: Feature): string {
+  const b = featureBounds(f);
+  const cx = ((b.x0 + b.x1) / 2).toFixed(2);
+  const cy = ((b.y0 + b.y1) / 2).toFixed(2);
+  return `translate(${cx} ${cy}) scale(${LIFT.scale}) translate(-${cx} -${cy})`;
+}
+
 /**
  * The region to leave at full brightness inside an inset, as mask black.
  *
@@ -101,31 +113,41 @@ function featureShape(f: Feature, strokeW: number): string[] {
  * the kiosk's magnifier makes, and for the same reason. Black in a mask hides
  * what covers it, which is how the region keeps the picture.
  */
-function shapeHole(f: Feature, shortEdge: number): string {
+function shapeHole(
+  f: Feature,
+  shortEdge: number,
+  /** Optional mapping into another coordinate space, for a standalone mask. */
+  at: (x: number, y: number) => [number, number] = (x, y) => [x, y],
+  colour = '#000',
+): string {
   const band = Math.max(6, Math.round(shortEdge / 100));
-  if (f.shape === 'polygon' && f.polygon?.length) {
-    return `<polygon points="${f.polygon.map(([x, y]) => `${x},${y}`).join(' ')}" fill="#000"/>`;
-  }
-  if (f.shape === 'polyline' && f.polygon?.length) {
-    return (
-      `<polyline points="${f.polygon.map(([x, y]) => `${x},${y}`).join(' ')}" fill="none" ` +
-      `stroke="#000" stroke-width="${band * 2}" stroke-linejoin="round" stroke-linecap="round"/>`
-    );
+  const pt = (x: number, y: number): string => at(x, y).map((v) => v.toFixed(1)).join(',');
+  if (f.polygon?.length && (f.shape === 'polygon' || f.shape === 'polyline')) {
+    const points = f.polygon.map(([x, y]) => pt(x, y)).join(' ');
+    return f.shape === 'polygon'
+      ? `<polygon points="${points}" fill="${colour}"/>`
+      : `<polyline points="${points}" fill="none" stroke="${colour}" ` +
+          `stroke-width="${band * 2}" stroke-linejoin="round" stroke-linecap="round"/>`;
   }
   if (f.shape === 'arc' && f.arc) {
     const { cx, cy, r, a0, a1 } = f.arc;
-    const x0 = (cx + r * Math.cos(a0)).toFixed(1);
-    const y0 = (cy + r * Math.sin(a0)).toFixed(1);
-    const x1 = (cx + r * Math.cos(a1)).toFixed(1);
-    const y1 = (cy + r * Math.sin(a1)).toFixed(1);
     const large = a1 - a0 > Math.PI ? 1 : 0;
+    // The radius is mapped through two points on the arc rather than scaled by
+    // hand, so one mapping serves both the overlay and a standalone mask.
+    const [sx, sy] = at(cx + r * Math.cos(a0), cy + r * Math.sin(a0));
+    const [ex, ey] = at(cx + r * Math.cos(a1), cy + r * Math.sin(a1));
+    const [mx, my] = at(cx, cy);
+    const rr = Math.hypot(sx - mx, sy - my);
     return (
-      `<path d="M ${x0} ${y0} A ${r.toFixed(1)} ${r.toFixed(1)} 0 ${large} 1 ${x1} ${y1}" fill="none" ` +
-      `stroke="#000" stroke-width="${band * 2}" stroke-linecap="round"/>`
+      `<path d="M ${sx.toFixed(1)} ${sy.toFixed(1)} A ${rr.toFixed(1)} ${rr.toFixed(1)} 0 ${large} 1 ` +
+      `${ex.toFixed(1)} ${ey.toFixed(1)}" fill="none" stroke="${colour}" ` +
+      `stroke-width="${band * 2}" stroke-linecap="round"/>`
     );
   }
   const { cx, cy, r } = f.circle;
-  return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#000"/>`;
+  const [ccx, ccy] = at(cx, cy);
+  const [rx, ry] = at(cx + r, cy);
+  return `<circle cx="${ccx.toFixed(1)}" cy="${ccy.toFixed(1)}" r="${Math.hypot(rx - ccx, ry - ccy).toFixed(1)}" fill="${colour}"/>`;
 }
 
 /**
@@ -178,14 +200,56 @@ function calloutMarkup(
   // everything in the panel except the region being named. Not blacked out —
   // this is a crop of a photograph, and the region has to sit in the sky
   // around it for naming it to mean anything.
+  //
+  // The region is not left flat. It is raised off the patch: drawn a little
+  // larger, as a thing held nearer the eye is, with a shadow cast onto the
+  // dimmed surround. `LIFT` carries the numbers, because the exported frame
+  // composites this piece with sharp and the studio canvas draws it again, and
+  // three pieces drawn from three slightly different centres are three pieces
+  // that miss their own shadows.
+  //
+  // Both the wash and the shadow wear a mask that excludes the *raised* shape,
+  // so neither can reach the piece however the host orders its layers — which
+  // is what lets the exported frame put the piece in as a raster layer under
+  // this whole overlay.
+  const near = raisedTransform(f);
   const maskId = `${clipId}-m`;
+  const raisedHole = `<g transform="${tf}"><g transform="${near}">${shapeHole(f, Math.min(frameW, frameH))}</g></g>`;
   parts.push(
     `<mask id="${escapeXml(maskId)}" maskUnits="userSpaceOnUse" x="${x}" y="${y}" width="${w}" height="${h}">` +
       `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff"/>` +
-      `<g transform="${tf}">${shapeHole(f, Math.min(frameW, frameH))}</g>` +
+      raisedHole +
       `</mask>`,
-    `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="rgba(3,5,10,.4)" mask="url(#${escapeXml(maskId)})"/>`,
+    `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="rgba(3,5,10,${LIFT.wash})" mask="url(#${escapeXml(maskId)})"/>`,
   );
+
+  const lift = Math.max(3, Math.min(w, h) * LIFT.offsetShare);
+  const blur = Math.max(2, Math.min(w, h) * LIFT.blurShare);
+  const shadowId = `${clipId}-s`;
+  parts.push(
+    `<filter id="${escapeXml(shadowId)}" x="-40%" y="-40%" width="180%" height="180%">` +
+      `<feGaussianBlur stdDeviation="${(blur / c.scale).toFixed(2)}"/></filter>`,
+    `<g mask="url(#${escapeXml(maskId)})" opacity="${LIFT.shadowOpacity}">` +
+      `<g transform="translate(${(lift / c.scale).toFixed(2)} ${(lift / c.scale).toFixed(2)})" filter="url(#${escapeXml(shadowId)})">` +
+      raisedHole +
+      `</g></g>`,
+  );
+
+  // The piece itself, where the picture can reach the SVG. Where it cannot —
+  // the exported frame — sharp has already laid it down underneath, cut to the
+  // same shape by the same arithmetic.
+  if (imageHref) {
+    const pieceId = `${clipId}-p`;
+    parts.push(
+      `<mask id="${escapeXml(pieceId)}" maskUnits="userSpaceOnUse" x="${x}" y="${y}" width="${w}" height="${h}">` +
+        `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#000"/>` +
+        `<g transform="${tf}"><g transform="${near}" fill="#fff" stroke="#fff">${shapeHole(f, Math.min(frameW, frameH))}</g></g>` +
+        `</mask>`,
+      `<g mask="url(#${escapeXml(pieceId)})"><g transform="${tf}"><g transform="${near}">` +
+        `<image href="${imageHref}" x="0" y="0" width="${frameW}" height="${frameH}" preserveAspectRatio="none"/>` +
+        `</g></g></g>`,
+    );
+  }
 
   // No contour inside the panel. The wash already says exactly which part of
   // the patch is the feature — that is what it is for — and a dashed outline
@@ -284,11 +348,13 @@ type ImageFormat = 'jpeg' | 'png';
  * multi-megapixel JPEG inside an XML parser, which is as slow as it sounds.
  */
 async function calloutLayers(
+  report: Reading,
   imagePath: string,
   callouts: Callout[],
 ): Promise<sharp.OverlayOptions[]> {
   const layers: sharp.OverlayOptions[] = [];
   for (const c of callouts) {
+    const f = report.features.find((x) => x.id === c.id);
     try {
       const buf = await sharp(imagePath)
         .extract({ left: c.crop.x, top: c.crop.y, width: c.crop.w, height: c.crop.h })
@@ -296,6 +362,7 @@ async function calloutLayers(
         .png()
         .toBuffer();
       layers.push({ input: buf, left: c.inset.x, top: c.inset.y });
+      if (f) layers.push(await raisedLayer(imagePath, c, f));
     } catch {
       // A crop that will not extract — a stale geometry against a resized
       // image, say — loses its pixels, not the whole export. The frame and the
@@ -304,6 +371,50 @@ async function calloutLayers(
     }
   }
   return layers;
+}
+
+/**
+ * The raised piece, as pixels cut to its own shape.
+ *
+ * The overlay cannot draw this one: it has no picture to draw it from, and
+ * handing it the whole photograph as base64 so librsvg can decode it again per
+ * panel costs twice the render time and a nine-megabyte SVG — measured, on a
+ * 4144×2822 frame.
+ *
+ * So sharp cuts it instead: a smaller window of the source — smaller by
+ * exactly the lift — blown up to the panel, then masked to the raised outline
+ * with `dest-in`. It goes *under* the overlay, which is safe because the wash
+ * and the shadow both wear a mask that excludes this shape.
+ */
+async function raisedLayer(
+  imagePath: string,
+  c: Callout,
+  f: Feature,
+): Promise<sharp.OverlayOptions> {
+  const r = raisedCrop(c, f);
+  const win = {
+    left: Math.max(0, Math.round(r.x)),
+    top: Math.max(0, Math.round(r.y)),
+    width: Math.max(1, Math.round(r.w)),
+    height: Math.max(1, Math.round(r.h)),
+  };
+  // The outline in the panel's own pixels, which is what the alpha mask is.
+  const toInset = (x: number, y: number): [number, number] => {
+    const [rx, ry] = raisedPoint(f, x, y);
+    return [(rx - c.crop.x) * c.scale, (ry - c.crop.y) * c.scale];
+  };
+  const mask =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${c.inset.w}" height="${c.inset.h}">` +
+    `<rect width="${c.inset.w}" height="${c.inset.h}" fill="#000"/>` +
+    shapeHole(f, Math.min(c.inset.w, c.inset.h) * 2, toInset, '#fff') +
+    `</svg>`;
+  const piece = await sharp(imagePath)
+    .extract(win)
+    .resize(c.inset.w, c.inset.h, { fit: 'fill' })
+    .composite([{ input: Buffer.from(mask), blend: 'dest-in' }])
+    .png()
+    .toBuffer();
+  return { input: piece, left: c.inset.x, top: c.inset.y };
 }
 
 async function annotatedPipeline(
@@ -318,7 +429,7 @@ async function annotatedPipeline(
   const callouts = planCallouts(report);
   const svgOverlay = buildOverlaySvg(report, { callouts });
   const pipeline = sharp(imagePath).composite([
-    ...(await calloutLayers(imagePath, callouts)),
+    ...(await calloutLayers(report, imagePath, callouts)),
     { input: Buffer.from(svgOverlay), top: 0, left: 0 },
   ]);
   return format === 'png' ? pipeline.png() : pipeline.jpeg({ quality });

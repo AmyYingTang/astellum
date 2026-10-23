@@ -238,6 +238,11 @@ drawn a second time inside the panel: it would sit on the same boundary the
 wash already draws and compete with it, which leaves the eye less sure which
 pixels are being named rather than more.
 
+The region is also **raised** off the patch — it casts a shadow onto the dimmed
+sky and is drawn a little larger, the way a thing held nearer the eye is — so
+it reads as a piece lifted out of the picture rather than as a bright stain on
+it. The shadow alone was not enough to see; it is the two together that work.
+
 If a frame is busy enough that a panel would have to cover another mark, it is
 left out instead.
 

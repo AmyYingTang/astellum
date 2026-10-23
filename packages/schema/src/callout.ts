@@ -346,3 +346,61 @@ export function insetEdgePoint(
   );
   return { x: Math.round(cx + dx * t), y: Math.round(cy + dy * t) };
 }
+
+/**
+ * How a magnified region is raised off the patch it sits in.
+ *
+ * The wash alone says *which* pixels are the feature; it says nothing about
+ * depth, and a flat bright patch reads as a stain rather than as a piece of
+ * the picture lifted out of it. Two cues together do read as lifted: a shadow
+ * cast onto the dimmed surround, and the piece drawn a little larger, because
+ * a thing held nearer the eye is bigger. The shadow alone was tried first and
+ * is nearly invisible.
+ *
+ * Shares of the inset's own size, so a panel on a 1200px frame and one on a
+ * 4000px frame are lifted by the same amount to look at.
+ */
+export const LIFT = {
+  /** How much bigger the raised piece is drawn. */
+  scale: 1.1,
+  /** Shadow offset, down and to the right. */
+  offsetShare: 0.03,
+  blurShare: 0.035,
+  /** Opacity of the wash over everything the piece is not. */
+  wash: 0.55,
+  shadowOpacity: 0.9,
+} as const;
+
+/**
+ * Scale a point about the feature's own centre, the way the raised piece is.
+ *
+ * Shared because three surfaces draw this piece — an SVG transform, a sharp
+ * crop, a canvas path — and a piece drawn from three slightly different
+ * centres is three pieces that do not line up with their own shadow.
+ */
+export function raisedPoint(f: Feature, x: number, y: number): [number, number] {
+  const b = featureBounds(f);
+  const cx = (b.x0 + b.x1) / 2;
+  const cy = (b.y0 + b.y1) / 2;
+  return [cx + (x - cx) * LIFT.scale, cy + (y - cy) * LIFT.scale];
+}
+
+/**
+ * The source window that fills an inset when its piece is drawn raised.
+ *
+ * Smaller than the ordinary crop by exactly the lift, and centred so the two
+ * agree where the feature is: that is what makes the raised piece sit over the
+ * hole it came from rather than beside it.
+ */
+export function raisedCrop(c: Callout, f: Feature): { x: number; y: number; w: number; h: number } {
+  const b = featureBounds(f);
+  const cx = (b.x0 + b.x1) / 2;
+  const cy = (b.y0 + b.y1) / 2;
+  const k = LIFT.scale;
+  return {
+    x: cx + (c.crop.x - cx) / k,
+    y: cy + (c.crop.y - cy) / k,
+    w: c.crop.w / k,
+    h: c.crop.h / k,
+  };
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Reading } from '@astellum/schema';
+import { LIFT, type Reading } from '@astellum/schema';
 import { buildOverlaySvg } from './annotate.js';
 
 const report = {
@@ -165,14 +165,14 @@ describe('holding the surround back', () => {
   it('washes the panel and cuts the region out of the wash', () => {
     const svg = buildOverlaySvg(withShape('polygon', { polygon: tri }));
     expect(svg).toContain('mask id="k-cal-g1-m"');
-    expect(svg).toContain('fill="rgba(3,5,10,.4)"');
-    expect(svg).toContain('<polygon points="785,635 815,635 815,665" fill="#000"/>');
+    expect(svg).toContain(`fill="rgba(3,5,10,${LIFT.wash})"`);
+    expect(svg).toContain('<polygon points="785.0,635.0 815.0,635.0 815.0,665.0" fill="#000"/>');
   });
 
   /* An open line encloses nothing, so it gets a band along itself instead. */
   it('gives an open line a band rather than an area', () => {
     const svg = buildOverlaySvg(withShape('polyline', { polygon: tri }));
-    expect(svg).toMatch(/<polyline points="785,635 815,635 815,665" fill="none" stroke="#000"/);
+    expect(svg).toMatch(/<polyline points="785\.0,635\.0 815\.0,635\.0 815\.0,665\.0" fill="none" stroke="#000"/);
   });
 
   /*
@@ -184,10 +184,38 @@ describe('holding the surround back', () => {
    */
   it('draws no contour inside the panel', () => {
     const svg = buildOverlaySvg(withShape('polygon', { polygon: tri }));
-    // `featureShape` writes its points to one decimal; the mask's hole does
-    // not. So the drawn contour is countable on its own, and there is exactly
-    // one of it — the one on the picture.
-    expect(svg.match(/points="785\.0,635\.0 815\.0,635\.0 815\.0,665\.0"/g)).toHaveLength(1);
-    expect(svg.match(/points="785,635 815,635 815,665"/g)).toHaveLength(1); // the hole
+    // The shape is written several times — the mark on the picture, the hole
+    // in the wash's mask, the shape that casts the shadow — but only one of
+    // them is *drawn*: the rest are stencils, in mask black and white. So the
+    // test is how many wear the feature's own colour.
+    const copies = svg.match(/<polygon points="785\.0[^>]*>/g) ?? [];
+    const drawn = copies.filter((t) => !/#000|#fff/.test(t));
+    expect(copies.length).toBeGreaterThan(1);
+    expect(drawn).toHaveLength(1);
+    expect(drawn[0]).toContain('stroke-dasharray'); // the dashed mark on the picture
+  });
+
+  /*
+   * The region is raised out of the patch, not left flat: a shadow on the
+   * dimmed sky, and the piece drawn larger. A flat bright patch reads as a
+   * stain; the two cues together read as a piece lifted out of the picture.
+   */
+  it('casts a shadow and keeps it off the piece it lifts', () => {
+    const svg = buildOverlaySvg(withShape('polygon', { polygon: tri }));
+    expect(svg).toContain('<feGaussianBlur');
+    // The shadow wears the wash's mask, which excludes the raised shape — so
+    // it falls on the surround and never on the thing it is lifting.
+    expect(svg).toMatch(/<g mask="url\(#k-cal-g1-m\)" opacity="0\.9">/);
+    // And it is offset: a shadow exactly under its own shape is no shadow.
+    expect(svg).toMatch(/<g transform="translate\(\d+(\.\d+)? \d+(\.\d+)?\)" filter="url\(#k-cal-g1-s\)">/);
+  });
+
+  it('draws the piece larger, only where it has a picture to draw it from', () => {
+    expect(buildOverlaySvg(withShape('polygon', { polygon: tri }))).not.toContain('k-cal-g1-p');
+    const poster = buildOverlaySvg(withShape('polygon', { polygon: tri }), {
+      imageHref: 'data:image/png;base64,AA',
+    });
+    expect(poster).toContain('mask id="k-cal-g1-p"');
+    expect(poster).toContain(`scale(${LIFT.scale})`);
   });
 });
