@@ -7,6 +7,9 @@ import {
   mergeLibraries,
   missingElements,
   pickStyle,
+  upsertStyles,
+  PredefinedReading,
+  ROLE_IDS,
 } from './index.js';
 
 const entry = {
@@ -60,6 +63,68 @@ describe('predefined readings', () => {
     expect(pickStyle(entry, 'general')?.name).toBe('general');
     expect(pickStyle(entry, 'kids')?.name).toBe('general'); // requested one absent
     expect(pickStyle({ ...entry, styles: {} })).toBeUndefined();
+  });
+
+  /*
+   * A role is a style key, and this chain is what makes the three roles free:
+   * one `general` version answers all of them until somebody wants to write
+   * for a role separately.
+   */
+  it('answers every role from the catch-all until a role is written for', () => {
+    for (const role of ROLE_IDS) expect(pickStyle(entry, role)?.name).toBe('general');
+    const withRole = {
+      ...entry,
+      styles: {
+        ...entry.styles,
+        teacher: { fun_facts: [], features: [], narrative: { zh: '机制:', en: 'Mechanism:' } },
+      },
+    };
+    expect(pickStyle(withRole, 'teacher')?.name).toBe('teacher');
+    expect(pickStyle(withRole, 'primary')?.name).toBe('general'); // still unwritten
+  });
+});
+
+/**
+ * Saving one role must not delete the others. Harmless while `general` was the
+ * only style; a data-loss bug the moment a curator writes for two roles.
+ */
+describe('saving one role', () => {
+  const base = PredefinedReading.parse({
+    schema_version: 1,
+    primary_id: 'NGC 3372',
+    styles: {
+      general: { narrative: { zh: '通用', en: 'General' } },
+      teacher: { narrative: { zh: '老师', en: 'Teacher' }, culture: { zh: '神话', en: 'Myth' } },
+    },
+  });
+
+  it('leaves the roles it was not editing alone', () => {
+    const next = PredefinedReading.parse({
+      schema_version: 1,
+      primary_id: 'NGC 3372',
+      styles: { primary: { narrative: { zh: '小学生', en: 'Kids' } } },
+    });
+    const saved = upsertStyles(base, next);
+    expect(Object.keys(saved.styles).sort()).toEqual(['general', 'primary', 'teacher']);
+    expect(saved.styles.teacher?.culture?.en).toBe('Myth');
+  });
+
+  it('still lets a field be cleared inside the role being edited', () => {
+    const next = PredefinedReading.parse({
+      schema_version: 1,
+      primary_id: 'NGC 3372',
+      styles: { teacher: { narrative: { zh: '改过的', en: 'Rewritten' } } },
+    });
+    const saved = upsertStyles(base, next);
+    expect(saved.styles.teacher?.narrative?.en).toBe('Rewritten');
+    expect(saved.styles.teacher?.culture).toBeUndefined(); // cleared, not merged back
+  });
+
+  it('is an ordinary save when there was nothing there before', () => {
+    expect(Object.keys(upsertStyles(undefined, base).styles).sort()).toEqual([
+      'general',
+      'teacher',
+    ]);
   });
 
   it('reports which of the five elements a style still lacks', () => {

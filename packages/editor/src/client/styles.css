@@ -792,6 +792,22 @@ textarea.explanation {
 .gen-reading {
   padding: 6px 14px;
 }
+/* The role sits in the row itself, not in the menu: it is readable without
+   opening anything, because it means something in both modes. Its label is
+   inline rather than stacked so the row stays one line high. */
+.role-pick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.role-pick .field-label {
+  margin-bottom: 0;
+}
+.gen-role-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
 .gen {
   position: relative;
 }

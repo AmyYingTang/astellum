@@ -70,7 +70,8 @@ cli
   .command('kiosk <image>', 'Onsite: one-shot identify → predefined reading → fullscreen page')
   .option('--target <name>', 'The target you shot, e.g. "M42" (recommended — it is the identity)')
   .option('--lang <lang>', 'Display language: zh or en', { default: 'zh' })
-  .option('--style <name>', 'Predefined reading style (default: from settings)')
+  .option('--role <id>', 'Who it is for: primary, adult or teacher (default: adult)')
+  .option('--style <name>', 'Style key to read, when it is not one of the roles')
   .option('--out <dir>', 'Output directory')
   .option('--no-open', 'Do not open the finished page in a browser')
   .action(async (image: string, options) => {
@@ -78,6 +79,7 @@ cli
       image,
       target: options.target,
       lang: options.lang,
+      role: options.role,
       style: options.style,
       out: options.out,
       open: options.open,
@@ -101,13 +103,15 @@ cli
   .command('kiosk-watch <dir>', 'Onsite: watch a folder and build a frame for each new image')
   .option('--target <name>', 'Fixed target for every image (default: guessed from the filename)')
   .option('--lang <lang>', 'Display language: zh or en', { default: 'zh' })
-  .option('--style <name>', 'Predefined reading style')
+  .option('--role <id>', 'Who it is for: primary, adult or teacher (default: adult)')
+  .option('--style <name>', 'Style key to read, when it is not one of the roles')
   .option('--out <dir>', 'Output directory')
   .action(async (dir: string, options) => {
     await watchKiosk({
       dir,
       target: options.target,
       lang: options.lang,
+      role: options.role,
       style: options.style,
       out: options.out,
     });

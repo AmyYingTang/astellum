@@ -7,6 +7,13 @@ import {
   setContentOverlay,
   BUILT_IN_STYLE_PRESETS,
   StylePreset,
+  ROLE_IDS,
+  DEFAULT_ROLE,
+  rolePresets,
+  focusPresets,
+  stylePresets,
+  defaultRoleId,
+  isRoleId,
 } from './index.js';
 
 beforeEach(() => setContentOverlay({}));
@@ -65,5 +72,87 @@ describe('built-in style presets', () => {
   it('has no duplicate ids, which a preset is picked by', () => {
     const ids = BUILT_IN_STYLE_PRESETS.map((p) => p.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+/**
+ * The roles are the one axis that crosses the offline/online line: offline a
+ * role is a style key in the predefined library, online it is the sentence the
+ * model is given about its reader. Both surfaces ask it, so it is asserted
+ * here rather than in either of them.
+ */
+describe('reading roles', () => {
+  it('ships exactly the three roles, in the order they are offered', () => {
+    expect(rolePresets().map((r) => r.id)).toEqual([...ROLE_IDS]);
+  });
+
+  it('starts in the general adult visitor, who is most of a room', () => {
+    expect(DEFAULT_ROLE).toBe('adult');
+    expect(defaultRoleId()).toBe('adult');
+  });
+
+  it('keeps tone out of the roles — playful is a focus, not an audience', () => {
+    expect(focusPresets().map((f) => f.id)).toContain('humor');
+    expect(rolePresets().map((r) => r.id)).not.toContain('humor');
+  });
+
+  it('resolves the overlay over the built-ins once, for every surface', () => {
+    expect(stylePresets()).toEqual(BUILT_IN_STYLE_PRESETS);
+    const mine: StylePreset = {
+      id: 'adult',
+      group: 'audience',
+      labelZh: '改过的',
+      labelEn: 'Mine',
+      textZh: '写给成年人',
+      textEn: 'For adults',
+    };
+    setContentOverlay({ stylePresets: [mine] });
+    expect(stylePresets()).toEqual([mine]);
+    expect(rolePresets()).toEqual([mine]);
+  });
+
+  it('opens in the first role an overlay does offer, when it dropped the default', () => {
+    setContentOverlay({
+      stylePresets: [
+        {
+          id: 'teacher',
+          group: 'audience',
+          labelZh: '老师',
+          labelEn: 'Teacher',
+          textZh: '写给老师',
+          textEn: 'For teachers',
+        },
+      ],
+    });
+    expect(defaultRoleId()).toBe('teacher');
+  });
+
+  /*
+   * A role travels in query strings and request bodies, and arrives at
+   * `pickStyle` as a style key. An unknown one would not fail there — it would
+   * degrade to the catch-all text under a role name nobody chose — so it is
+   * refused at the door instead.
+   */
+  it('refuses a role nothing offers, and keeps accepting the built-in ids', () => {
+    expect(isRoleId('adult')).toBe(true);
+    expect(isRoleId('kids')).toBe(false); // the old audience preset
+    expect(isRoleId('general')).toBe(false); // the catch-all is not a role
+    expect(isRoleId(undefined)).toBe(false);
+    setContentOverlay({
+      stylePresets: [
+        {
+          id: 'mine',
+          group: 'audience',
+          labelZh: '我的',
+          labelEn: 'Mine',
+          textZh: '写给我',
+          textEn: 'For me',
+        },
+      ],
+    });
+    expect(isRoleId('mine')).toBe(true);
+    // Still true: a frame written before the overlay narrowed the list has to
+    // keep resolving.
+    expect(isRoleId('adult')).toBe(true);
   });
 });

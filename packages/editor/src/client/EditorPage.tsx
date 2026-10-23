@@ -8,6 +8,7 @@ import {
   fetchJob,
   fetchReport,
   generateReading,
+  readPredefinedText,
   savePredefined,
   saveAnnotations,
   imageUrl,
@@ -19,7 +20,7 @@ import { Canvas } from './Canvas.js';
 import { Sidebar } from './Sidebar.js';
 import { FactsPanel } from './FactsPanel.js';
 import { LangToggle, useUi } from './i18n.js';
-import { PRESETS } from './presets.js';
+import { PRESETS, DEFAULT_ROLE_ID } from './presets.js';
 import { getConfig } from './api.js';
 
 const EXPORT_ORDER: ExportFormat[] = ['annotated', 'embed', 'poster', 'all'];
@@ -121,12 +122,31 @@ function Editor({
   const [styleFree, setStyleFree] = useState('');
   const [savingPredef, setSavingPredef] = useState<'idle' | 'saving' | 'done'>('idle');
   const [savingAnns, setSavingAnns] = useState<'idle' | 'saving' | 'done'>('idle');
-  // Style presets are curator copy: the server sends them when a content
-  // overlay supplies them, otherwise the built-in list stands.
+  // Style presets are curator copy: the server resolves the overlay over the
+  // built-ins and sends the list that is actually in force.
   const [presets, setPresets] = useState(PRESETS);
+  // Who this reading is for. One role is always in force — a reading is
+  // written for somebody — and it is the same axis the library is keyed by,
+  // so it decides both the prompt and which pre-written text is shown.
+  const [role, setRole] = useState<string>(DEFAULT_ROLE_ID);
+  // Whether a role change has text to re-read. `ai` means the model writes it,
+  // and replacing its prose with the library's on a role change would throw
+  // away the generation the curator is looking at.
+  const [predefinedMode, setPredefinedMode] = useState(false);
+  const [switchingRole, setSwitchingRole] = useState(false);
   useEffect(() => {
     getConfig()
-      .then((c) => c.stylePresets?.length && setPresets(c.stylePresets))
+      .then((c) => {
+        if (c.stylePresets?.length) setPresets(c.stylePresets);
+        setPredefinedMode(c.config.reading.mode === 'predefined');
+        // An overlay may rename or drop the roles; follow the server rather
+        // than sitting in one it no longer offers.
+        const roles = (c.stylePresets?.length ? c.stylePresets : PRESETS).filter(
+          (x) => x.group === 'audience',
+        );
+        const want = c.defaultRole ?? DEFAULT_ROLE_ID;
+        setRole(roles.some((x) => x.id === want) ? want : (roles[0]?.id ?? want));
+      })
       .catch(() => undefined);
   }, []);
 
@@ -137,10 +157,25 @@ function Editor({
       else next.add(id);
       return next;
     });
+  /**
+   * What the model is told about its reader.
+   *
+   * The role first and always — the focus chips and the free-text box lean on
+   * a reading that is already addressed to somebody, and sending them without
+   * it used to leave the model guessing.
+   */
+  const roleLabel = ((): string => {
+    const p = presets.find((x) => x.group === 'audience' && x.id === role);
+    return p ? (uiLang === 'zh' ? p.labelZh : p.labelEn) : role;
+  })();
   const buildTone = (): string | undefined => {
-    const parts = presets.filter((p) => presetIds.has(p.id)).map((p) =>
-      uiLang === 'en' ? p.textEn : p.textZh,
-    );
+    const text = (p: { textZh: string; textEn: string }): string =>
+      uiLang === 'en' ? p.textEn : p.textZh;
+    const current = presets.find((p) => p.group === 'audience' && p.id === role);
+    const parts = current ? [text(current)] : [];
+    for (const p of presets) {
+      if (p.group !== 'audience' && presetIds.has(p.id)) parts.push(text(p));
+    }
     if (styleFree.trim()) parts.push(styleFree.trim());
     return parts.join('\n') || undefined;
   };
@@ -209,7 +244,9 @@ function Editor({
     setSaveError(null);
     try {
       if (stateRef.current.dirty) await doSave(); // save edits before promoting them
-      await savePredefined(slug);
+      // Promoted under the role it was written for, so the kiosk's role
+      // switch finds it where it looks.
+      await savePredefined(slug, role);
       setSavingPredef('done');
     } catch (e) {
       setSaveError((e as Error).message);
@@ -236,7 +273,7 @@ function Editor({
     setSaveError(null);
     try {
       if (stateRef.current.dirty) await doSave(); // persist reviewed annotations first
-      await generateReading(slug, tone);
+      await generateReading(slug, tone, role);
       for (;;) {
         const s = await fetchJob(slug);
         if (s.state === 'done') break;
@@ -250,11 +287,36 @@ function Editor({
     }
   };
 
+  /**
+   * Switch role.
+   *
+   * On the predefined side this re-reads the library and reloads — a second,
+   * no network. In `ai` mode there is nothing to re-read: the role is simply
+   * who the next generation is for, so changing it only changes the prompt.
+   */
+  const doSetRole = async (next: string): Promise<void> => {
+    setRole(next);
+    if (!predefinedMode) return;
+    setSwitchingRole(true);
+    setSaveError(null);
+    try {
+      if (stateRef.current.dirty) await doSave(); // don't lose edits to a reload
+      await readPredefinedText(slug, next);
+      location.reload();
+    } catch (e) {
+      setSaveError((e as Error).message);
+      setSwitchingRole(false);
+    }
+  };
+
   const doReidentify = async (opts: { starMagMax?: number }): Promise<void> => {
     setReidentifying(true);
     setSaveError(null);
     try {
-      await reidentify(slug, opts); // re-run Stage 1 on the stored image
+      // The role travels with it: a re-identification in `predefined` mode
+      // fills the text in again, and it should come back in the role on
+      // screen rather than the configured default.
+      await reidentify(slug, { ...opts, role }); // re-run Stage 1 on the stored image
       for (;;) {
         const s = await fetchJob(slug);
         if (s.state === 'done') break;
@@ -428,6 +490,27 @@ function Editor({
         <div className="divider" onMouseDown={startDrag} title="拖动调整图像 / 文字宽度" />
         <div className="text-col" style={canvasW != null ? { flex: '1 1 0' } : undefined}>
           <div className="text-actions">
+            {/* Who this is for. Outside the generate menu on purpose: it is
+                not only a prompt instruction — it is the key the predefined
+                library is read by, so it means something even with no model
+                in reach, and it should be readable at a glance rather than
+                behind a button. */}
+            <label className="role-pick">
+              <span className="field-label">{t.roleLabel}</span>
+              <select
+                value={role}
+                disabled={switchingRole || generating}
+                onChange={(e) => void doSetRole(e.target.value)}
+              >
+                {presets
+                  .filter((p) => p.group === 'audience')
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {uiLang === 'zh' ? p.labelZh : p.labelEn}
+                    </option>
+                  ))}
+              </select>
+            </label>
             <div className="gen">
               <button
                 className="primary gen-reading"
@@ -439,12 +522,19 @@ function Editor({
               {genMenuOpen && (
                 <div className="gen-menu">
                   <span className="field-label">{t.styleLabel}</span>
-                  {(['audience', 'focus'] as const).map((group) => (
-                    <div className="chip-group" key={group}>
-                      <span className="chip-group-label">
-                        {group === 'audience' ? t.audienceLabel : t.focusLabel}
-                      </span>
-                      {presets.filter((p) => p.group === group).map((p) => (
+                  {/* The role is not in here — it has its own control, and it
+                      is a single choice rather than one of these stackable
+                      sentences. What is left leans on a reading that is
+                      already addressed to somebody. */}
+                  <p className="gen-role-note">
+                    {t.roleInEffect}
+                    {roleLabel}
+                  </p>
+                  <div className="chip-group">
+                    <span className="chip-group-label">{t.focusLabel}</span>
+                    {presets
+                      .filter((p) => p.group === 'focus')
+                      .map((p) => (
                         <button
                           type="button"
                           key={p.id}
@@ -454,8 +544,7 @@ function Editor({
                           {uiLang === 'zh' ? p.labelZh : p.labelEn}
                         </button>
                       ))}
-                    </div>
-                  ))}
+                  </div>
                   <input
                     className="style-free"
                     placeholder={t.styleFreePlaceholder}
@@ -553,10 +642,14 @@ function Editor({
       )}
       {saveError && <div className="save-error">{t.errorLabel}: {saveError}</div>}
 
-      {(reidentifying || generating) && (
+      {(reidentifying || generating || switchingRole) && (
         <div className="overlay">
           <div className="overlay-box">
-            {generating ? t.genReadingRunning : t.reidentifying}
+            {generating
+              ? t.genReadingRunning
+              : switchingRole
+                ? t.switchingRole
+                : t.reidentifying}
             <p className="muted">{generating ? t.stageReading : t.stageSolving}</p>
           </div>
         </div>

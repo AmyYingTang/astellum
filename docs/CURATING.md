@@ -124,10 +124,29 @@ came from the last two so nothing generic is passed off as specific:
 
 | layer | source | scope |
 |---|---|---|
-| 1. target | `readings.json` for this object, in the chosen style | this target |
+| 1. target | `readings.json` for this object, in the chosen role | this target |
 | 2. annotation note | the note you wrote in the atlas | this annotation |
 | 3. generic note | `content.json` → `featureNotes` | all objects of that type |
 | 4. facts | built at render time from the fact sheet | anything |
+
+### Roles
+
+A reading's *style key* is a **role**: who the text is written for. Three ship —
+`primary` (小学生), `adult` (成人) and `teacher` (中学科学老师) — plus `general`,
+which is not a role but the catch-all every role falls back to.
+
+So you do not owe three versions of anything. Write one under `通用` /
+`general` and all three roles show it; write a role's own version when that
+target deserves a different depth. The atlas's role list marks which ones have
+text (`已录`), and saving one role never touches the others.
+
+The same three roles are what the studio offers beside its prompt and what the
+kiosk asks in its picker — one axis, so the answer means the same thing whether
+the text is looked up or written on the night.
+
+If you rename or drop a role in `content.json` → `stylePresets`, you are
+renaming a style key: the library has to be written under the new ids, or every
+target falls back to `general`.
 
 ### Coverage, then drafting
 
@@ -193,7 +212,7 @@ there is nothing to migrate.
 |---|---|
 | `featureNotes` | the plain-language note per structure type — layer 3 above |
 | `nicknames` | names that exist only in observing apps and the community |
-| `stylePresets` | the quick-pick buttons beside the studio's prompt |
+| `stylePresets` | the three roles, and the focus buttons beside the studio's prompt |
 | `readingBrief` | who the writing is for, and what a reading must cover |
 
 `readingBrief` is the one to reach for first: it is the standard both the drafter

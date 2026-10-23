@@ -26,6 +26,12 @@ const report = {
 } satisfies Reading;
 
 const picker = { endpoint: '/api/run' };
+/** The roles as a server hands them over: an id and both labels. */
+const ROLES = [
+  { id: 'primary', labelZh: '小学生', labelEn: 'Primary school' },
+  { id: 'adult', labelZh: '成人', labelEn: 'Adult' },
+  { id: 'teacher', labelZh: '中学科学老师', labelEn: 'Science teacher' },
+];
 
 /**
  * The chrome is the page's only way out, and the one thing that must NOT appear
@@ -52,11 +58,11 @@ describe('kiosk chrome', () => {
   it('adds the picker, pointed at the endpoint it was given', () => {
     const html = generateKioskHtml(report, {
       imageDataUri: 'data:image/png;base64,AA',
-      picker: { endpoint: '/api/run', styles: ['科普', '诗意'] },
+      picker: { endpoint: '/api/run', roles: ROLES, defaultRole: 'adult' },
     });
     expect(html).toContain('id="k-pick-btn"');
     expect(html).toContain('"/api/run"');
-    expect(html).toContain('<option>科普</option>');
+    expect(html).toContain('id="k-pick-role"');
   });
 
   // The language switch replaces textContent on everything carrying data-zh, so
@@ -328,49 +334,73 @@ describe('kiosk shell', () => {
 });
 
 /**
- * Which question the picker asks is the whole of the offline/online choice:
- * pick from what somebody wrote, or describe the room and have it written.
+ * The picker asks one question — who is this for — and the answer means
+ * something in both modes. It used to ask two, and in the mode anybody
+ * actually ran it asked neither: the style select needed "more than one"
+ * style, and the only style written was `general`.
  */
-describe('picker: library styles vs an audience to write for', () => {
-  const presets = [
-    { id: 'kids', group: 'audience' as const, labelZh: '儿童', labelEn: 'Kids', textZh: '写给孩子', textEn: 'For children' },
-    { id: 'art', group: 'focus' as const, labelZh: '艺术', labelEn: 'Artistic', textZh: '侧重艺术', textEn: 'Lean artistic' },
-  ];
-
-  it('offers the styles it was handed, not a single configured one', () => {
-    const html = generateKioskShellHtml({ picker: { endpoint: '/api/run', styles: ['general', '诗意'] } });
-    expect(html).toContain('id="k-pick-style"');
-    expect(html).toContain('<option>诗意</option>');
-  });
-
-  // The server used to pass `[config.reading.style]`, which could never satisfy
-  // this condition, so the select had never once appeared.
-  it('leaves the style out when there is nothing to choose between', () => {
-    expect(generateKioskShellHtml({ picker: { endpoint: '/api/run', styles: ['general'] } })).not.toContain(
-      'id="k-pick-style"',
-    );
-  });
-
-  it('asks who is in the room instead, when it writes on the night', () => {
-    const html = generateKioskShellHtml({ picker: { endpoint: '/api/run', presets } });
-    expect(html).toContain('class="k-chip"');
-    expect(html).toContain('data-text-zh="写给孩子"'); // the sentence the model gets
-    expect(html).toContain('id="k-pick-tone"'); // and room to add to it
-    expect(html).toContain('tone:tone()'); // which the POST carries
-  });
-
-  it('never asks both — the two are the same question of different machines', () => {
+describe('picker: who is this for', () => {
+  it('offers the roles it was handed, and opens in the default one', () => {
     const html = generateKioskShellHtml({
-      picker: { endpoint: '/api/run', styles: ['general', '诗意'], presets },
+      picker: { endpoint: '/api/run', roles: ROLES, defaultRole: 'adult' },
     });
-    expect(html).toContain('class="k-chip"');
-    expect(html).not.toContain('id="k-pick-style"');
+    expect(html).toContain('id="k-pick-role"');
+    expect(html).toContain('value="teacher"');
+    expect(html).toContain('value="adult" selected');
+    expect(html).toContain('role:roleSel?roleSel.value:undefined'); // the POST carries it
   });
 
-  it('says plainly what writing on the night costs', () => {
-    const html = generateKioskShellHtml({ picker: { endpoint: '/api/run', presets }, lang: 'en' });
+  it('carries both labels, so the language switch reaches the options', () => {
+    const html = generateKioskShellHtml({
+      picker: { endpoint: '/api/run', roles: ROLES },
+      lang: 'en',
+    });
+    expect(html).toContain('data-zh="中学科学老师"');
+    expect(html).toContain('data-en="Science teacher"');
+  });
+
+  it('asks it offline too — a role is a style key, so there is always an answer', () => {
+    const html = generateKioskShellHtml({ picker: { endpoint: '/api/run', roles: ROLES } });
+    expect(html).toContain('id="k-pick-role"');
+    expect(html).not.toContain('需要网络'); // but says nothing about a network
+  });
+
+  it('says plainly what writing on the night costs, when it does', () => {
+    const html = generateKioskShellHtml({
+      picker: { endpoint: '/api/run', roles: ROLES, writesOnTheNight: true },
+      lang: 'en',
+    });
     expect(html).toContain('needs a network');
     expect(html).toContain('the model only changes the wording');
+  });
+});
+
+/**
+ * The switch on the frame itself. Offered only for a frame whose words came
+ * from the library — see `runKiosk`, which decides that per frame.
+ */
+describe('the role switch on a frame', () => {
+  it('offers the roles, marks the one in force, and reloads in the chosen one', () => {
+    const html = generateKioskHtml(report, {
+      imageDataUri: 'data:...',
+      roles: ROLES,
+      currentRole: 'teacher',
+    });
+    expect(html).toContain('id="k-role-sel"');
+    expect(html).toContain('value="teacher" selected');
+    expect(html).toContain("u.searchParams.set('role', sel.value)");
+  });
+
+  it('is absent when no roles were passed — the model wrote this one', () => {
+    const html = generateKioskHtml(report, { imageDataUri: 'data:...' });
+    expect(html).not.toContain('id="k-role-sel"');
+  });
+
+  it('says it is switching, in the label nothing else rewrites', () => {
+    const html = generateKioskHtml(report, { imageDataUri: 'data:...', roles: ROLES });
+    expect(html).toContain('sel.parentNode.querySelector');
+    expect(html).toContain('换成这个角色的讲法');
+    expect(html).toContain('Switching to that role');
   });
 });
 

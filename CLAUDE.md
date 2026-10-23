@@ -46,7 +46,11 @@ a deployment's own layer. The launcher and the CLI's `bin` are both named
   costs a network and tens of seconds, and is why the default is the other way.
   Even then the model only rewrites prose: identity, geometry and colour still
   come from the identification, and an unreachable model falls back to the
-  library rather than losing the frame.
+  library rather than losing the frame. The role switch on a frame re-reads the
+  library (a second, offline) and is therefore **not offered on a frame the
+  model wrote** — a switch that asks a model is one that sometimes fails with
+  an audience watching. Which it was is recorded per frame in `frame.json`, not
+  inferred from the current config.
 - **Bilingual everywhere.** Every user-facing string, feature name and
   explanation ships zh + en. UI language starts from the browser locale
   (`preferredLang`) and is remembered.
@@ -72,10 +76,18 @@ only genuine machine-level preferences: `solve`, `catalog`, `atlas`, `reading`,
 
 ## Where the text comes from
 
+**Roles are one axis.** A reading's style key *is* a role — `primary` / `adult`
+/ `teacher`, default `adult`, plus `general` as the catch-all every role falls
+back to. Offline a role selects which pre-written text to show; online it is
+what the model is told about its reader. They were nearly two axes (roles for
+the prompt, style names for the library), which gives a curator two
+vocabularies for one question. `pickStyle` degrading to `general` is what makes
+the roles cost nothing until somebody writes for them.
+
 The kiosk resolves each label through four layers, in order, and marks anything
 from the last two so nothing generic is passed off as specific:
 
-1. `readings.json` — this target, this style
+1. `readings.json` — this target, this role
 2. the annotation's own note in the atlas
 3. `content.json` → `featureNotes` — by drawable type (11 of the 15 have one)
 4. a template built from grounded facts
@@ -128,4 +140,10 @@ for a while, so interface changes there appeared not to take effect.
   has not been observed firing.
 - No genuine network-unplugged rehearsal yet.
 - The atlas upload takes JPG/PNG only; the studio and kiosk take FITS.
+- The studio's 「生成解读」 button ignores `reading.mode`: it shows and calls the
+  model even where settings say `predefined`, so offline it just fails. The
+  comment on `ReadingConfig.mode` claims the studio stops offering what it
+  cannot do; it does not.
+- The atlas's reading editor is zh-only (pre-existing), against the bilingual
+  invariant — including the role selector added with the roles.
 - One pre-existing lint error: `react-hooks/exhaustive-deps` rule not installed.

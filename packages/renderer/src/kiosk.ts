@@ -3,7 +3,6 @@ import {
   badgeAnchor,
   type Feature,
   type Reading,
-  type StylePreset,
 } from '@astellum/schema';
 import { overlayLabel } from './overlayLabel.js';
 
@@ -85,9 +84,13 @@ export interface KioskOptions {
   textSources?: Record<string, string>;
   /** Overall completeness; drives the banner. Default 'ok'. */
   state?: KioskState;
-  /** Styles the operator can switch between live (D6). Needs a server. */
-  styles?: string[];
-  currentStyle?: string;
+  /**
+   * Roles the operator can switch between live. Needs a server, and only
+   * offered for a frame whose words came from the library — switching role
+   * re-reads it, which a frame the model wrote has nothing to answer with.
+   */
+  roles?: KioskRole[];
+  currentRole?: string;
   /** Close the panel after this many idle seconds. 0 disables. Default 120. */
   idleResetSec?: number;
   /** Where "← ASTELLUM" goes. Absolute, because the one-shot page is opened as
@@ -99,19 +102,33 @@ export interface KioskOptions {
   picker?: KioskPicker;
 }
 
+/**
+ * One role, with both labels.
+ *
+ * Both languages travel with it because the page carries both and the switcher
+ * swaps text nodes in place — a select whose options were resolved server-side
+ * would keep whichever language the frame was built in.
+ */
+export interface KioskRole {
+  id: string;
+  labelZh: string;
+  labelEn: string;
+}
+
 export interface KioskPicker {
-  /** Endpoint that takes {filename, dataUrl, target, lang, style, tone} and
+  /** Endpoint that takes {filename, dataUrl, target, lang, role} and
    *  answers {ok, url} — the kiosk server's /api/run. */
   endpoint: string;
-  /** Offered in the form when the library has more than one. */
-  styles?: string[];
   /**
-   * Audience buttons, when this deployment writes its words on the night
-   * (`kiosk.readingSource: 'ai'`) rather than reading what a curator wrote.
-   * Supplied instead of `styles`: picking from a library and describing an
-   * audience are the same question asked of two different machines.
+   * Who to write for. Always offered, in both modes: offline it selects which
+   * pre-written text to show, and on the night it tells the model who is in
+   * the room. One question, which is the point of making it one axis.
    */
-  presets?: StylePreset[];
+  roles?: KioskRole[];
+  /** Which one the form opens in. */
+  defaultRole?: string;
+  /** This deployment writes on the night; shows what that costs. */
+  writesOnTheNight?: boolean;
   /** Offline-catalogue state, already phrased; shown under the form. */
   offlineNote?: { zh: string; en: string };
 }
@@ -124,7 +141,7 @@ const UI = {
     generic: '通用说明:这段讲的是这类结构，不是专门写这个天体的',
     statusTitle: '这一屏的状态(仅工作人员可见)',
     langBtn: 'EN',
-    styleLabel: '讲解风格',
+    roleLabel: '讲给谁听',
     pick: '选择图片',
     pickTitle: '现场识别',
     pickSub: '选一张图,几秒后出一张可点的全屏页。支持 FITS(自动拉伸)、JPG、PNG、TIFF。',
@@ -142,9 +159,7 @@ const UI = {
     zoomOut: '缩小',
     zoomReset: '复位',
     allItems: '全部',
-    audienceLabel: '讲给谁听',
-    focusLabel: '侧重',
-    customLabel: '还想补充什么(可选)',
+    switchingRole: '换成这个角色的讲法…',
     aiNote: '现场为这批观众写文字:需要网络,要等模型几十秒。身份、位置和颜色仍然来自识别,模型只改措辞。',
     poster: '海报',
     posterPortrait: '竖版',
@@ -161,7 +176,7 @@ const UI = {
     generic: 'General note: about this kind of structure, not written for this object',
     statusTitle: 'Status of this screen (for staff)',
     langBtn: '中文',
-    styleLabel: 'Style',
+    roleLabel: 'Who is this for',
     pick: 'Pick image',
     pickTitle: 'Onsite reading',
     pickSub:
@@ -180,9 +195,7 @@ const UI = {
     zoomOut: 'Zoom out',
     zoomReset: 'Fit',
     allItems: 'All',
-    audienceLabel: 'Who is this for',
-    focusLabel: 'Lean towards',
-    customLabel: 'Anything to add (optional)',
+    switchingRole: 'Switching to that role…',
     aiNote: 'Written on the night for the people in front of you: needs a network, and the model takes tens of seconds. Identity, position and colour still come from the identification — the model only changes the wording.',
     poster: 'Poster',
     posterPortrait: 'Portrait',
@@ -258,12 +271,6 @@ a.k-chrome:hover{background:#1c2333;border-color:#3a4a6b;}
   text-align:left;padding:7px 10px;border-radius:7px;cursor:pointer;width:100%;}
 #k-poster-menu button:hover{background:#1c2333;}
 #k-poster[disabled]{opacity:1;cursor:progress;}
-#k-pick .k-chips{margin-top:20px;font-size:13px;color:#8a93a8;}
-#k-pick .k-chips>div{margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;}
-#k-pick .k-chip{background:#141925;border:1px solid #2a3344;color:#cfd6e4;
-  border-radius:999px;padding:7px 14px;font-size:13px;cursor:pointer;}
-#k-pick .k-chip:hover{border-color:#3f4d6b;}
-#k-pick .k-chip.on{background:#2b6cb0;border-color:#2b6cb0;color:#fff;}
 #k-pick .k-note{margin-top:16px;color:#6b768f;font-size:12px;line-height:1.6;}
 #k-pick .k-foot{margin-top:22px;padding-top:16px;border-top:1px solid #1b2231;
   color:#5d6780;font-size:12px;line-height:1.6;}
@@ -298,34 +305,30 @@ function chromeButtons(
 /** The overlay form. Lifted from the kiosk's old front door, which this replaces. */
 function pickerOverlay(picker: KioskPicker | undefined, lang: 'zh' | 'en'): string {
   if (!picker) return '';
-  const group = (g: 'audience' | 'focus', label: 'audienceLabel' | 'focusLabel'): string => {
-    const chips = (picker.presets ?? []).filter((x) => x.group === g);
-    if (!chips.length) return '';
-    return `<div class="k-chips"><span data-zh="${esc(UI.zh[label])}" data-en="${esc(UI.en[label])}">${esc(UI[lang][label])}</span>
-      <div>${chips
+  /**
+   * One question, asked the same way in both modes.
+   *
+   * It used to be two — a style select read from the library, or audience
+   * chips handed to the model — and the select never appeared, because the
+   * only style anybody had written was `general` and one is not "more than
+   * one". A role is a style key now, so there is always something to offer.
+   */
+  const roles = picker.roles?.length
+    ? `<label><span data-zh="${esc(UI.zh.roleLabel)}" data-en="${esc(UI.en.roleLabel)}">${esc(UI[lang].roleLabel)}</span>
+      <select id="k-pick-role">${picker.roles
         .map(
-          (c) =>
-            `<button type="button" class="k-chip" data-zh="${esc(c.labelZh)}" data-en="${esc(c.labelEn)}" ` +
-            `data-text-zh="${esc(c.textZh)}" data-text-en="${esc(c.textEn)}">${esc(lang === 'zh' ? c.labelZh : c.labelEn)}</button>`,
+          (r) =>
+            `<option value="${esc(r.id)}"${r.id === picker.defaultRole ? ' selected' : ''} ` +
+            `data-zh="${esc(r.labelZh)}" data-en="${esc(r.labelEn)}">${esc(
+              lang === 'zh' ? r.labelZh : r.labelEn,
+            )}</option>`,
         )
-        .join('')}</div></div>`;
-  };
-  // Either the library's styles or an audience to write for — never both; which
-  // one the server offers is what `kiosk.readingSource` decides.
-  const presets = picker.presets?.length
-    ? `${group('audience', 'audienceLabel')}${group('focus', 'focusLabel')}
-    <label><span data-zh="${esc(UI.zh.customLabel)}" data-en="${esc(UI.en.customLabel)}">${esc(UI[lang].customLabel)}</span>
-      <input type="text" id="k-pick-tone" placeholder="${esc(lang === 'zh' ? '例如:观众里有小朋友' : 'e.g. there are children in the room')}">
-    </label>
-    <p class="k-note" data-zh="${esc(UI.zh.aiNote)}" data-en="${esc(UI.en.aiNote)}">${esc(UI[lang].aiNote)}</p>`
-    : '';
-  const styles =
-    !picker.presets?.length && picker.styles && picker.styles.length > 1
-      ? `<label><span data-zh="${esc(UI.zh.styleLabel)}" data-en="${esc(UI.en.styleLabel)}">${esc(UI[lang].styleLabel)}</span>
-      <select id="k-pick-style">${picker.styles
-        .map((s) => `<option>${esc(s)}</option>`)
         .join('')}</select></label>`
-      : '';
+    : '';
+  // What writing on the night costs, said before the operator commits to it.
+  const aiNote = picker.writesOnTheNight
+    ? `<p class="k-note" data-zh="${esc(UI.zh.aiNote)}" data-en="${esc(UI.en.aiNote)}">${esc(UI[lang].aiNote)}</p>`
+    : '';
   const foot = picker.offlineNote
     ? `<p class="k-foot" data-zh="${esc(picker.offlineNote.zh)}" data-en="${esc(picker.offlineNote.en)}">${esc(picker.offlineNote[lang])}</p>`
     : '';
@@ -351,9 +354,9 @@ function pickerOverlay(picker: KioskPicker | undefined, lang: 'zh' | 'en'): stri
           <option value="en"${lang === 'en' ? ' selected' : ''}>English</option>
         </select>
       </label>
-      ${styles}
+      ${roles}
     </div>
-    ${presets}
+    ${aiNote}
 
     <button class="k-go" id="k-pick-go" type="submit" disabled
       data-zh="${esc(UI.zh.start)}" data-en="${esc(UI.en.start)}">${esc(UI[lang].start)}</button>
@@ -443,23 +446,6 @@ ${
   wrap.addEventListener('click', function(e){ if(e.target===wrap) closePick(); });
   document.addEventListener('keydown', function(e){ if(e.key==='Escape') closePick(); });
 
-  // A chip is a sentence the model will be given, not a filter — so they add
-  // up, and nothing is selected by default: the operator says what is true of
-  // the room, or says nothing.
-  document.querySelectorAll('#k-pick .k-chip').forEach(function(c){
-    c.addEventListener('click', function(){ c.classList.toggle('on'); });
-  });
-  function tone(){
-    var l=document.getElementById('k-pick-lang').value==='en'?'en':'zh';
-    var parts=[];
-    document.querySelectorAll('#k-pick .k-chip.on').forEach(function(c){
-      parts.push(c.getAttribute('data-text-'+l));
-    });
-    var free=document.getElementById('k-pick-tone');
-    if(free && free.value.trim()) parts.push(free.value.trim());
-    return parts.length?parts.join(' '):undefined;
-  }
-
   file.addEventListener('change', function(){
     var f=file.files[0];
     if(f){ fname.textContent=f.name; fname.removeAttribute('data-zh'); fname.removeAttribute('data-en'); }
@@ -476,14 +462,16 @@ ${
     });
     st.textContent=T('solving');
     try{
-      var styleSel=document.getElementById('k-pick-style');
+      // The role goes over as an id. The server turns it into either a style
+      // key or a sentence for the model, which is its business, not this
+      // form's — the form only knows who is in the room.
+      var roleSel=document.getElementById('k-pick-role');
       var r=await fetch(${JSON.stringify(picker.endpoint)},{method:'POST',
         headers:{'content-type':'application/json'},
         body:JSON.stringify({filename:f.name, dataUrl:b64,
           target:document.getElementById('k-pick-target').value.trim()||undefined,
           lang:document.getElementById('k-pick-lang').value,
-          style:styleSel?styleSel.value:undefined,
-          tone:tone()})});
+          role:roleSel?roleSel.value:undefined})});
       var j=await r.json();
       if(!j.ok) throw new Error(j.error||T('failed'));
       st.textContent=T('opening');
@@ -684,16 +672,28 @@ export function generateKioskHtml(report: Reading, opts: KioskOptions): string {
         .join('')}</div>`
     : '';
 
-  const styleSwitch =
-    opts.styles && opts.styles.length > 1
-      ? `<label class="k-style">${esc(UI[lang].styleLabel)}
-  <select id="k-style-sel">${opts.styles
+  /**
+   * Change who the frame is talking to, in front of the room.
+   *
+   * Re-reads the library — a second, no network, no model. That is the whole
+   * reason this is offered at all: the kiosk reads, it does not write, and a
+   * switch that had to ask a model would be a switch that sometimes fails
+   * with an audience watching.
+   */
+  const roleSwitch = opts.roles?.length
+    ? `<label class="k-style"><span data-zh="${esc(UI.zh.roleLabel)}" data-en="${esc(
+        UI.en.roleLabel,
+      )}">${esc(UI[lang].roleLabel)}</span>
+  <select id="k-role-sel">${opts.roles
     .map(
-      (s) =>
-        `<option value="${esc(s)}"${s === opts.currentStyle ? ' selected' : ''}>${esc(s)}</option>`,
+      (r) =>
+        `<option value="${esc(r.id)}"${r.id === opts.currentRole ? ' selected' : ''} ` +
+        `data-zh="${esc(r.labelZh)}" data-en="${esc(r.labelEn)}">${esc(
+          lang === 'zh' ? r.labelZh : r.labelEn,
+        )}</option>`,
     )
     .join('')}</select></label>`
-      : '';
+    : '';
 
   /** Where the magnified view crops, per feature, in image pixels. */
   const crops = drawn.map((f) => ({ id: f.id, ...bboxOf(f) }));
@@ -895,7 +895,7 @@ ${CHROME_CSS}
     </span>
     ${chromeButtons({ ...opts, poster: true }, lang)}
     <button id="k-lang" data-zh="${esc(UI.zh.langBtn)}" data-en="${esc(UI.en.langBtn)}">${esc(UI[lang].langBtn)}</button>
-    ${styleSwitch}
+    ${roleSwitch}
   </div>
   <div id="k-main">
   <div id="k-view">
@@ -1579,10 +1579,21 @@ ${chromeScript(opts.picker)}
     if(want && want!==LANG) applyLang(want);
   } catch(e){}
 
-  var sel=document.getElementById('k-style-sel');
+  var sel=document.getElementById('k-role-sel');
   if(sel) sel.addEventListener('change', function(){
-    // Styles are rendered server-side; reload with the chosen one.
-    var u=new URL(location.href); u.searchParams.set('style', sel.value); location.href=u.toString();
+    // The text is resolved server-side; reload in the chosen role. Say so
+    // first: it is fast, but an audience is looking at this screen and a
+    // control that does nothing visible for a moment reads as broken.
+    sel.disabled=true;
+    // Said in the switch's own label, which nothing else on the page
+    // rewrites — the hint under the picture is measured and re-fitted by
+    // the layout code and would fight us for it.
+    var say=sel.parentNode.querySelector('span');
+    if(say){
+      say.textContent=LANG==='zh'?${JSON.stringify(UI.zh.switchingRole)}:${JSON.stringify(UI.en.switchingRole)};
+      say.removeAttribute('data-zh'); say.removeAttribute('data-en');
+    }
+    var u=new URL(location.href); u.searchParams.set('role', sel.value); location.href=u.toString();
   });
 
   ['pointerdown','keydown'].forEach(function(ev){

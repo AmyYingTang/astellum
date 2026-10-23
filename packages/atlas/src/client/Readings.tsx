@@ -75,14 +75,18 @@ function Pair({
   );
 }
 
+interface Role {
+  id: string;
+  labelZh: string;
+  labelEn: string;
+}
+
 export function ReadingEditor({
   primaryId,
   aliases,
-  style = 'general',
 }: {
   primaryId: string;
   aliases: string[];
-  style?: string;
 }): React.JSX.Element | null {
   const [data, setData] = useState<Loaded | null>(null);
   const [narrative, setNarrative] = useState<LocalizedString>(EMPTY);
@@ -96,11 +100,25 @@ export function ReadingEditor({
   const [drafting, setDrafting] = useState(false);
   // Only offered when an LLM is actually configured to write text.
   const [canDraft, setCanDraft] = useState(false);
+  /**
+   * Which role is being written.
+   *
+   * A role is a style key, so this is the one field that decides where every
+   * other field on this form lands. It used to be fixed at `general`, which
+   * meant a curator could only ever write one version — fine while there was
+   * one style, wrong now that the kiosk lets an operator ask for three.
+   */
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [style, setStyle] = useState('general');
 
   useEffect(() => {
     fetch('/api/config')
       .then((r) => r.json())
-      .then((c: { readingMode?: string }) => setCanDraft(c.readingMode === 'ai'))
+      .then((c: { readingMode?: string; roles?: Role[]; defaultRole?: string }) => {
+        setCanDraft(c.readingMode === 'ai');
+        setRoles(c.roles ?? []);
+        if (c.defaultRole) setStyle(c.defaultRole);
+      })
       .catch(() => setCanDraft(false));
   }, []);
 
@@ -183,6 +201,10 @@ export function ReadingEditor({
     if (j.ok) void load();
   };
 
+  const written = Object.entries(data?.reading?.styles ?? {})
+    .filter(([, v]) => has(v.narrative) || (v.fun_facts?.length ?? 0) > 0 || (v.features?.length ?? 0) > 0)
+    .map(([k]) => k);
+
   const missing: string[] = [];
   if (!has(narrative)) missing.push('导读');
   if (!has(scale)) missing.push('尺度感');
@@ -202,6 +224,28 @@ export function ReadingEditor({
         <>
           <p className="hint">
             现场没有网络和 AI 时显示的文字。留空的项会退回到通用说明或事实模板 —— 不会空白。
+          </p>
+
+          {/* The role is the key everything below is saved under, so it comes
+              first and stays visible while the form is filled in. */}
+          {roles.length > 0 && (
+            <label className="rd-role">
+              讲给谁听
+              <select value={style} onChange={(e) => setStyle(e.target.value)}>
+                {roles.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.labelZh}
+                    {written.includes(r.id) ? '・已录' : ''}
+                  </option>
+                ))}
+                {/* The catch-all. One version written here answers every role,
+                    which is how a target gets covered without writing three. */}
+                <option value="general">通用{written.includes('general') ? '・已录' : ''}</option>
+              </select>
+            </label>
+          )}
+          <p className="hint">
+            没写的角色会退回「通用」—— 先写通用那一份,三个角色就都有话说了。
           </p>
 
           {data?.reading?.source === 'ai_draft' && (

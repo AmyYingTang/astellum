@@ -41,6 +41,8 @@ export interface CreateProjectRequest {
   lang?: 'zh' | 'en';
   /** Extra instructions (tone/audience/focus) appended to the read prompt. */
   style?: string;
+  /** Which role to fill the predefined text in for; a style key. */
+  role?: string;
   /** Stage 1 only: identify → factsheet + a stub reading, skipping the LLM. */
   factsOnly?: boolean;
 }
@@ -95,8 +97,10 @@ export interface ConfigResponse {
   offlineCatalog: boolean;
   /** Present when the hub launched this studio. */
   hubUrl?: string;
-  /** Curator-supplied style presets; absent means use the built-ins. */
+  /** The presets in force — a curator's list if they supplied one. */
   stylePresets?: StylePreset[];
+  /** Which role a surface should open in. */
+  defaultRole?: string;
   readiness?: {
     catalogsReady: boolean;
     missingCatalogs: string[];

@@ -23,7 +23,10 @@ export interface Strings {
   generate: string;
   generating: string;
   styleLabel: string;
-  audienceLabel: string;
+  roleLabel: string;
+  /** Prefix, with its own separator: '当前角色:' / 'Writing for: '. */
+  roleInEffect: string;
+  switchingRole: string;
   focusLabel: string;
   styleFreePlaceholder: string;
   openExisting: string;
@@ -113,7 +116,9 @@ const STRINGS: Record<UiLang, Strings> = {
     generate: '生成读图',
     generating: '识别中…',
     styleLabel: '风格(可选)',
-    audienceLabel: '读者',
+    roleLabel: '角色',
+    roleInEffect: '当前角色:',
+    switchingRole: '切换角色中…',
     focusLabel: '侧重',
     styleFreePlaceholder: '其他要求…(可选,会附加到提示词)',
     openExisting: '打开已有作品',
@@ -202,7 +207,9 @@ const STRINGS: Record<UiLang, Strings> = {
     generate: 'Generate',
     generating: 'Reading…',
     styleLabel: 'Style (optional)',
-    audienceLabel: 'Audience',
+    roleLabel: 'Role',
+    roleInEffect: 'Writing for: ',
+    switchingRole: 'Switching role…',
     focusLabel: 'Focus',
     styleFreePlaceholder: 'Other instructions… (optional, appended to the prompt)',
     openExisting: 'Open existing',

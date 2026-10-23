@@ -38,7 +38,10 @@ export async function createProject(req: CreateProjectRequest): Promise<string> 
   return body.slug;
 }
 
-export async function reidentify(slug: string, opts: { starMagMax?: number } = {}): Promise<void> {
+export async function reidentify(
+  slug: string,
+  opts: { starMagMax?: number; role?: string } = {},
+): Promise<void> {
   const res = await fetch(`/api/projects/${encodeURIComponent(slug)}/reidentify`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -49,14 +52,34 @@ export async function reidentify(slug: string, opts: { starMagMax?: number } = {
 }
 
 
-export async function generateReading(slug: string, tone?: string): Promise<void> {
+export async function generateReading(
+  slug: string,
+  tone?: string,
+  role?: string,
+): Promise<void> {
   const res = await fetch(`/api/projects/${encodeURIComponent(slug)}/reading`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ tone }),
+    body: JSON.stringify({ tone, role }),
   });
   const body = (await res.json()) as { ok: boolean; error?: string };
   if (!body.ok) throw new Error(body.error ?? `Generate reading failed (${res.status})`);
+}
+
+/**
+ * Re-read this project's text from the library in another role.
+ *
+ * Cheap and local — the fact sheet is already on disk — which is why the
+ * role switch can act the moment it is changed instead of asking first.
+ */
+export async function readPredefinedText(slug: string, role: string): Promise<void> {
+  const res = await fetch(`/api/projects/${encodeURIComponent(slug)}/predefined-text`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ role }),
+  });
+  const body = (await res.json()) as { ok: boolean; error?: string };
+  if (!body.ok) throw new Error(body.error ?? `Could not re-read the text (${res.status})`);
 }
 
 export async function fetchJob(slug: string): Promise<JobStatus> {

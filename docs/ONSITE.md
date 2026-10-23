@@ -120,20 +120,37 @@ The terminal is the operator's side: it prints which layer wrote each line
 (`target` / `note` / `generic` / `facts`) and what was dropped and why, so
 "why isn't that labelled" has an answer.
 
-## Style switching
+## Who it is for
 
-The kiosk allows switching the reading style live, so a schools group and a
-public session can get different wording from the same library. Only styles
-that exist in `readings.json` appear — with one style written, there is nothing
-to choose between and no switch is offered.
+Both the picker and the frame itself ask one question: **who is this for**.
+Three answers ship — **小学生 / Primary school**, **成人 / Adult** and
+**中学科学老师 / Science teacher** — and a frame opens in Adult, which is most
+of a room.
+
+Switching role on a frame re-reads the library: a second, no network, no model.
+A school group and the public session after it are a switch apart. The picture
+and the marks do not change; only which layer the words come from.
+
+A role is also the *style key* the reading library is written under, which is
+why the question means something with the network unplugged. If nobody has
+written a target's text for a role, the role falls back to the `通用` /
+catch-all version — so one version written covers all three, and writing per
+role is something you do when you want to, not something you owe. What is
+written where shows in the atlas's role list (`已录`).
+
+The switch is offered when **"Offer the style switch on screen"** is on
+(`kiosk.switchableStyle`, the default), and only on a frame whose words came
+from the library. A frame the model wrote has nothing to re-read, and swapping
+its prose for the library's at a touch, with an audience watching, is not a
+thing worth offering.
 
 ## Writing for the room instead (online)
 
 A kiosk reads what somebody already wrote. If you would rather have the words
 written for the audience actually in front of you, set **"Where the words come
-from"** in Settings (`kiosk.readingSource: ai`). The picker then asks who they
-are — children, experienced observers, a light tone, and a box for anything
-else — instead of which style to use.
+from"** in Settings (`kiosk.readingSource: ai`). The picker asks the same
+question — who is this for — and the answer becomes what the model is told
+about its reader instead of which text to look up.
 
 What this costs, plainly:
 
@@ -143,6 +160,10 @@ What this costs, plainly:
   know what the screen says.
 - If the model cannot be reached, the frame still goes up — with the predefined
   reading. You get a line in the terminal, the audience gets a page.
+- **The role switch is not offered on such a frame.** Changing role means asking
+  the model again, which takes the same tens of seconds and can fail; a switch
+  that sometimes fails in front of a room is worse than no switch. Pick the role
+  in the picker, or build the frame again.
 
 What it does *not* change: identity, position, colour and which features are
 drawn all still come from the identification and the atlas. The model only

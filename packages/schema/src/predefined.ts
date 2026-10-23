@@ -17,12 +17,34 @@ import { normalizeId } from './registry.js';
  * Never blank, never invented — a target with nothing written still gets the
  * generic layer, and the UI says so.
  *
- * Styles are a map because the audience varies (schools vs public vs advanced),
- * and the kiosk can switch between them live. The first release only ships
- * `general`; the structure is here so adding a style is data, not code.
+ * Styles are a map because the audience varies, and the kiosk can switch
+ * between them live. That axis now has names: a style key *is* a reading role
+ * (`ROLE_IDS` below), the same three the studio offers beside the prompt. One
+ * idea, two implementations — offline, a role selects which pre-written text
+ * to show; online, it tells the model who it is writing for.
  */
 
-/** School year 8–12 reading level — also fine for general adult outreach. */
+/**
+ * The reading roles, which are also the style keys of this library.
+ *
+ * Keeping them one axis rather than two is what makes the roles mean the same
+ * thing in both modes. The alternative — roles for the LLM, separate style
+ * names for the library — was tried on paper and gives a curator two
+ * vocabularies for the same question.
+ */
+export const ROLE_IDS = ['primary', 'adult', 'teacher'] as const;
+export type RoleId = (typeof ROLE_IDS)[number];
+
+/** Where a surface starts: the general adult visitor, who is most of a room. */
+export const DEFAULT_ROLE: RoleId = 'adult';
+
+/**
+ * The catch-all style key, and the end of `pickStyle`'s fallback chain.
+ *
+ * Not a role. A curator with one version of a target's text writes it here and
+ * all three roles find it, so the roles cost nothing until somebody wants to
+ * write for them separately.
+ */
 export const DEFAULT_STYLE = 'general' as const;
 
 /**
@@ -118,6 +140,23 @@ function mergeStyle(base: PredefinedStyle, over: PredefinedStyle): PredefinedSty
   };
 }
 
+/**
+ * Put one entry's styles over another's, replacing only the keys it carries.
+ *
+ * The editor has one role open at a time and sends that role. Replacing the
+ * whole entry — which is what saving used to do, harmlessly, while `general`
+ * was the only style — would delete every role the form was not looking at.
+ *
+ * Within a role it *is* a replacement: the form omits the fields a curator has
+ * cleared, and merging those back in would make clearing one impossible.
+ */
+export function upsertStyles(
+  prev: PredefinedReading | undefined,
+  next: PredefinedReading,
+): PredefinedReading {
+  return { ...next, styles: { ...prev?.styles, ...next.styles } };
+}
+
 /** Merge libraries in priority order (later overlays win, field by field). */
 export function mergeLibraries(libs: PredefinedLibrary[]): PredefinedLibrary {
   const byKey = new Map<string, PredefinedReading>();
@@ -155,8 +194,11 @@ export function findPredefined(
 
 /**
  * Pick a style, degrading rather than failing: the requested one, else the
- * default, else whichever single style exists. Onsite must always render
+ * catch-all, else whichever single style exists. Onsite must always render
  * something when the target has any text at all.
+ *
+ * This chain is why a role is free: ask for `teacher`, get the one `general`
+ * version somebody actually wrote.
  */
 export function pickStyle(
   entry: PredefinedReading,

@@ -10,7 +10,9 @@ import {
   findPredefined,
   pickStyle,
   mergeLibraries,
-  contentOverlay,
+  stylePresets,
+  isRoleId,
+  defaultRoleId,
   Registry,
   pixelToWorld,
 } from '@astellum/schema';
@@ -179,7 +181,10 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
       // Set when launched from the hub, so the UI can offer a way back.
       hubUrl: process.env.ASTELLUM_HUB_URL || undefined,
       // Style presets are curator copy; the overlay wins over the built-ins.
-      stylePresets: contentOverlay().stylePresets,
+      // Resolved here rather than in the client, so the roles the studio
+      // offers and the style keys the library is read by cannot disagree.
+      stylePresets: stylePresets(),
+      defaultRole: defaultRoleId(),
       readiness: await readiness().catch(() => undefined),
     });
   });
@@ -241,7 +246,14 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
     imageName: string,
     width: number,
     height: number,
-    opts: { apiKey?: string; hint?: string; lang: 'zh' | 'en'; starMagMax?: number },
+    opts: {
+      apiKey?: string;
+      hint?: string;
+      lang: 'zh' | 'en';
+      starMagMax?: number;
+      /** Which role's pre-written text to fill in; only used in `predefined`. */
+      role?: string;
+    },
   ): Promise<void> => {
     try {
       const factsheet = await identify(
@@ -289,7 +301,10 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
               toolVersion,
               displayLanguage: opts.lang,
               imageSrc: imageName,
-              style: config.reading.style,
+              // The role the curator has selected, which is a style key. The
+              // configured style stays as the fallback for a request that
+              // names no role at all.
+              style: opts.role ?? config.reading.style,
               fallback: config.reading.fallback,
             })
           : {
@@ -358,6 +373,7 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
         // as good a hint as the one the user would have typed.
         hint: body.hint || hintFromFile || undefined,
         lang: body.lang === 'en' ? 'en' : 'zh',
+        ...(isRoleId(body.role) ? { role: body.role } : {}),
       });
     } catch (e) {
       res.status(500).json({ ok: false, error: (e as Error).message });
@@ -366,11 +382,24 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
 
   // Generate the AI reading on demand (LLM only) — tailors text onto the
   // already-reviewed annotations, preserving their circles/labels.
+  //
+  // KNOWN GAP: this does not consult `reading.mode`. A studio set to
+  // `predefined` still offers the button and still comes here, so with no
+  // model in reach it simply fails. `ReadingConfig.mode`'s comment says the
+  // studio stops offering what it cannot do; it does not. Left as-is on
+  // purpose — changing it is a behaviour change nobody has asked for yet.
   app.post('/api/projects/:slug/reading', async (req, res) => {
     try {
       const slug = req.params.slug;
       const dir = projectDir(slug);
-      const tone = ((req.body ?? {}) as { tone?: string }).tone || undefined;
+      const body = (req.body ?? {}) as { tone?: string; role?: string };
+      // The client folds the role into `tone` itself, because it knows which
+      // language the curator is reading in. `role` is the fallback for a
+      // caller that only names who it is for.
+      const tone =
+        body.tone ||
+        (isRoleId(body.role) ? stylePresets().find((p) => p.id === body.role)?.textZh : undefined) ||
+        undefined;
       const reading = await loadReport(slug);
       const files = await readdir(dir);
       const imageName = files.find((f) => /^image\.(jpe?g|png)$/i.test(f));
@@ -406,12 +435,56 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
   });
 
   // Re-run identification on an existing project's stored image (no re-upload).
+  /**
+   * Re-read this project's text from the predefined library, in one role.
+   *
+   * The studio's half of the kiosk's role switch. The expensive work — the
+   * solve and the catalogue query — is already on disk as `factsheet.json`,
+   * so changing role is a library read, not an identification.
+   *
+   * Only for the predefined side. In `ai` mode a role is who the next
+   * generation is written for, and re-reading here would replace prose the
+   * model wrote with the library's, which nobody asked for.
+   */
+  app.post('/api/projects/:slug/predefined-text', async (req, res) => {
+    try {
+      const slug = req.params.slug;
+      const dir = projectDir(slug);
+      const { role } = (req.body ?? {}) as { role?: string };
+      if (!isRoleId(role)) throw new Error(`Not a role: ${role ?? '(none)'}`);
+      const factsheet = await loadFactsheet(slug);
+      let lang: 'zh' | 'en' = 'zh';
+      try {
+        lang = (await loadReport(slug)).display_language;
+      } catch {
+        // no prior reading — default zh
+      }
+      const files = await readdir(dir);
+      const imageName = files.find((f) => /^image\.(jpe?g|png)$/i.test(f)) ?? factsheet.image.src;
+      const { reading, coverage } = readingFromPredefined(
+        factsheet,
+        await loadReadingLibraries(defaultReadingsPaths()),
+        {
+          toolVersion,
+          displayLanguage: lang,
+          imageSrc: imageName,
+          style: role,
+          fallback: config.reading.fallback,
+        },
+      );
+      await writeFile(join(dir, 'reading.json'), JSON.stringify(reading, null, 2) + '\n', 'utf8');
+      res.json({ ok: true, role, matchedStyle: coverage.style ?? null });
+    } catch (e) {
+      res.status(400).json({ ok: false, error: (e as Error).message });
+    }
+  });
+
   app.post('/api/projects/:slug/reidentify', async (req, res) => {
     try {
       const slug = req.params.slug;
       const dir = projectDir(slug);
       const apiKey = requireApiKey();
-      const starMagMax = ((req.body ?? {}) as { starMagMax?: number }).starMagMax;
+      const { starMagMax, role } = (req.body ?? {}) as { starMagMax?: number; role?: string };
 
       const files = await readdir(dir);
       const imageName = files.find((f) => /^image\.(jpe?g|png)$/i.test(f));
@@ -433,6 +506,7 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
         apiKey,
         lang,
         starMagMax: typeof starMagMax === 'number' ? starMagMax : undefined,
+        ...(isRoleId(role) ? { role } : {}),
       });
     } catch (e) {
       res.status(500).json({ ok: false, error: (e as Error).message });
@@ -507,7 +581,11 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
   // offsite work fills it as a side effect.
   app.post('/api/projects/:slug/save-predefined', async (req, res) => {
     try {
-      const style = ((req.body ?? {}) as { style?: string }).style || config.reading.style;
+      // The style key a reading is promoted under is the role it was written
+      // for. Falls back to the default role rather than `reading.style`: a
+      // request that names no role still has to land somewhere a role reads.
+      const asked = ((req.body ?? {}) as { style?: string }).style;
+      const style = isRoleId(asked) ? asked! : defaultRoleId();
       const reading = await loadReport(req.params.slug);
       const factsheet = await loadFactsheet(req.params.slug).catch(() => null);
       if (!factsheet) throw new Error('No factsheet for this project — re-identify it first.');

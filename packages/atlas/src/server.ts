@@ -19,7 +19,14 @@ import {
   createCompositeCatalogClient,
 } from '@astellum/identify';
 import type { FactSheet } from '@astellum/schema';
-import { PredefinedReading, findPredefined } from '@astellum/schema';
+import {
+  PredefinedReading,
+  defaultRoleId,
+  findPredefined,
+  isRoleId,
+  rolePresets,
+  upsertStyles,
+} from '@astellum/schema';
 import { loadConfig } from '@astellum/schema/node';
 import { draftPredefinedStyle } from '@astellum/reader';
 import { AtlasEntry, AtlasFile, findEntry, normalizeId } from './atlas.js';
@@ -172,6 +179,11 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
       // Whether an LLM is configured to write text — decides whether the
       // reading editor offers to draft one.
       readingMode: loadConfig().reading.mode,
+      // The roles text is written per, which are the library's style keys.
+      // Resolved here so an overlay that renames them renames them for the
+      // editor too, rather than leaving it writing keys nothing reads.
+      roles: rolePresets().map((r) => ({ id: r.id, labelZh: r.labelZh, labelEn: r.labelEn })),
+      defaultRole: defaultRoleId(),
     }),
   );
 
@@ -447,7 +459,10 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
       // being worked on, and reviews both in one pass. A shape that is later
       // dropped leaves an entry keyed to an id nothing looks up — harmless.
       const drawn = entry.annotations.filter((a) => a.id);
-      const style = String((req.body as { style?: string } | undefined)?.style ?? cfg.reading.style);
+      // A role, which is the style key the draft will be saved under. The
+      // configured style stays as the fallback for a caller that names none.
+      const asked = (req.body as { style?: string } | undefined)?.style;
+      const style = isRoleId(asked) ? asked! : String(asked ?? cfg.reading.style);
 
       const drafted = await draftPredefinedStyle(
         {
@@ -478,8 +493,11 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
       const parsed = PredefinedReading.parse(body.reading);
       const lib = await store.loadReadings();
       const key = normalizeId(parsed.primary_id);
+      const prev = lib.entries.find((e) => normalizeId(e.primary_id) === key);
       const entries = lib.entries.filter((e) => normalizeId(e.primary_id) !== key);
-      entries.push({ ...parsed, updated_at: new Date().toISOString() });
+      // The editor sends the one role it has open; the others have to survive
+      // that — see `upsertStyles`.
+      entries.push({ ...upsertStyles(prev, parsed), updated_at: new Date().toISOString() });
       await store.saveReadings({ schema_version: 1, entries });
       res.json({ ok: true });
     } catch (e) {

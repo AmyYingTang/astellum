@@ -837,7 +837,12 @@ button.link {
 .rd-features { margin-top: 20px; }
 .rd-features h4 { font-size: 13px; color: #8a93a8; font-weight: 600; }
 .rd-foot { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
+/* The role decides where everything below is saved, so it reads as a heading
+   for the form rather than as one more field in it. */
+.rd-role { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #8a93a8;
+  margin-top: 14px; }
 .rd-source { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #8a93a8; }
+.rd-role select,
 .rd-source select {
   background: #141925; border: 1px solid #2a3346; color: #cfd6e4;
   border-radius: 8px; padding: 6px 9px; font-size: 13px;

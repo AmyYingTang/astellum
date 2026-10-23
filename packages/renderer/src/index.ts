@@ -21,6 +21,7 @@ export {
   KIOSK_FAVICON_DATA_URI,
   type KioskOptions,
   type KioskPicker,
+  type KioskRole,
   type KioskShellOptions,
   type KioskState,
 } from './kiosk.js';

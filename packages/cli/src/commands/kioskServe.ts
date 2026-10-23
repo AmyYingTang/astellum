@@ -2,7 +2,7 @@ import express from 'express';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { join, resolve, extname } from 'node:path';
 import { tmpdir } from 'node:os';
-import { Reading, BUILT_IN_STYLE_PRESETS, contentOverlay } from '@astellum/schema';
+import { Reading, defaultRoleId, isRoleId, rolePresets } from '@astellum/schema';
 import { loadConfig } from '@astellum/schema/node';
 import { offlineCatalogStatus, isOfflineReady } from '@astellum/identify';
 import {
@@ -11,8 +11,7 @@ import {
   renderPosterBuffers,
   type KioskPicker,
 } from '@astellum/renderer';
-import { loadReadingLibraries, defaultReadingsPaths } from '@astellum/reader';
-import { runKiosk, restyleFrame, styleNames } from './kiosk.js';
+import { runKiosk, restyleFrame, loadFrameRecord } from './kiosk.js';
 import { exitWhenOrphaned } from '../supervised.js';
 import { langFor } from '../lang.js';
 
@@ -63,29 +62,20 @@ export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
     const status = await offlineCatalogStatus().catch(() => []);
     const missing = status.filter((s) => !s.present).map((s) => s.key);
     const ready = status.length ? isOfflineReady(status) : true;
-    // Offer whichever question this deployment can answer: the styles somebody
-    // has actually written for, or — when it writes on the night — who is in
-    // the room. The style list is the library's, the same one the frame's own
-    // switch uses; it used to be the single configured style, which could
-    // never satisfy the form's "more than one" condition, so that select has
-    // never appeared.
+    // One question either way: who is this for. It used to be two — a style
+    // list read from the library, or audience chips handed to the model — and
+    // the style select never once appeared, because the only style anybody had
+    // written was `general` and one is not "more than one". A role is a style
+    // key now, so the roles exist whether or not somebody has written for them
+    // and the form can always ask.
     const ai = cfg.kiosk.readingSource === 'ai';
-    // A library that will not parse must not take the picker down with it —
-    // but it must not vanish quietly either, or a deployment loses its styles
-    // and nobody learns why until the frame itself fails.
-    const library = ai
-      ? null
-      : await loadReadingLibraries(defaultReadingsPaths()).catch((e: Error) => {
-          console.log(`  ⚠ could not read the readings library: ${e.message}`);
-          return null;
-        });
-    const overlay = contentOverlay().stylePresets;
     return {
       hubUrl: process.env.ASTELLUM_HUB_URL || undefined,
       picker: {
         endpoint: '/api/run',
-        styles: library ? styleNames(library) : undefined,
-        presets: ai ? (overlay?.length ? overlay : BUILT_IN_STYLE_PRESETS) : undefined,
+        roles: rolePresets().map((r) => ({ id: r.id, labelZh: r.labelZh, labelEn: r.labelEn })),
+        defaultRole: defaultRoleId(),
+        writesOnTheNight: ai,
         offlineNote: ready
           ? { zh: '离线星表齐全,可断网运行', en: 'Offline catalogues ready — this works unplugged.' }
           : {
@@ -110,8 +100,7 @@ export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
         dataUrl?: string;
         target?: string;
         lang?: string;
-        style?: string;
-        tone?: string;
+        role?: string;
       };
       if (!body.dataUrl) throw new Error('No file received');
       const ext = (extname(body.filename ?? '') || '.jpg').toLowerCase();
@@ -127,11 +116,10 @@ export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
         image: src,
         target: body.target,
         lang: body.lang,
-        style: body.style,
-        // Only the form in `ai` mode sends one, and only `ai` mode's runKiosk
-        // looks at it — but say it explicitly rather than inferring the source
-        // from whether a chip was pressed.
-        ...(cfg.kiosk.readingSource === 'ai' ? { source: 'ai' as const, tone: body.tone } : {}),
+        // One answer, two uses: the style key offline, the model's reader on
+        // the night. runKiosk decides which, from the source below.
+        role: body.role,
+        ...(cfg.kiosk.readingSource === 'ai' ? { source: 'ai' as const } : {}),
         out: dir,
         open: false,
         // The frame carries the same chrome as the shell it replaces, so the
@@ -185,23 +173,27 @@ export async function serveKiosk(args: KioskServeArgs = {}): Promise<void> {
   });
 
   /**
-   * The frame. With `?style=` it is re-read in that style first — the switch on
-   * screen reloads here, and until now this route ignored the query, so that
-   * switch silently did nothing at all.
+   * The frame. With `?role=` it is re-read for that role first — the switch on
+   * screen reloads here.
    *
    * Re-reading costs a second (the solve and the catalogue query are already on
-   * disk) and is only possible from the library, so it is refused outright when
-   * this deployment has the words written on the night.
+   * disk) and is only possible from the library. Whether that is allowed is
+   * decided by *this frame*, not by the configuration: a frame the model wrote
+   * has no pre-written text behind it, and re-reading would quietly replace
+   * its prose with the library's while an audience was looking at it. The
+   * switch is not offered on such a frame; this refuses it as well, because a
+   * URL outlives the page that produced it.
    */
   app.get('/view/:id', async (req, res) => {
     try {
       if (!/^f\d+$/.test(req.params.id)) throw new Error('bad id');
       const dir = join(workdir, req.params.id);
-      const style = typeof req.query.style === 'string' ? req.query.style : undefined;
-      if (style && cfg.kiosk.readingSource !== 'ai') {
+      const role = typeof req.query.role === 'string' ? req.query.role : undefined;
+      const frame = await loadFrameRecord(dir);
+      if (isRoleId(role) && frame?.source !== 'ai') {
         const html = await restyleFrame({
           dir,
-          style,
+          role: role!,
           lang: langFor(req),
           chrome: await chrome(),
         });

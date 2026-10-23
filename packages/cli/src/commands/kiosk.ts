@@ -20,9 +20,21 @@ import {
   coverageSummary,
   type RunClaudeOptions,
 } from '@astellum/reader';
-import { generateKioskHtml, type KioskPicker, type KioskState } from '@astellum/renderer';
+import {
+  generateKioskHtml,
+  type KioskPicker,
+  type KioskRole,
+  type KioskState,
+} from '@astellum/renderer';
 import { loadConfig } from '@astellum/schema/node';
-import { FactSheet, type KioskConfig, type Reading } from '@astellum/schema';
+import {
+  FactSheet,
+  defaultRoleId,
+  isRoleId,
+  rolePresets,
+  type KioskConfig,
+  type Reading,
+} from '@astellum/schema';
 import { TOOL_VERSION } from '../version.js';
 
 /**
@@ -45,12 +57,20 @@ export interface KioskArgs {
   lang?: string;
   style?: string;
   /**
+   * Who this frame is for — a role id, which is also a style key.
+   *
+   * One answer serves both modes: offline it selects the pre-written text,
+   * on the night it becomes the sentence the model is given about its reader.
+   */
+  role?: string;
+  /**
    * Write for the audience in front of you instead of reading what a curator
    * wrote. `undefined` follows `kiosk.readingSource`, which is `predefined`
    * unless a deployment has turned this on.
    */
   source?: 'predefined' | 'ai';
-  /** Audience instruction for the `ai` path, already phrased. */
+  /** Audience instruction for the `ai` path, already phrased. Overrides what
+   *  `role` would have said, for a caller that has its own wording. */
   tone?: string;
   /** Model runner, so this path can be exercised without a logged-in CLI. */
   runner?: (o: RunClaudeOptions) => Promise<string>;
@@ -105,19 +125,55 @@ export interface KioskResult {
   matchedTarget: string | null;
 }
 
+/** The roles, as the page needs them: an id and both labels. */
+function kioskRoles(): KioskRole[] {
+  return rolePresets().map((r) => ({ id: r.id, labelZh: r.labelZh, labelEn: r.labelEn }));
+}
+
+/**
+ * What a frame directory remembers about itself.
+ *
+ * Only `role` could be recovered from `reading.json`; `source` could not, and
+ * it is the one the role switch turns on. A frame the model wrote has no
+ * pre-written text to switch to, and offering the switch anyway would replace
+ * its prose with the library's at a touch, in front of a room.
+ */
+interface FrameRecord {
+  source: 'predefined' | 'ai';
+  role: string;
+}
+
+const FRAME_FILE = 'frame.json';
+
+/** How this frame was written. Absent for a directory an older version wrote. */
+export async function loadFrameRecord(dir: string): Promise<FrameRecord | null> {
+  try {
+    const raw = JSON.parse(await readFile(join(dir, FRAME_FILE), 'utf8')) as Partial<FrameRecord>;
+    if (raw.source !== 'predefined' && raw.source !== 'ai') return null;
+    return { source: raw.source, role: typeof raw.role === 'string' ? raw.role : defaultRoleId() };
+  } catch {
+    return null;
+  }
+}
+
 /** Build one frame. Returns null when nothing could be identified — the one
  *  case where no page is produced, because identity is never fabricated. */
 export async function runKiosk(args: KioskArgs): Promise<KioskResult | null> {
   const p = loadConfig();
   const lang = args.lang === 'en' ? 'en' : 'zh';
-  const style = args.style ?? p.reading.style;
+  const role = isRoleId(args.role) ? args.role! : defaultRoleId();
+  // The role is the style key. `args.style` stays ahead of it for the CLI,
+  // where somebody may have written text under a key of their own.
+  const style = args.style ?? (isRoleId(args.role) ? role : p.reading.style);
+  // What the model is told about its reader, when it is the model writing.
+  const tone = args.tone ?? rolePresets().find((r) => r.id === role)?.[lang === 'en' ? 'textEn' : 'textZh'];
   // A kiosk reads from the library by default — it has to work unplugged. A
   // deployment can ask for the words to be written on the night instead; the
   // structure is still grounded either way, the model only rewrites prose.
   const textSource = args.source ?? p.kiosk.readingSource;
   console.log(
     `solve=${p.solve.mode}, catalog=${p.catalog.sources.join('+')}, ` +
-      (textSource === 'ai' ? `reading=ai${args.tone ? ' (tailored)' : ''}` : `reading=predefined:${style}`),
+      (textSource === 'ai' ? `reading=ai:${role}` : `reading=predefined:${style}`),
   );
 
   // Fail loudly *here*, with the audience not yet watching, rather than halfway
@@ -211,12 +267,12 @@ export async function runKiosk(args: KioskArgs): Promise<KioskResult | null> {
     try {
       reading = await tailorReading(reading, {
         imagePath,
-        tone: args.tone,
+        tone,
         factsheet: trimmed,
         model: p.reading.model ?? undefined,
         runner: args.runner,
       });
-      console.log('  text: written for this audience');
+      console.log(`  text: written for this audience (${role})`);
     } catch (e) {
       console.log(`  ⚠ could not write on the night (${(e as Error).message})`);
       console.log('    Showing the predefined reading instead.');
@@ -238,12 +294,11 @@ export async function runKiosk(args: KioskArgs): Promise<KioskResult | null> {
     imageDataUri: `data:${mime};base64,${buf.toString('base64')}`,
     textSources: Object.fromEntries(coverage.sources),
     state,
-    // Switching style means re-reading the library, which the server can do in
+    // Switching role means re-reading the library, which the server can do in
     // a second. It means asking the model again when the words were written on
     // the night, which it cannot — so there is nothing to offer there.
-    styles:
-      p.kiosk.switchableStyle && library && textSource !== 'ai' ? styleNames(library) : undefined,
-    currentStyle: coverage.style ?? style,
+    roles: p.kiosk.switchableStyle && textSource !== 'ai' ? kioskRoles() : undefined,
+    currentRole: role,
     idleResetSec: p.kiosk.idleResetSec,
     hubUrl: args.chrome?.hubUrl,
     picker: args.chrome?.picker,
@@ -251,6 +306,11 @@ export async function runKiosk(args: KioskArgs): Promise<KioskResult | null> {
   const htmlPath = join(outDir, 'kiosk.html');
   await writeFile(htmlPath, html, 'utf8');
   await writeFile(join(outDir, 'reading.json'), JSON.stringify(reading, null, 2) + '\n', 'utf8');
+  await writeFile(
+    join(outDir, FRAME_FILE),
+    JSON.stringify({ source: textSource, role } satisfies FrameRecord, null, 2) + '\n',
+    'utf8',
+  );
 
   const c = coverageSummary(coverage);
   console.log(`\n  ${reading.object.name.zh} / ${reading.object.name.en} — ${state}`);
@@ -292,10 +352,10 @@ export function trimForKiosk(sheet: FactSheet, k: KioskConfig): FactSheet {
 }
 
 /**
- * The same frame, in another style.
+ * The same frame, read for a different role.
  *
  * The expensive half of a frame — the solve and the catalogue query — is
- * already on disk as `factsheet.json`, so a schools group and the public
+ * already on disk as `factsheet.json`, so a school group and the public
  * session after it are a second apart, not a minute. Nothing about the picture
  * or the marks changes; only which layer the words come from.
  *
@@ -304,7 +364,8 @@ export function trimForKiosk(sheet: FactSheet, k: KioskConfig): FactSheet {
  */
 export async function restyleFrame(opts: {
   dir: string;
-  style: string;
+  /** The role to read in — a style key. */
+  role: string;
   lang: 'zh' | 'en';
   chrome?: { hubUrl?: string; picker?: KioskPicker };
 }): Promise<string | null> {
@@ -321,7 +382,7 @@ export async function restyleFrame(opts: {
     toolVersion: TOOL_VERSION,
     displayLanguage: opts.lang,
     imageSrc: sheet.image.src,
-    style: opts.style,
+    style: opts.role,
     fallback: p.reading.fallback,
   });
 
@@ -342,26 +403,32 @@ export async function restyleFrame(opts: {
     imageDataUri: `data:${mime};base64,${buf.toString('base64')}`,
     textSources: Object.fromEntries(coverage.sources),
     state,
-    styles: p.kiosk.switchableStyle && library ? styleNames(library) : undefined,
-    currentStyle: coverage.style ?? opts.style,
+    roles: p.kiosk.switchableStyle ? kioskRoles() : undefined,
+    currentRole: opts.role,
     idleResetSec: p.kiosk.idleResetSec,
     hubUrl: opts.chrome?.hubUrl,
     picker: opts.chrome?.picker,
   });
-  // The frame on disk becomes the restyled one: the next plain visit to this
-  // id should show what is on the screen, not what it said before.
+  // The frame on disk becomes the re-read one: the next plain visit to this
+  // id should show what is on the screen, not what it said before — and the
+  // role it is now in, so the switch opens where the operator left it.
   await writeFile(join(opts.dir, 'kiosk.html'), html, 'utf8');
   await writeFile(join(opts.dir, 'reading.json'), JSON.stringify(reading, null, 2) + '\n', 'utf8');
+  await writeFile(
+    join(opts.dir, FRAME_FILE),
+    JSON.stringify({ source: 'predefined', role: opts.role } satisfies FrameRecord, null, 2) + '\n',
+    'utf8',
+  );
   return html;
 }
 
 
 /**
- * Every style anybody has written for, anywhere in the merged library.
+ * Every style key anybody has written for, anywhere in the merged library.
  *
- * Both the in-frame switch and the picker offer this same list — they used to
- * disagree, the picker having been handed the single configured style and so
- * never meeting its own "more than one" condition.
+ * No longer what either switch offers — both offer the roles, which exist
+ * whether or not a curator has written for them. Kept because it is the honest
+ * answer to "what is actually written here", which the atlas reports.
  */
 export function styleNames(library: { entries: { styles: Record<string, unknown> }[] }): string[] {
   const out = new Set<string>();

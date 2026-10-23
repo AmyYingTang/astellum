@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { FactSheet, FactSheetObject } from '@astellum/schema';
-import { trimForKiosk } from './kiosk.js';
+import { mkdtemp, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { trimForKiosk, loadFrameRecord } from './kiosk.js';
 import { targetFromFilename } from './kiosk.js';
 
 describe('target from a stacking program filename', () => {
@@ -76,5 +79,51 @@ describe('what a kiosk frame keeps', () => {
     const out = trimForKiosk(s, cfg);
     expect(out.image).toBe(s.image);
     expect(out.solve).toBe(s.solve);
+  });
+});
+
+/**
+ * What the role switch turns on.
+ *
+ * It is a per-frame fact, not a configuration one: a deployment can be set to
+ * write on the night and still have offline frames sitting in its workdir from
+ * earlier, and offering the switch on a frame the model wrote would replace its
+ * prose with the library's at a touch, in front of a room.
+ */
+describe('what a frame remembers about itself', () => {
+  const dir = async (record: unknown): Promise<string> => {
+    const d = await mkdtemp(join(tmpdir(), 'astellum-frame-'));
+    if (record !== undefined) {
+      await writeFile(join(d, 'frame.json'), JSON.stringify(record), 'utf8');
+    }
+    return d;
+  };
+
+  it('reads back how it was written and for whom', async () => {
+    expect(await loadFrameRecord(await dir({ source: 'predefined', role: 'teacher' }))).toEqual({
+      source: 'predefined',
+      role: 'teacher',
+    });
+  });
+
+  it('says nothing for a directory an older version wrote', async () => {
+    expect(await loadFrameRecord(await dir(undefined))).toBeNull();
+  });
+
+  /*
+   * Nothing, rather than a guess: the caller's fallback is to show the frame as
+   * it stands, which is always safe. Guessing `predefined` here would re-read a
+   * frame the model may have written.
+   */
+  it('refuses a record it cannot believe', async () => {
+    expect(await loadFrameRecord(await dir({ role: 'adult' }))).toBeNull();
+    expect(await loadFrameRecord(await dir({ source: 'something-else' }))).toBeNull();
+  });
+
+  it('falls back to the default role when only the source was recorded', async () => {
+    expect(await loadFrameRecord(await dir({ source: 'ai' }))).toEqual({
+      source: 'ai',
+      role: 'adult',
+    });
   });
 });
