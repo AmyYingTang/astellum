@@ -233,6 +233,11 @@ the kiosk puts under your finger. The region being named keeps the picture; the
 sky around it is dimmed so the eye goes to the shape. It is still a crop of a
 photograph, which is what makes naming it mean anything.
 
+That wash is the only thing marking the shape in there. The outline is not
+drawn a second time inside the panel: it would sit on the same boundary the
+wash already draws and compete with it, which leaves the eye less sure which
+pixels are being named rather than more.
+
 If a frame is busy enough that a panel would have to cover another mark, it is
 left out instead.
 

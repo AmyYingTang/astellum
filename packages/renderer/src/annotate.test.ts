@@ -174,4 +174,20 @@ describe('holding the surround back', () => {
     const svg = buildOverlaySvg(withShape('polyline', { polygon: tri }));
     expect(svg).toMatch(/<polyline points="785,635 815,635 815,665" fill="none" stroke="#000"/);
   });
+
+  /*
+   * And no outline inside the panel. The wash already says which pixels are
+   * the feature; a dashed contour drawn on top of that same boundary competes
+   * with it and leaves the eye less sure what is being named, not more. So the
+   * shape appears twice in the file — once on the picture, once as the hole in
+   * the mask — and never a third time as a drawing inside the panel.
+   */
+  it('draws no contour inside the panel', () => {
+    const svg = buildOverlaySvg(withShape('polygon', { polygon: tri }));
+    // `featureShape` writes its points to one decimal; the mask's hole does
+    // not. So the drawn contour is countable on its own, and there is exactly
+    // one of it — the one on the picture.
+    expect(svg.match(/points="785\.0,635\.0 815\.0,635\.0 815\.0,665\.0"/g)).toHaveLength(1);
+    expect(svg.match(/points="785,635 815,635 815,665"/g)).toHaveLength(1); // the hole
+  });
 });

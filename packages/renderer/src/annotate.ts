@@ -187,12 +187,10 @@ function calloutMarkup(
     `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="rgba(3,5,10,.4)" mask="url(#${escapeXml(maskId)})"/>`,
   );
 
-  // The contour again, at the inset's scale. Stroke divided by the scale so it
-  // lands at the same visual weight as the one on the picture — the inset is a
-  // closer look at the subject, not a heavier drawing of it.
-  parts.push(
-    `<g transform="${tf}">${featureShape(f, Math.max(0.5, strokeW / c.scale)).join('')}</g>`,
-  );
+  // No contour inside the panel. The wash already says exactly which part of
+  // the patch is the feature — that is what it is for — and a dashed outline
+  // drawn on top of that boundary only competes with it, leaving the eye less
+  // sure which pixels are being named rather than more.
   parts.push(`</g>`);
 
   // The frame, and the number in its corner so the inset and the mark are

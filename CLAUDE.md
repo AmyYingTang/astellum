@@ -108,7 +108,9 @@ panel. Only drawn contours qualify — a catalogue ring enlarged is the same rin
 — and a frame with no free space gets none rather than one laid over another
 mark. Panels go to the frame's edge, and inside one the surround is dimmed the
 way the kiosk's magnifier dims it — the region keeps the picture, the sky around
-it is held back. A curator can refuse a panel (`feature.callout.off`,
+it is held back. That wash is the *only* marking in there; the contour is not
+redrawn inside the panel, where it would sit on the boundary the wash already
+draws and compete with it. A curator can refuse a panel (`feature.callout.off`,
 reversible) or drag it (`callout.x`/`y`, absolute, because the automatic
 position moves whenever anything else does). The kiosk draws none of this: it
 already solves the problem with the pointer, and a fixed panel would fight the

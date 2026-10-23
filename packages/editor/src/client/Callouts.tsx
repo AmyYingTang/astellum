@@ -97,33 +97,6 @@ function patchSceneFunc(
   };
 }
 
-/** The contour, drawn again at the inset's scale. */
-function Contour({
-  c,
-  f,
-  strokeW,
-}: {
-  c: Callout;
-  f: Feature;
-  strokeW: number;
-}): React.JSX.Element | null {
-  const color = COLOR_PALETTE[f.color_key];
-  if (!f.polygon?.length) return null;
-  const points = f.polygon.flatMap((p) => into(c, p[0], p[1]));
-  return f.shape === 'polyline' ? (
-    <Line points={points} stroke={color.stroke} strokeWidth={strokeW} lineCap="round" lineJoin="round" />
-  ) : (
-    <Line
-      points={points}
-      closed
-      stroke={color.stroke}
-      strokeWidth={strokeW}
-      dash={[strokeW * 4, strokeW * 3]}
-      lineJoin="round"
-    />
-  );
-}
-
 export function Callouts({
   report,
   callouts,
@@ -170,7 +143,6 @@ export function Callouts({
               opacity={0.75}
               listening={false}
             />
-            <Contour c={c} f={f} strokeW={px(2)} />
             {/* The whole panel is the handle, not just its border: a 2px
                 stroke is the only thing Konva would hit-test without a fill,
                 and asking someone to grab a hairline to move a panel is not a
