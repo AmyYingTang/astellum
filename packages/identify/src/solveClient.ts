@@ -2,6 +2,7 @@ import type { SolveClient } from './types.js';
 import { createNovaSolveClient } from './nova.js';
 import { createLocalSolveClient } from './localSolve.js';
 import { createCachedSolveClient } from './cache.js';
+import { loadConfig } from '@astellum/schema/node';
 
 const numEnv = (k: string): number | undefined => {
   const v = process.env[k];
@@ -9,14 +10,27 @@ const numEnv = (k: string): number | undefined => {
   return Number.isFinite(n) ? n : undefined;
 };
 
-/** True when the configured solver is the offline local astrometry.net one. */
-export function isLocalSolver(): boolean {
-  return (process.env.ASTELLUM_SOLVER ?? '').toLowerCase() === 'local';
+/**
+ * True when the configured solver is the offline local astrometry.net one.
+ *
+ * Reads the control file, not just `ASTELLUM_SOLVER`. The env var predates the
+ * config file and used to be the only way to say this, so these two functions
+ * only ever looked at it — which meant a machine set to `local` in Settings was
+ * told it was on nova, and the atlas refused to solve without a nova API key it
+ * did not need. `applyEnvOverrides` folds `ASTELLUM_SOLVER` into
+ * `solve.mode`, so reading config honours the env var as well: one answer, and
+ * it is the one `createConfiguredSolveClient` acts on.
+ *
+ * Pass `mode` where the caller already has a config in hand — a per-request
+ * handler should not re-read the file to print a name.
+ */
+export function isLocalSolver(mode?: 'nova' | 'local'): boolean {
+  return (mode ?? loadConfig().solve.mode) === 'local';
 }
 
 /** Human name of the configured solver, for log lines. */
-export function solverName(): string {
-  return isLocalSolver() ? 'local astrometry.net' : 'nova';
+export function solverName(mode?: 'nova' | 'local'): string {
+  return isLocalSolver(mode) ? 'local astrometry.net' : 'nova';
 }
 
 /**
@@ -42,9 +56,9 @@ export function createConfiguredSolveClient(
 ): SolveClient {
   let inner: SolveClient;
   // The control file's profile already has the env overrides applied, so an
-  // explicit mode is authoritative; without one, fall back to reading env here
-  // (the pre-config behaviour, still used by callers that don't load a profile).
-  if (o.mode ? o.mode === 'local' : isLocalSolver()) {
+  // explicit mode is authoritative; without one, `isLocalSolver` reads the
+  // same control file and arrives at the same answer.
+  if (isLocalSolver(o.mode)) {
     inner = createLocalSolveClient({
       configPath: process.env.ASTROMETRY_CFG,
       solveField: process.env.SOLVE_FIELD,

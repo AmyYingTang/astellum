@@ -229,10 +229,11 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
   const requireApiKey = (): string | undefined => {
     const apiKey = process.env.ASTROMETRY_API_KEY;
     // The local solver needs no key — and the active profile, not just the env
-    // var, is what decides which solver runs.
-    if (!apiKey && config.solve.mode !== 'local' && !isLocalSolver()) {
+    // var, is what decides which solver runs. `isLocalSolver` reads the profile
+    // itself now, so the mode is passed only to save it re-reading the file.
+    if (!apiKey && !isLocalSolver(config.solve.mode)) {
       throw new Error(
-        'Plate-solving needs a nova API key. Put ASTROMETRY_API_KEY in a .env file (where you run the studio) or export it, then restart — or set ASTELLUM_SOLVER=local for offline solving. Free key from nova.astrometry.net.',
+        'Plate-solving needs a nova API key. Put ASTROMETRY_API_KEY in a .env file (where you run the studio) or export it, then restart — or switch the solver to local in Settings (or set ASTELLUM_SOLVER=local) for offline solving. Free key from nova.astrometry.net.',
       );
     }
     return apiKey;

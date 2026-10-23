@@ -137,7 +137,7 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
     const apiKey = process.env.ASTROMETRY_API_KEY;
     if (!apiKey && !isLocalSolver()) {
       throw new Error(
-        'Plate-solving needs a nova API key. Put ASTROMETRY_API_KEY in a .env file (where you run the atlas server) or export it, then restart — or set ASTELLUM_SOLVER=local for offline solving. Free key from nova.astrometry.net.',
+        'Plate-solving needs a nova API key. Put ASTROMETRY_API_KEY in a .env file (where you run the atlas server) or export it, then restart — or switch the solver to local in Settings (or set ASTELLUM_SOLVER=local) for offline solving. Free key from nova.astrometry.net.',
       );
     }
     return apiKey;
@@ -172,8 +172,8 @@ export async function startAtlasServer(opts: AtlasServerOptions): Promise<AtlasS
   // Which plate-solver is configured — shown in the tool's UI.
   app.get('/api/config', (_req, res) =>
     res.json({
-      solver: solverName(),
-      localSolver: isLocalSolver(),
+      solver: solverName(loadConfig().solve.mode),
+      localSolver: isLocalSolver(loadConfig().solve.mode),
       // Set when launched from the hub, so the UI can offer a way back.
       hubUrl: process.env.ASTELLUM_HUB_URL || undefined,
       // Whether an LLM is configured to write text — decides whether the
