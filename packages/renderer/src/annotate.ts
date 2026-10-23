@@ -1,5 +1,13 @@
 import sharp from 'sharp';
-import { COLOR_PALETTE, badgeAnchor, type Reading } from '@astellum/schema';
+import {
+  COLOR_PALETTE,
+  badgeAnchor,
+  insetEdgePoint,
+  planCallouts,
+  type Callout,
+  type Feature,
+  type Reading,
+} from '@astellum/schema';
 import { overlayLabel } from './overlayLabel.js';
 
 function escapeXml(s: string): string {
@@ -10,78 +18,174 @@ function escapeXml(s: string): string {
     .replace(/"/g, '&quot;');
 }
 
-/** Build the SVG overlay (circles + numbered badges) for a report. */
-export function buildOverlaySvg(report: Reading): string {
-  const { width, height } = report.image;
-  const lang = report.display_language;
-  const strokeW = Math.max(2, Math.round(Math.min(width, height) / 300));
+/**
+ * A feature's own geometry, without its badge or name.
+ *
+ * Pulled out of the loop because a magnified inset draws the same contour a
+ * second time, at a different size, and two copies of this would be two
+ * drawings of one shape that drift apart.
+ */
+function featureShape(f: Feature, strokeW: number): string[] {
+  const color = COLOR_PALETTE[f.color_key];
+  const { cx, cy, r } = f.circle;
   const parts: string[] = [];
-
-  for (const f of report.features) {
-    if (f.draw === false) continue; // listed in the Facts panel but not drawn
-    const color = COLOR_PALETTE[f.color_key];
-    const { cx, cy, r } = f.circle;
-    if (f.shape === 'arrow' && f.arrow_to) {
-      // Class-B direction arrow (line + arrowhead).
+  if (f.shape === 'arrow' && f.arrow_to) {
+    // Class-B direction arrow (line + arrowhead).
+    const [ax, ay] = f.arrow_to;
+    const ang = Math.atan2(ay - cy, ax - cx);
+    const hl = strokeW * 6;
+    const p2 = `${(ax - hl * Math.cos(ang - 0.4)).toFixed(1)},${(ay - hl * Math.sin(ang - 0.4)).toFixed(1)}`;
+    const p3 = `${(ax - hl * Math.cos(ang + 0.4)).toFixed(1)},${(ay - hl * Math.sin(ang + 0.4)).toFixed(1)}`;
+    parts.push(
+      `<line x1="${cx}" y1="${cy}" x2="${ax}" y2="${ay}" stroke="${color.stroke}" stroke-width="${strokeW}"/>`,
+      `<polygon points="${ax},${ay} ${p2} ${p3}" fill="${color.stroke}"/>`,
+    );
+  } else if (f.shape === 'dot') {
+    // Comet nucleus: small filled dot (badge anchors at the coma radius).
+    parts.push(
+      `<circle cx="${cx}" cy="${cy}" r="${strokeW * 2.5}" fill="${color.stroke}" stroke="#0b0e14" stroke-width="${Math.max(1, Math.round(strokeW / 2))}"/>`,
+    );
+  } else if (f.shape === 'arc' && f.arc) {
+    // Class-B ionization front: a curved arc along the nebula rim.
+    const { cx: acx, cy: acy, r: ar, a0, a1 } = f.arc;
+    const x0 = (acx + ar * Math.cos(a0)).toFixed(1);
+    const y0 = (acy + ar * Math.sin(a0)).toFixed(1);
+    const x1 = (acx + ar * Math.cos(a1)).toFixed(1);
+    const y1 = (acy + ar * Math.sin(a1)).toFixed(1);
+    const large = a1 - a0 > Math.PI ? 1 : 0;
+    parts.push(
+      `<path d="M ${x0} ${y0} A ${ar.toFixed(1)} ${ar.toFixed(1)} 0 ${large} 1 ${x1} ${y1}" fill="none" stroke="${color.stroke}" stroke-width="${strokeW}" stroke-linecap="round"/>`,
+    );
+  } else if (f.shape === 'polyline' && f.polygon && f.polygon.length > 1) {
+    // A pillar's bright rim: a thin open line tracing the lit edge (its own
+    // colour/label distinguishes it from the dashed column outline).
+    const rpts = f.polygon.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+    parts.push(
+      `<polyline points="${rpts}" fill="none" stroke="${color.stroke}" stroke-width="${Math.max(1, Math.round(strokeW * 0.8))}" stroke-linecap="round" stroke-linejoin="round"/>`,
+    );
+  } else if (f.shape === 'polygon' && f.polygon && f.polygon.length > 1) {
+    // Class-B morphology suggestion (e.g. a pillar): a soft dashed outline,
+    // never a hard box. An optional arrow shows the 迎光 / illumination direction.
+    const pts = f.polygon.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+    parts.push(
+      `<polygon points="${pts}" fill="none" stroke="${color.stroke}" stroke-width="${strokeW}" stroke-dasharray="${strokeW * 4} ${strokeW * 3}" stroke-linejoin="round"/>`,
+    );
+    if (f.arrow_to) {
       const [ax, ay] = f.arrow_to;
       const ang = Math.atan2(ay - cy, ax - cx);
-      const hl = strokeW * 6;
+      const hl = strokeW * 5;
       const p2 = `${(ax - hl * Math.cos(ang - 0.4)).toFixed(1)},${(ay - hl * Math.sin(ang - 0.4)).toFixed(1)}`;
       const p3 = `${(ax - hl * Math.cos(ang + 0.4)).toFixed(1)},${(ay - hl * Math.sin(ang + 0.4)).toFixed(1)}`;
       parts.push(
         `<line x1="${cx}" y1="${cy}" x2="${ax}" y2="${ay}" stroke="${color.stroke}" stroke-width="${strokeW}"/>`,
         `<polygon points="${ax},${ay} ${p2} ${p3}" fill="${color.stroke}"/>`,
       );
-    } else if (f.shape === 'dot') {
-      // Comet nucleus: small filled dot (badge anchors at the coma radius).
-      parts.push(
-        `<circle cx="${cx}" cy="${cy}" r="${strokeW * 2.5}" fill="${color.stroke}" stroke="#0b0e14" stroke-width="${Math.max(1, Math.round(strokeW / 2))}"/>`,
-      );
-    } else if (f.shape === 'arc' && f.arc) {
-      // Class-B ionization front: a curved arc along the nebula rim.
-      const { cx: acx, cy: acy, r: ar, a0, a1 } = f.arc;
-      const x0 = (acx + ar * Math.cos(a0)).toFixed(1);
-      const y0 = (acy + ar * Math.sin(a0)).toFixed(1);
-      const x1 = (acx + ar * Math.cos(a1)).toFixed(1);
-      const y1 = (acy + ar * Math.sin(a1)).toFixed(1);
-      const large = a1 - a0 > Math.PI ? 1 : 0;
-      parts.push(
-        `<path d="M ${x0} ${y0} A ${ar.toFixed(1)} ${ar.toFixed(1)} 0 ${large} 1 ${x1} ${y1}" fill="none" stroke="${color.stroke}" stroke-width="${strokeW}" stroke-linecap="round"/>`,
-      );
-    } else if (f.shape === 'polyline' && f.polygon && f.polygon.length > 1) {
-      // A pillar's bright rim: a thin open line tracing the lit edge (its own
-      // colour/label distinguishes it from the dashed column outline).
-      const rpts = f.polygon.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
-      parts.push(
-        `<polyline points="${rpts}" fill="none" stroke="${color.stroke}" stroke-width="${Math.max(1, Math.round(strokeW * 0.8))}" stroke-linecap="round" stroke-linejoin="round"/>`,
-      );
-    } else if (f.shape === 'polygon' && f.polygon && f.polygon.length > 1) {
-      // Class-B morphology suggestion (e.g. a pillar): a soft dashed outline,
-      // never a hard box. An optional arrow shows the 迎光 / illumination direction.
-      const pts = f.polygon.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
-      parts.push(
-        `<polygon points="${pts}" fill="none" stroke="${color.stroke}" stroke-width="${strokeW}" stroke-dasharray="${strokeW * 4} ${strokeW * 3}" stroke-linejoin="round"/>`,
-      );
-      if (f.arrow_to) {
-        const [ax, ay] = f.arrow_to;
-        const ang = Math.atan2(ay - cy, ax - cx);
-        const hl = strokeW * 5;
-        const p2 = `${(ax - hl * Math.cos(ang - 0.4)).toFixed(1)},${(ay - hl * Math.sin(ang - 0.4)).toFixed(1)}`;
-        const p3 = `${(ax - hl * Math.cos(ang + 0.4)).toFixed(1)},${(ay - hl * Math.sin(ang + 0.4)).toFixed(1)}`;
-        parts.push(
-          `<line x1="${cx}" y1="${cy}" x2="${ax}" y2="${ay}" stroke="${color.stroke}" stroke-width="${strokeW}"/>`,
-          `<polygon points="${ax},${ay} ${p2} ${p3}" fill="${color.stroke}"/>`,
-        );
-      }
-    } else if (f.shape !== 'field') {
-      // A-class solid ring, or a Class-B shell sample (small dashed circle).
-      // 'field' is the subject the frame is a crop of: a ring around it would
-      // claim a boundary this picture does not contain, so it gets none.
-      const dash = f.shape === 'shell' ? ` stroke-dasharray="${strokeW * 5} ${strokeW * 3}"` : '';
-      parts.push(
-        `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color.stroke}" stroke-width="${strokeW}"${dash}/>`,
-      );
     }
+  } else if (f.shape !== 'field') {
+    // A-class solid ring, or a Class-B shell sample (small dashed circle).
+    // 'field' is the subject the frame is a crop of: a ring around it would
+    // claim a boundary this picture does not contain, so it gets none.
+    const dash = f.shape === 'shell' ? ` stroke-dasharray="${strokeW * 5} ${strokeW * 3}"` : '';
+    parts.push(
+      `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color.stroke}" stroke-width="${strokeW}"${dash}/>`,
+    );
+  }
+  return parts;
+}
+
+/**
+ * One magnified inset: the patch enlarged, framed, and tied back to its mark.
+ *
+ * `imageHref` is how the enlarged pixels get in, and only one of the two hosts
+ * can supply it. In a browser — the poster — the picture is already a data
+ * URI, so the inset is an <image> scaled inside a clip. For the exported frame
+ * the pixels are composited underneath by sharp, which crops and resizes far
+ * more cheaply than librsvg re-decoding the whole photograph from base64; there
+ * this draws the frame, the line and the contour, over pixels already in place.
+ */
+function calloutMarkup(
+  c: Callout,
+  f: Feature,
+  strokeW: number,
+  imageHref: string | undefined,
+  frameW: number,
+  frameH: number,
+): string {
+  const color = COLOR_PALETTE[f.color_key];
+  const clipId = `k-cal-${c.id}`;
+  const { x, y, w, h } = c.inset;
+  const parts: string[] = [];
+
+  parts.push(
+    `<clipPath id="${escapeXml(clipId)}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${Math.round(strokeW * 2)}"/></clipPath>`,
+  );
+
+  // The line runs from the frame's edge, not its centre: aimed at the centre
+  // but cut where it leaves the box. Drawn from the centre it crossed the
+  // enlarged patch — a dashed line over the one thing the inset exists to show.
+  const e = insetEdgePoint(c.inset, c.anchor);
+  parts.push(
+    `<line x1="${c.anchor.x}" y1="${c.anchor.y}" x2="${e.x}" y2="${e.y}" ` +
+      `stroke="${color.stroke}" stroke-width="${Math.max(1, Math.round(strokeW * 0.7))}" ` +
+      `stroke-dasharray="${strokeW * 3} ${strokeW * 2}" opacity="0.75"/>`,
+  );
+
+  // Everything inside the frame, in source coordinates: place the inset, scale
+  // up, then bring the crop's own origin to zero.
+  const tf = `translate(${x} ${y}) scale(${c.scale}) translate(${-c.crop.x} ${-c.crop.y})`;
+  parts.push(`<g clip-path="url(#${escapeXml(clipId)})">`);
+  if (imageHref) {
+    parts.push(
+      `<g transform="${tf}"><image href="${imageHref}" x="0" y="0" width="${frameW}" height="${frameH}" preserveAspectRatio="none"/></g>`,
+    );
+  }
+  // The contour again, at the inset's scale. Stroke divided by the scale so it
+  // lands at the same visual weight as the one on the picture — the inset is a
+  // closer look at the subject, not a heavier drawing of it.
+  parts.push(
+    `<g transform="${tf}">${featureShape(f, Math.max(0.5, strokeW / c.scale)).join('')}</g>`,
+  );
+  parts.push(`</g>`);
+
+  // The frame, and the number in its corner so the inset and the mark are
+  // obviously the same thing.
+  parts.push(
+    `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${Math.round(strokeW * 2)}" fill="none" ` +
+      `stroke="${color.stroke}" stroke-width="${strokeW}"/>`,
+  );
+  const br = Math.round(Math.min(w, h) * 0.09);
+  const bx = x + br * 1.4;
+  const by = y + br * 1.4;
+  parts.push(
+    `<circle cx="${bx}" cy="${by}" r="${br}" fill="${color.badge}" stroke="#0b0e14" stroke-width="${Math.max(1, Math.round(strokeW / 2))}"/>`,
+    `<text x="${bx}" y="${by}" font-family="sans-serif" font-size="${Math.round(br * 1.1)}" font-weight="700" fill="#0b0e14" text-anchor="middle" dominant-baseline="central">${escapeXml(c.num)}</text>`,
+  );
+  return parts.join('');
+}
+
+export interface OverlaySvgOptions {
+  /**
+   * The insets to draw. Computed here when omitted — but the exported frame
+   * composites the enlarged pixels itself and has to crop exactly where this
+   * draws, so that path plans once and passes the answer in.
+   */
+  callouts?: Callout[];
+  /** The picture, as something an <image> can reference. See `calloutMarkup`. */
+  imageHref?: string;
+}
+
+/** Build the SVG overlay (circles + numbered badges + magnified insets). */
+export function buildOverlaySvg(report: Reading, opts: OverlaySvgOptions = {}): string {
+  const { width, height } = report.image;
+  const lang = report.display_language;
+  const strokeW = Math.max(2, Math.round(Math.min(width, height) / 300));
+  const parts: string[] = [];
+  const callouts = opts.callouts ?? planCallouts(report);
+
+  for (const f of report.features) {
+    if (f.draw === false) continue; // listed in the Facts panel but not drawn
+    const color = COLOR_PALETTE[f.color_key];
+    parts.push(...featureShape(f, strokeW));
 
     // Badge anchored fully outside the circle (offset by r + bubble radius) so
     // it never covers small circles, then nudged by the user offset — but kept
@@ -114,18 +218,63 @@ export function buildOverlaySvg(report: Reading): string {
     );
   }
 
+  // Insets last: they are panels laid on the picture, and a mark drawn over
+  // one would read as part of what it shows.
+  for (const c of callouts) {
+    const f = report.features.find((x) => x.id === c.id);
+    if (f) parts.push(calloutMarkup(c, f, strokeW, opts.imageHref, width, height));
+  }
+
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${parts.join('')}</svg>`;
 }
 
 type ImageFormat = 'jpeg' | 'png';
 
-function annotatedPipeline(
+/**
+ * The enlarged patches, as image buffers ready to composite.
+ *
+ * sharp crops and resizes natively. The alternative — base64 the whole
+ * photograph into the SVG and let librsvg scale it three times — decodes a
+ * multi-megapixel JPEG inside an XML parser, which is as slow as it sounds.
+ */
+async function calloutLayers(
   imagePath: string,
-  svgOverlay: string,
+  callouts: Callout[],
+): Promise<sharp.OverlayOptions[]> {
+  const layers: sharp.OverlayOptions[] = [];
+  for (const c of callouts) {
+    try {
+      const buf = await sharp(imagePath)
+        .extract({ left: c.crop.x, top: c.crop.y, width: c.crop.w, height: c.crop.h })
+        .resize(c.inset.w, c.inset.h, { fit: 'fill' })
+        .png()
+        .toBuffer();
+      layers.push({ input: buf, left: c.inset.x, top: c.inset.y });
+    } catch {
+      // A crop that will not extract — a stale geometry against a resized
+      // image, say — loses its pixels, not the whole export. The frame and the
+      // line are still drawn, and an empty frame is obvious; a failed render
+      // is a curator with nothing.
+    }
+  }
+  return layers;
+}
+
+async function annotatedPipeline(
+  report: Reading,
+  imagePath: string,
   format: ImageFormat,
   quality: number,
-): sharp.Sharp {
-  const pipeline = sharp(imagePath).composite([{ input: Buffer.from(svgOverlay), top: 0, left: 0 }]);
+): Promise<sharp.Sharp> {
+  // Planned once and passed to both halves: the pixels are composited at these
+  // rectangles and the frames are drawn at them, so two plans would be a frame
+  // around the wrong patch.
+  const callouts = planCallouts(report);
+  const svgOverlay = buildOverlaySvg(report, { callouts });
+  const pipeline = sharp(imagePath).composite([
+    ...(await calloutLayers(imagePath, callouts)),
+    { input: Buffer.from(svgOverlay), top: 0, left: 0 },
+  ]);
   return format === 'png' ? pipeline.png() : pipeline.jpeg({ quality });
 }
 
@@ -139,9 +288,8 @@ export interface RenderAnnotatedOptions {
 /** Composite the overlay onto the source image and write annotated output. */
 export async function renderAnnotated(opts: RenderAnnotatedOptions): Promise<void> {
   const format: ImageFormat = opts.outPath.toLowerCase().endsWith('.png') ? 'png' : 'jpeg';
-  await annotatedPipeline(opts.imagePath, buildOverlaySvg(opts.report), format, opts.quality ?? 92).toFile(
-    opts.outPath,
-  );
+  const pipeline = await annotatedPipeline(opts.report, opts.imagePath, format, opts.quality ?? 92);
+  await pipeline.toFile(opts.outPath);
 }
 
 export interface RenderAnnotatedBufferOptions {
@@ -153,10 +301,11 @@ export interface RenderAnnotatedBufferOptions {
 
 /** Same as renderAnnotated but returns the encoded image bytes instead of writing. */
 export async function renderAnnotatedBuffer(opts: RenderAnnotatedBufferOptions): Promise<Buffer> {
-  return annotatedPipeline(
+  const pipeline = await annotatedPipeline(
+    opts.report,
     opts.imagePath,
-    buildOverlaySvg(opts.report),
     opts.format ?? 'jpeg',
     opts.quality ?? 92,
-  ).toBuffer();
+  );
+  return pipeline.toBuffer();
 }

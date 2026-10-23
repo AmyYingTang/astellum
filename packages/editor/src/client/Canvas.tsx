@@ -17,12 +17,14 @@ import {
   fieldRadiusDeg,
   formatRaHm,
   formatDecDm,
+  planCallouts,
   worldToPixel,
   type Reading,
   type Wcs,
 } from '@astellum/schema';
 import type { Action } from './state.js';
 import { useUi } from './i18n.js';
+import { Callouts } from './Callouts.js';
 
 /** Round a raw degree step to a "nice" value, aiming for ~12 lines across the field. */
 function niceStep(radius: number): number {
@@ -165,6 +167,10 @@ export function Canvas({
   const [ref, { w: containerW, h: containerH }] = useSize();
   const grid = showGrid && gridWcs ? buildGrid(gridWcs) : null;
   const { width, height } = report.image;
+  // What the export will draw, drawn here too. Recomputed on every render
+  // because the shapes move while a curator works, and an inset pointing at
+  // where a pillar used to be is worse than none.
+  const callouts = planCallouts(report);
   // Fit the image fully within the container so it never overflows (which
   // would trigger a scrollbar and a ResizeObserver feedback loop).
   const scale = Math.min(containerW / width, containerH / height) || 1;
@@ -421,6 +427,11 @@ export function Canvas({
               </Group>
             );
           })}
+        </Layer>
+        {/* Over the marks: an inset is a panel laid on the picture, and a mark
+            drawn across one would read as part of what it shows. */}
+        <Layer listening={false}>
+          <Callouts report={report} callouts={callouts} image={img} px={px} />
         </Layer>
       </Stage>
     </div>

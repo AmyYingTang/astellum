@@ -1,0 +1,267 @@
+import { badgeAnchor } from './badge.js';
+import type { Feature, Reading } from './reading.js';
+
+/**
+ * Magnified insets for the marks that are too small to read.
+ *
+ * The kiosk solves this with the pointer: come near a mark and it magnifies
+ * under your finger. A poster and an exported frame have no pointer, and a
+ * pillar 28 pixels across on a 4000-pixel frame is a scribble — the viewer can
+ * see that something is circled and never what.
+ *
+ * So the still picture carries its own magnifier: a panel in an empty corner
+ * showing that patch enlarged, with a line back to where it came from.
+ *
+ * This module decides *where*, and nothing else. It touches no pixels and
+ * emits no markup, because four surfaces have to agree on the answer — the
+ * exported frame (compositing crops with sharp), the poster (an <image> in an
+ * SVG), the studio canvas (Konva), and the tests. Layout that is computed
+ * twice is layout that disagrees.
+ */
+
+export interface Box {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+/**
+ * What a feature actually covers on the frame.
+ *
+ * A polygon's extent is its points; everything else falls back to the circle,
+ * which is what the badge anchors on and what the ring is drawn from.
+ */
+export function featureBounds(f: Feature): Box {
+  if (f.polygon?.length && (f.shape === 'polygon' || f.shape === 'polyline')) {
+    const xs = f.polygon.map((q) => q[0]);
+    const ys = f.polygon.map((q) => q[1]);
+    return { x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys) };
+  }
+  if (f.shape === 'arc' && f.arc) {
+    // The whole circle the arc is cut from, which is never smaller than the arc
+    // and is one line instead of sampling the sweep.
+    const { cx, cy, r } = f.arc;
+    return { x0: cx - r, y0: cy - r, x1: cx + r, y1: cy + r };
+  }
+  const { cx, cy, r } = f.circle;
+  return { x0: cx - r, y0: cy - r, x1: cx + r, y1: cy + r };
+}
+
+const widthOf = (b: Box): number => b.x1 - b.x0;
+const heightOf = (b: Box): number => b.y1 - b.y0;
+const longerSide = (b: Box): number => Math.max(widthOf(b), heightOf(b));
+const centreOf = (b: Box): { x: number; y: number } => ({
+  x: (b.x0 + b.x1) / 2,
+  y: (b.y0 + b.y1) / 2,
+});
+
+function overlap(a: Box, b: Box): number {
+  const w = Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0);
+  const h = Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0);
+  return w > 0 && h > 0 ? w * h : 0;
+}
+
+/**
+ * The shapes whose point is their *shape*.
+ *
+ * A catalogue object's ring says "the thing is here"; magnified it is a larger
+ * ring around the same point, and the picture has paid for an inset that shows
+ * nothing new. The human-drawn morphology — a pillar, a bright rim, an
+ * ionization front — is a drawn contour, and a contour too small to follow is
+ * exactly the failure this fixes.
+ */
+const MAGNIFIABLE = new Set(['polygon', 'polyline', 'arc']);
+
+export interface CalloutOptions {
+  /** Hard cap. Each inset costs a piece of the picture. */
+  max?: number;
+  /** A feature qualifies when its longer side is under this share of the
+   *  frame's short edge. */
+  maxShare?: number;
+  /** The inset's size, as a share of the short edge. */
+  insetShare?: number;
+  /** Below this there is nothing to gain; above it, the source has no more
+   *  detail to give and the inset is just a blurrier version of the same
+   *  patch. */
+  minScale?: number;
+  maxScale?: number;
+  /** Keep insets this far (share of the short edge) from the frame edge. */
+  marginShare?: number;
+}
+
+const DEFAULTS = {
+  max: 3,
+  maxShare: 0.12,
+  insetShare: 0.22,
+  minScale: 2,
+  maxScale: 8,
+  marginShare: 0.02,
+} as const;
+
+export interface Callout {
+  /** The feature this magnifies. */
+  id: string;
+  /** Its badge number, so the inset and the mark can be tied together. */
+  num: string;
+  /** The patch of the source image to enlarge, in image pixels. */
+  crop: { x: number; y: number; w: number; h: number };
+  /** Where the enlarged patch is drawn, in image pixels. */
+  inset: { x: number; y: number; w: number; h: number };
+  /** How much bigger the patch is drawn than it is. */
+  scale: number;
+  /** The point on the original mark the connector points at. */
+  anchor: { x: number; y: number };
+}
+
+/**
+ * Which marks get an inset, and where it goes.
+ *
+ * Returns an empty list when nothing qualifies, which is the common case and
+ * the one to keep cheap: most frames have nothing too small on them.
+ */
+export function planCallouts(report: Reading, opts: CalloutOptions = {}): Callout[] {
+  const o = { ...DEFAULTS, ...opts };
+  const { width, height } = report.image;
+  const short = Math.min(width, height);
+  if (!short || o.max <= 0) return [];
+
+  const drawn = report.features.filter((f) => f.draw !== false);
+
+  // Everything already on the picture, so an inset can be put where nothing is.
+  // The marks, and the badges with a generous allowance for the name beside
+  // them: how wide a string renders is the renderer's business and differs per
+  // font, so this reserves a block rather than pretending to measure one.
+  const occupied: Box[] = [];
+  for (const f of drawn) {
+    occupied.push(featureBounds(f));
+    const br = f.badge.bubble_r;
+    const [ax, ay] = badgeAnchor(f, br);
+    const bx = ax + f.badge.offset_x;
+    const by = ay + f.badge.offset_y;
+    const nameW = br * 12;
+    occupied.push({
+      x0: bx - (bx > width * 0.66 ? nameW : br * 2),
+      y0: by - br * 2,
+      x1: bx + (bx > width * 0.66 ? br * 2 : nameW),
+      y1: by + br * 2,
+    });
+  }
+
+  const tooSmall = o.maxShare * short;
+  const candidates = drawn
+    .filter((f) => MAGNIFIABLE.has(f.shape) && longerSide(featureBounds(f)) < tooSmall)
+    .map((f) => ({ f, bounds: featureBounds(f) }))
+    .sort((a, b) => longerSide(a.bounds) - longerSide(b.bounds));
+
+  const insetSize = Math.round(o.insetShare * short);
+  const margin = Math.round(o.marginShare * short);
+  const out: Callout[] = [];
+
+  for (const { f, bounds } of candidates) {
+    if (out.length >= o.max) break;
+
+    // The patch, with room around it: a contour cropped to its own edges reads
+    // as a cut-out, and what makes a pillar legible is the gas it stands in.
+    const want = longerSide(bounds) * 1.8;
+    const scale = Math.min(o.maxScale, Math.max(o.minScale, insetSize / Math.max(want, 1)));
+    const cropSize = Math.min(Math.round(insetSize / scale), short);
+    const c = centreOf(bounds);
+    const crop = {
+      x: Math.round(Math.max(0, Math.min(width - cropSize, c.x - cropSize / 2))),
+      y: Math.round(Math.max(0, Math.min(height - cropSize, c.y - cropSize / 2))),
+      w: cropSize,
+      h: cropSize,
+    };
+
+    // A neighbour already showing inside somebody's crop is already magnified.
+    // Three pillars in a row should cost one inset, not three — and the test is
+    // whether the shape overlaps that crop at all, not whether its centre
+    // happens to fall in it: two pillars eight pixels apart are one subject.
+    const alreadyShown = out.some(
+      (p) => overlap(bounds, { x0: p.crop.x, y0: p.crop.y, x1: p.crop.x + p.crop.w, y1: p.crop.y + p.crop.h }) > 0,
+    );
+    if (alreadyShown) continue;
+
+    const inset = placeInset(insetSize, c, { width, height, margin }, occupied);
+    if (!inset) continue; // nowhere free — better no inset than one over a mark
+
+    out.push({
+      id: f.id,
+      num: f.badge.num,
+      crop,
+      inset,
+      scale: Math.round((insetSize / cropSize) * 100) / 100,
+      anchor: { x: Math.round(c.x), y: Math.round(c.y) },
+    });
+    // The inset itself is now in the way of the next one.
+    occupied.push({ x0: inset.x, y0: inset.y, x1: inset.x + inset.w, y1: inset.y + inset.h });
+  }
+
+  return out;
+}
+
+/**
+ * Somewhere the inset covers nothing.
+ *
+ * Walks a coarse grid and takes the emptiest spot, nearest the mark among the
+ * equally empty ones — close enough that the connector is short, never so close
+ * that it sits on what it is magnifying. Returns null when every position
+ * covers something: a frame can be full, and an inset over another mark trades
+ * one unreadable feature for two.
+ */
+function placeInset(
+  size: number,
+  from: { x: number; y: number },
+  frame: { width: number; height: number; margin: number },
+  occupied: Box[],
+): { x: number; y: number; w: number; h: number } | null {
+  const { width, height, margin } = frame;
+  if (size + 2 * margin > width || size + 2 * margin > height) return null;
+  const step = Math.max(8, Math.round(size / 4));
+  let best: { x: number; y: number; cost: number; dist: number } | null = null;
+
+  for (let y = margin; y <= height - size - margin; y += step) {
+    for (let x = margin; x <= width - size - margin; x += step) {
+      const box: Box = { x0: x, y0: y, x1: x + size, y1: y + size };
+      let cost = 0;
+      for (const b of occupied) cost += overlap(box, b);
+      const cx = x + size / 2;
+      const cy = y + size / 2;
+      const dist = Math.hypot(cx - from.x, cy - from.y);
+      // Never on top of the thing it magnifies, however empty the rest is.
+      if (dist < size * 0.75) continue;
+      if (!best || cost < best.cost || (cost === best.cost && dist < best.dist)) {
+        best = { x, y, cost, dist };
+      }
+    }
+  }
+  if (!best || best.cost > 0) return null;
+  return { x: best.x, y: best.y, w: size, h: size };
+}
+
+/**
+ * Where a line aimed at the inset's centre crosses its edge.
+ *
+ * The connector starts here, not at the centre: drawn from the centre it runs
+ * across the enlarged patch, over the one thing the inset exists to show.
+ *
+ * Parametric along the segment and clipped to the box's two slabs, so whichever
+ * of the four sides the line actually meets falls out of the smaller ratio,
+ * with no corner cases to enumerate.
+ */
+export function insetEdgePoint(
+  inset: { x: number; y: number; w: number; h: number },
+  from: { x: number; y: number },
+): { x: number; y: number } {
+  const cx = inset.x + inset.w / 2;
+  const cy = inset.y + inset.h / 2;
+  const dx = from.x - cx;
+  const dy = from.y - cy;
+  if (!dx && !dy) return { x: Math.round(cx), y: Math.round(cy) };
+  const t = Math.min(
+    dx ? inset.w / 2 / Math.abs(dx) : Infinity,
+    dy ? inset.h / 2 / Math.abs(dy) : Infinity,
+  );
+  return { x: Math.round(cx + dx * t), y: Math.round(cy + dy * t) };
+}

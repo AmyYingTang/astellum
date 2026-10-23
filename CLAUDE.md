@@ -100,6 +100,15 @@ keep the built-in; an empty section means "not specified", not "make it empty".
 64 otype labels), the palette, UI strings. They are coupled to enums and colour
 mappings — data-ifying them trades a compile error for a runtime one.
 
+**Magnified insets are a still-picture problem.** The kiosk magnifies under the
+pointer; a poster and an exported frame cannot, so `planCallouts` (in the
+schema, beside `badgeAnchor`, because four surfaces have to agree on the
+answer) picks up to three marks too small to read and finds empty space for a
+panel. Only drawn contours qualify — a catalogue ring enlarged is the same ring
+— and a frame with no free space gets none rather than one laid over another
+mark. The kiosk does not draw them: it already solves this with the pointer,
+and a fixed panel would fight the live one for the same screen.
+
 ## Order of work that matters
 
 Annotate → draft the text → review shape and words **together** → export.
@@ -140,6 +149,9 @@ for a while, so interface changes there appeared not to take effect.
   has not been observed firing.
 - No genuine network-unplugged rehearsal yet.
 - The atlas upload takes JPG/PNG only; the studio and kiosk take FITS.
+- A magnified inset cannot be turned off or moved by hand — the only lever is
+  moving the annotation it follows. No one has needed one yet; a `callout`
+  section in config is the obvious place if they do.
 - The studio's 「生成解读」 button ignores `reading.mode`: it shows and calls the
   model even where settings say `predefined`, so offline it just fails. The
   comment on `ReadingConfig.mode` claims the studio stops offering what it

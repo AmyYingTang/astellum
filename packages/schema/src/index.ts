@@ -7,6 +7,9 @@ export type { PaletteEntry } from './colorKeys.js';
 export * from './reading.js';
 // One definition of where a badge sits; every renderer and the spread share it.
 export { badgeAnchor, maxBadgeDrift, pinWithinReach, type BadgeAnchorFeature } from './badge.js';
+// Where a magnified inset goes for a mark too small to read. Shared, because
+// the exported frame, the poster and the studio canvas all have to agree.
+export * from './callout.js';
 
 // Identification stage (Stage 1) — grounded fact sheet + taxonomy + WCS.
 export * from './i18n.js';

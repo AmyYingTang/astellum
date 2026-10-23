@@ -72,3 +72,60 @@ describe('buildOverlaySvg', () => {
     expect(buildOverlaySvg(report)).toMatchSnapshot();
   });
 });
+
+/**
+ * The magnified insets. Where they go is `planCallouts`' business and tested
+ * there; this is about what gets drawn once the answer is in.
+ */
+describe('magnified insets', () => {
+  const tiny: Reading = {
+    ...report,
+    features: [
+      ...report.features,
+      {
+        id: 'f3',
+        fact_ref: null,
+        label: { zh: '柱', en: 'pillar' },
+        color_key: 'pillar',
+        shape: 'polygon',
+        circle: { cx: 800, cy: 650, r: 15 },
+        polygon: [
+          [785, 635],
+          [815, 635],
+          [815, 665],
+        ],
+        badge: { num: '3', offset_x: 0, offset_y: 0, bubble_r: 30 },
+        explanation: { zh: 'z', en: 'z' },
+        needs_human_review: false,
+      },
+    ],
+  } as unknown as Reading;
+
+  it('frames the patch, numbers it, and runs a line back to the mark', () => {
+    const svg = buildOverlaySvg(tiny);
+    expect(svg).toContain('clipPath id="k-cal-f3"');
+    expect(svg).toContain('stroke-dasharray'); // the connector
+    expect(svg).toMatch(/<text[^>]*>3<\/text>/); // the inset carries the badge number
+  });
+
+  it('draws nothing extra for a frame whose marks are all readable', () => {
+    expect(buildOverlaySvg(report as unknown as Reading)).not.toContain('clipPath');
+  });
+
+  /*
+   * Only the poster can supply the pixels through the SVG; the exported frame
+   * has sharp composite them underneath, and an <image> there would make
+   * librsvg re-decode the whole photograph out of base64.
+   */
+  it('puts the picture in the inset only when given somewhere to get it', () => {
+    expect(buildOverlaySvg(tiny)).not.toContain('<image');
+    expect(buildOverlaySvg(tiny, { imageHref: 'data:image/png;base64,AA' })).toContain(
+      '<image href="data:image/png;base64,AA"',
+    );
+  });
+
+  it('honours a plan it was handed, rather than making its own', () => {
+    const svg = buildOverlaySvg(tiny, { callouts: [] });
+    expect(svg).not.toContain('clipPath');
+  });
+});

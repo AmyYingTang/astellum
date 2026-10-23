@@ -202,6 +202,31 @@ offline library as a side effect, instead of it only ever growing by hand.
 
 ---
 
+### Marks too small to read
+
+A kiosk magnifies whatever your finger is near. A poster and an exported frame
+cannot, and a pillar 28 pixels across on a 4000-pixel frame is a scribble — the
+viewer can see that *something* is circled and never what.
+
+So the still picture carries its own magnifier: up to three small marks get a
+panel in an empty part of the frame showing that patch enlarged, with a dashed
+line back to where it came from. It happens on its own — in the studio canvas,
+the exported image and the poster alike, so what you see while you work is what
+comes out.
+
+What gets one:
+
+- **Only drawn contours** — pillars, bright rims, ionization fronts. A
+  catalogue object's ring magnified is a bigger ring around the same point,
+  which costs a panel and shows nothing new.
+- **Only small ones** — under about an eighth of the frame's short edge.
+- **At most three**, smallest first, and neighbours already inside somebody's
+  crop don't get one of their own: three pillars in a row are one subject.
+
+If a frame is busy enough that a panel would have to cover another mark, it is
+left out instead. Nothing you can set changes this yet — moving or resizing the
+annotation is the only lever, since the panel follows the shape.
+
 ## 3. Wording you can change without rebuilding
 
 `packages/atlas/data/content.json` — edit, save, done. No build step. Any
