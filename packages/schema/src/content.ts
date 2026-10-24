@@ -65,9 +65,9 @@ export const BUILT_IN_STYLE_PRESETS: StylePreset[] = [
     labelZh: '小学生',
     labelEn: 'Primary school',
     textZh:
-      '目标读者是小学生(7-12 岁)。用生动的语言、比喻和故事,句子要短,避开专业术语。',
+      '目标读者是小学生(约 7–12 岁),想象一个孩子正站在这张图前面。每个结构先用日常的东西打比方,说它像什么(塔、泡泡、发光的边、暗暗的缺口),再用一个简单的动作讲原因——是什么很热的东西在推它、吹它、照亮它。整段最多用一个让人惊叹的大数字,单位要孩子能想象(比如公里)。多引导孩子在图里找东西。句子要短,不用专业术语,结尾留一个可以去发现的小悬念(比如藏在里面的「星星宝宝」)。可以简化,但不能说错。',
     textEn:
-      'Target audience is primary school children (7-12). Use vivid language, metaphors and stories; keep sentences short and avoid jargon.',
+      "Audience: primary school students (about 7–12). Picture a child standing in front of this image. For each structure, first say what it looks like in everyday words (towers, bubbles, glowing edges, dark gaps), then give the cause as one simple action: something very hot pushing it, blowing it or lighting it up. Use at most one big-number 'wow', in units a child can picture (such as kilometres). Invite them to find things in the picture. Keep sentences short, use no technical terms, and end with something to discover (a baby star hiding inside, a hidden clue). Simplify, but never say anything untrue.",
   },
   {
     id: 'adult',
@@ -75,9 +75,9 @@ export const BUILT_IN_STYLE_PRESETS: StylePreset[] = [
     labelZh: '成人',
     labelEn: 'Adult',
     textZh:
-      '目标读者是普通成年观众,没有天文学背景但愿意了解。可以用少量专业词,但每个都要解释。',
+      '目标读者是对科学好奇、但没有专业背景的成年人。每个结构先说出观众在图上能看到的样子,再用大白话讲清楚是什么物理过程把它塑造成这个形状(比如星光把云层一点点蒸发掉、恒星风吹出一个空腔)。每条至少给一个观众能在这张图上自己验证的细节——它朝哪个方向、亮边在哪一侧、旁边挨着什么。尽量联系到此刻仍在发生的过程。需要用术语时,在同一句里顺带解释。语气尊重,不要哄小孩,也不要「令人叹为观止」这类空话。',
     textEn:
-      'Target audience is general adult visitors with no astronomy background but real curiosity. A few technical terms are fine, but explain each one.',
+      'Audience: curious adults with no science background. For each structure, first name what the viewer can see, then explain in plain words the physical process that gave it this shape (for example, starlight slowly evaporating a cloud, or a stellar wind blowing out a cavity). Give at least one detail the viewer can check on this image themselves: which way it points, which side the bright edge is on, what sits next to it. Where possible, connect it to something still happening now. If a technical term helps, explain it in the same sentence. Be respectful rather than childish, and avoid empty superlatives.',
   },
   {
     id: 'teacher',
@@ -85,9 +85,9 @@ export const BUILT_IN_STYLE_PRESETS: StylePreset[] = [
     labelZh: '中学科学老师',
     labelEn: 'Science teacher',
     textZh:
-      '目标读者是中学科学老师。可以直接使用专业术语,侧重物理机制,以及能带进课堂的要点。',
+      '目标读者是正在备课的中学科学教师。使用规范的科学术语(如电离锋面、光致蒸发、恒星风、超新星遗迹),如果知道是哪个源头塑造了某个结构,要点名说出来(优先使用给定清单里的天体)。把每个结构和课程里会讲到的一般物理原理联系起来(辐射与物质、能量传递、引力、恒星的一生)。narrative 开头给一句可以直接拿到课堂上用的引子。不确定的地方要明说:机制有争议或数值不确定时,用「可能」「目前认为」等措辞,不要说成定论。不要编造数字,没把握的就不写。',
     textEn:
-      'Target audience is secondary school science teachers. Use technical terms freely; lean on the physical mechanisms and on what they could take into a lesson.',
+      "Audience: secondary school science teachers preparing a lesson. Use correct scientific terms (for example, ionisation front, photoevaporation, stellar wind, supernova remnant), and name the source responsible for each structure when it is known, preferring objects in the given list. Tie each structure to a general physical principle that a curriculum covers (radiation and matter, energy transfer, gravity, the life cycle of stars). Open the narrative with a one-line classroom hook. State uncertainty plainly: where a mechanism is debated or a value is uncertain, say so ('possibly', 'is thought to') rather than presenting it as settled. Do not invent numbers; leave out any you are not sure of.",
   },
   {
     // A tone, not a role — so it sits with the focus presets, which stack and

@@ -3,7 +3,9 @@ import { FEATURE_TAXONOMY, contentOverlay, type FeatureTypeKey } from '@astellum
 export interface TailorItem {
   id: string;
   name: string; // "zh / en"
-  type: string; // English type label
+  /** English type label (emission nebula, star …). Left out when there is
+   *  none to give — never a palette key standing in for one. */
+  type?: string;
   /** Fine-grained feature type from the taxonomy, when the object is one.
    *  Offsite wants precision, so the model is told the exact classification
    *  (a "wind-blown shell" rather than just "nebula") — the 39-entry taxonomy
@@ -63,7 +65,8 @@ export function buildTailorPrompt(opts: TailorPromptOptions): string {
         // The precise classification, when we have one — it is what lets the
         // model write about *this* structure instead of the generic category.
         const fine = t ? `  [${it.featureType}: ${t.zh} / ${t.en}]` : '';
-        return `  - id=${it.id}  ${it.name}  (${it.type})${fine}`;
+        const type = it.type ? `  (${it.type})` : '';
+        return `  - id=${it.id}  ${it.name}${type}${fine}`;
       })
       .join('\n') || '  (无 / none)';
   const imgLine = opts.imagePath

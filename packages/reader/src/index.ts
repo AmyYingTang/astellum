@@ -265,6 +265,21 @@ export function dropFieldRings(reading: Reading, factsheet: FactSheet): Reading 
   return changed ? { ...reading, features } : reading;
 }
 
+/**
+ * The English type to name an object by in the prompt, or nothing.
+ *
+ * A star's category is just "Star", so it gets its specific gloss (red
+ * supergiant, Wolf-Rayet …) the way the facts panel shows it. A Class-B
+ * structure gets none here: its `type` is the curator's label rather than a
+ * classification, and its precise taxonomy type already goes in the
+ * bracket beside it.
+ */
+function promptType(obj: FactObject): string | undefined {
+  if (obj.tier === 'B') return undefined;
+  if (obj.category === 'star') return otypeLabel(obj.type.otype)?.en ?? obj.type.en;
+  return obj.type.en || undefined;
+}
+
 function buildReading(
   factsheet: FactSheet,
   narrative: LocalizedString,
@@ -590,13 +605,17 @@ export async function tailorReading(
   const prompt = buildTailorPrompt({
     headline: `${reading.object.name.zh} / ${reading.object.name.en}`,
     items: reading.features.map((f) => {
-      // The reading has no taxonomy key of its own; recover it from the fact
-      // sheet entry it was grounded on, when one is supplied.
-      const ft = opts.factsheet?.objects.find((o) => o.id === f.fact_ref?.object_id)?.feature_type;
+      // The reading has neither a type nor a taxonomy key of its own; recover
+      // both from the fact sheet entry it was grounded on, when one is
+      // supplied. Not `color_key`: that is a palette slot ("hot", "dark"), and
+      // handed to the model as a type it reads as a claim about the object.
+      const obj = opts.factsheet?.objects.find((o) => o.id === f.fact_ref?.object_id);
+      const ft = obj?.feature_type;
+      const type = obj ? promptType(obj) : undefined;
       return {
         id: f.id,
         name: `${f.label.zh} / ${f.label.en}`,
-        type: f.color_key,
+        ...(type ? { type } : {}),
         ...(ft ? { featureType: ft } : {}),
       };
     }),

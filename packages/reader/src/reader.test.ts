@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { FactSheet } from '@astellum/schema';
+import { ColorKey, type FactSheet } from '@astellum/schema';
 import { extractJson, parseTailoring } from './parseJson.js';
 import { parseSimbadAscii } from './simbad.js';
 import { buildTailorPrompt } from './prompt.js';
-import { generateReading, readingFromFactsheet, ReaderError } from './index.js';
+import { generateReading, readingFromFactsheet, ReaderError, tailorReading } from './index.js';
 
 const obj = (over: Partial<FactSheet['objects'][number]>): FactSheet['objects'][number] => ({
   id: 'obj1',
@@ -146,5 +146,43 @@ describe('readingFromFactsheet (facts-only stub, no LLM)', () => {
     expect(reading.features[0]!.explanation).toEqual({ zh: '', en: '' });
     expect(reading.features[0]!.circle.r).toBe(390); // still sized from facts
     expect(reading.generator.llm).toContain('facts-only');
+  });
+});
+
+/**
+ * The object list in the studio's prompt used to give each feature's palette
+ * slot as its type — Eta Carinae arrived as "(hot)", a dark cloud as "(dark)" —
+ * which the model reads as a claim about the object.
+ */
+describe('tailorReading prompt', () => {
+  const prompted = async (): Promise<string> => {
+    const runner = vi.fn().mockResolvedValue(tailoringJson);
+    const reading = readingFromFactsheet(factsheet, { toolVersion: '0.1.0' });
+    await tailorReading(reading, { factsheet, runner });
+    return (runner.mock.calls[0]![0] as { prompt: string }).prompt;
+  };
+  const listLines = (prompt: string): string[] =>
+    prompt.split('\n').filter((l) => l.startsWith('  - id='));
+
+  it('never names an object by its colour key', async () => {
+    const lines = listLines(await prompted());
+    expect(lines).toHaveLength(3);
+    for (const k of ColorKey.options) {
+      for (const l of lines) expect(l).not.toContain(`(${k})`);
+    }
+  });
+
+  it('gives the real type, and a star its specific one', async () => {
+    const lines = listLines(await prompted());
+    expect(lines.find((l) => l.includes('id=obj1'))).toContain('(Globular cluster)');
+    expect(lines.find((l) => l.includes('id=obj3'))).toContain('(Dark nebula)');
+    expect(lines.find((l) => l.includes('id=obj2'))).not.toContain('(Star)');
+  });
+
+  it('leaves the type out when there is no fact sheet to take it from', async () => {
+    const runner = vi.fn().mockResolvedValue(tailoringJson);
+    await tailorReading(readingFromFactsheet(factsheet, { toolVersion: '0.1.0' }), { runner });
+    const prompt = (runner.mock.calls[0]![0] as { prompt: string }).prompt;
+    for (const l of listLines(prompt)) expect(l).not.toMatch(/\(\w+\)/);
   });
 });
