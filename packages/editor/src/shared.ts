@@ -69,10 +69,17 @@ export interface SaveResponse {
   error?: string;
 }
 
-export type ExportFormat = 'annotated' | 'embed' | 'poster' | 'all';
+/** `all` is the frame and both posters. The interactive embed page is the
+ *  CLI's (`astellum render --format embed`); the studio no longer offers it. */
+export type ExportFormat = 'annotated' | 'poster' | 'all';
 
 export interface ExportRequest {
   format: ExportFormat;
+  /** With `poster`: render only this layout. Both when omitted. */
+  layout?: 'portrait' | 'landscape';
+  /** Write the frame in this language — the one the studio is showing.
+   *  The reading's own `display_language` when omitted. */
+  lang?: 'zh' | 'en';
 }
 
 export interface ExportFile {

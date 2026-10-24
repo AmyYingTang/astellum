@@ -59,56 +59,12 @@ body,
   flex: 1;
 }
 
-.export {
-  position: relative;
-}
 
-.export-menu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 4px);
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 4px;
-  display: flex;
-  flex-direction: column;
-  min-width: 160px;
-  z-index: 10;
-}
 
-.export-menu button {
-  border: none;
-  background: none;
-  text-align: left;
-}
 
-.export-menu button:hover {
-  background: var(--border);
-}
 
-.export-menu .mode-row {
-  display: flex;
-  gap: 4px;
-  margin: 0 0 6px;
-  padding: 0 0 6px;
-  border-bottom: 1px solid var(--border);
-}
 
-.export-menu .mode-row button {
-  flex: 1;
-  text-align: center;
-  font-size: 11px;
-  padding: 4px 6px;
-  border-radius: 6px;
-  color: var(--muted);
-}
 
-.export-menu .mode-row button.active {
-  background: var(--accent);
-  color: #0b0e14;
-  font-weight: 600;
-}
 
 .export-result {
   position: fixed;
@@ -365,48 +321,21 @@ button.primary:disabled {
   overflow: hidden;
   padding: 16px;
 }
-.grid-toggle-float {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 10;
+.grid-toggle {
   font-size: 12px;
   padding: 4px 10px;
-  background: rgba(20, 25, 37, 0.85);
-  border: 1px solid var(--border);
-  border-radius: 6px;
   color: var(--muted);
 }
-.grid-toggle-float.active {
+.grid-toggle.active {
   color: var(--text);
   border-color: var(--accent);
 }
 
-/* Right column = always-visible action bar + scrollable text editor (~25%). */
-.text-col {
-  flex: 1 1 0;
-  min-width: 320px;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  background: var(--panel);
-  border-left: 1px solid var(--border);
-}
-.text-actions {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-  position: relative;
-}
 
 .sidebar {
-  flex: 1 1 0;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 16px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
 }
 
 .status {
@@ -609,27 +538,13 @@ textarea.explanation {
   background: #25324a;
 }
 .facts-panel {
-  position: relative;
-  flex: 0 0 20%;
-  min-width: 180px;
-  overflow: hidden;
-  border-right: 1px solid #222b3d;
-  background: #0d111a;
   font-size: 13px;
-}
-.facts-panel.collapsed {
-  flex: 0 0 32px;
-  min-width: 32px;
-}
-.facts-body {
-  height: 100%;
-  overflow-y: auto;
-  padding: 16px;
 }
 .facts-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 10px;
 }
@@ -637,14 +552,16 @@ textarea.explanation {
   margin: 0;
 }
 /* Re-identify confirm + params popover (in-app, not a native dialog) */
-.reid {
+/* The popover spans the panel rather than hanging off the button, which
+   sits mid-column now and would push it out of the edit column. */
+.facts-head {
   position: relative;
 }
 .reid-menu {
   position: absolute;
+  left: 0;
   right: 0;
   top: calc(100% + 4px);
-  width: 240px;
   background: var(--panel-2);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -653,6 +570,34 @@ textarea.explanation {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+.confirm-box {
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.reid-danger {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #4a1616;
+  border: 1px solid #c94a4a;
+  color: #ffd6d6;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+button.danger {
+  background: #c94a4a;
+  border-color: #c94a4a;
+  color: #fff;
+  font-weight: 700;
 }
 .reid-warn {
   margin: 0;
@@ -675,24 +620,8 @@ textarea.explanation {
   gap: 8px;
 }
 
-/* Collapse tab pinned to the panel's right edge, vertically centered */
-.collapse-btn {
-  position: absolute;
-  top: 50%;
-  right: 0;
-  transform: translateY(-50%);
-  z-index: 5;
-  padding: 12px 3px;
-  font-size: 13px;
-  line-height: 1;
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  border-right: none;
-  border-radius: 6px 0 0 6px;
-  cursor: pointer;
-}
 
-/* Draggable splitter between the image and the text panel */
+/* Draggable splitter between the edit column and the preview */
 .divider {
   flex: 0 0 6px;
   cursor: col-resize;
@@ -700,10 +629,6 @@ textarea.explanation {
 }
 .divider:hover {
   background: #3a4a66;
-}
-.facts-panel h2 {
-  font-size: 15px;
-  margin: 0 0 8px;
 }
 .facts-panel h3 {
   font-size: 13px;
@@ -803,46 +728,6 @@ textarea.explanation {
 }
 .gen-reading {
   padding: 6px 14px;
-}
-/* The role sits in the row itself, not in the menu: it is readable without
-   opening anything, because it means something in both modes. Its label is
-   inline rather than stacked so the row stays one line high. */
-.role-pick {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.role-pick .field-label {
-  margin-bottom: 0;
-}
-.gen-role-note {
-  margin: 0;
-  font-size: 12px;
-  color: var(--muted);
-}
-.gen {
-  position: relative;
-}
-.gen-menu {
-  position: absolute;
-  left: 0;
-  top: calc(100% + 4px);
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
-  width: 300px;
-  max-width: 80vw;
-  z-index: 20;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.gen-menu .style-free {
-  width: 100%;
-}
-.gen-menu > .primary {
-  margin-top: 4px;
 }
 .facts-features {
   margin: 4px 0 0;
@@ -945,3 +830,348 @@ textarea.explanation {
 }
 .save-predefined:hover:not(:disabled) { background: #1c2333; }
 .save-predefined:disabled { opacity: 0.6; cursor: default; }
+
+/* ── Studio layout: edit column | preview column ───────────────────────── */
+
+/* The edit column is tinted and badged so it reads as "where you change
+   things"; the preview keeps the plain page background, like the poster. */
+.edit-col {
+  flex: 0 0 30%;
+  min-width: 300px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+}
+.col-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.col-title {
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 14px;
+}
+.edit-col .col-head {
+  background: #1a2132;
+  border-bottom-color: var(--accent);
+}
+.col-sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+.edit-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.edit-panel {
+  background: #0d111a;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.edit-panel > :not(.edit-panel-head) {
+  padding: 4px 14px 14px;
+}
+.edit-panel-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+.edit-panel-head:hover:not(:disabled) {
+  background: var(--panel-2);
+}
+.edit-panel-head .fold {
+  color: var(--muted);
+  font-size: 12px;
+  width: 12px;
+}
+.fold-head {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+}
+.fold-head .field-label {
+  margin-bottom: 0;
+}
+
+.reading-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.reading-panel .style-free {
+  width: 100%;
+}
+.reading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+/* In a row of buttons, not the full-width block it is elsewhere. */
+.reading-actions .save-predefined,
+.facts-head .save-predefined {
+  margin-top: 0;
+  width: auto;
+  padding: 6px 12px;
+}
+
+/* Roles: one choice, shown as cards rather than a dropdown. */
+.role-cards .field-label {
+  margin-bottom: 6px;
+}
+.role-row {
+  display: flex;
+  gap: 6px;
+}
+.role-card {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-2);
+  cursor: pointer;
+  color: var(--muted);
+}
+.role-card:hover {
+  border-color: #3a4a66;
+}
+.role-card.active {
+  border-color: var(--accent);
+  color: var(--text);
+  background: #2a2a1a;
+}
+.role-card input,
+.fmt-tab input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+}
+.role-emoji {
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+/* Preview column */
+.preview-col {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.fmt-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: auto;
+}
+.fmt-tab {
+  white-space: nowrap;
+  font-size: 13px;
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  color: var(--muted);
+  background: var(--panel-2);
+}
+.fmt-tab:hover {
+  border-color: #3a4a66;
+}
+.fmt-tab.active {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.preview-hint {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: #cfd6e4;
+  background: #1a2132;
+  border-bottom: 1px solid var(--border);
+}
+.preview-body {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  overflow: auto;
+  background: #070a10;
+}
+.pp-annotated {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+}
+.pp-annotated > .canvas {
+  flex: 1 1 0;
+}
+.export-bar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+}
+.export-all {
+  margin-left: auto;
+}
+.export-main {
+  white-space: nowrap;
+  padding: 8px 18px;
+}
+
+/* The poster, mirrored from renderer/src/poster.ts at its render width and
+   scaled to fit (see Preview.tsx). Keep the two in step. */
+.pp-fit {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  align-self: flex-start;
+}
+.pp {
+  transform-origin: top left;
+  background: #070a10;
+  color: #e6e9f0;
+  font-family: -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  padding: 40px;
+}
+.pp header {
+  border-bottom: 1px solid #222b3d;
+  padding-bottom: 20px;
+  margin-bottom: 28px;
+}
+.pp h1 {
+  font-size: 40px;
+  margin: 0;
+  letter-spacing: 1px;
+}
+.pp-poster {
+  display: flex;
+  gap: 36px;
+  align-items: flex-start;
+}
+.pp-stage {
+  flex: 1 1 58%;
+  min-width: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+.pp-stage > .canvas {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+}
+.pp-panel {
+  flex: 1 1 42%;
+}
+.pp-narrative {
+  font-size: 15px;
+  line-height: 1.85;
+  color: #cfd6e4;
+  margin: 0 0 24px;
+  white-space: pre-wrap;
+}
+.pp-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #8a93a8;
+  margin: 0 0 12px;
+}
+.pp-features {
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+}
+.pp-features li {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.pp-dot {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: #070a10;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pp-features b {
+  font-size: 15px;
+}
+.pp-features p {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: #aeb6c6;
+}
+.pp-facts {
+  margin: 0;
+  padding-left: 18px;
+  color: #9aa5b8;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.pp footer {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid #222b3d;
+  color: #8a93a8;
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+}
+/* poster.ts switches to one column below 1000px; the portrait render is 820. */
+.pp-portrait {
+  padding: 28px;
+}
+.pp-portrait h1 {
+  font-size: 32px;
+}
+.pp-portrait .pp-poster {
+  flex-direction: column;
+}
+.pp-portrait .pp-stage,
+.pp-portrait .pp-panel {
+  flex: 1 1 100%;
+  width: 100%;
+}
+.pp-portrait .pp-panel {
+  margin-top: 8px;
+}

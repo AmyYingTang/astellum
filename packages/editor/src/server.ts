@@ -44,8 +44,9 @@ import {
   userReadingsPath,
   tailorReading,
   ReaderError,
+  dropFieldRings,
 } from '@astellum/reader';
-import { renderAnnotatedBuffer, generateEmbedHtml, renderPosterBuffers } from '@astellum/renderer';
+import { renderAnnotatedBuffer, renderPosterBuffers } from '@astellum/renderer';
 import type {
   CreateProjectRequest,
   ExportFile,
@@ -123,10 +124,18 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
     if (!SLUG_RE.test(slug)) throw new Error(`Invalid project id: ${slug}`);
     return join(workspace, slug);
   };
-  const loadReport = async (slug: string): Promise<Reading> =>
-    Reading.parse(JSON.parse(await readFile(join(projectDir(slug), 'reading.json'), 'utf8')));
   const loadFactsheet = async (slug: string): Promise<FactSheet> =>
     FactSheet.parse(JSON.parse(await readFile(join(projectDir(slug), 'factsheet.json'), 'utf8')));
+  // Every reader of a reading — the page, the export — sees it brought up to
+  // the rules it would be built with today, so a project from before a rule
+  // does not show what a new one would not.
+  const loadReport = async (slug: string): Promise<Reading> => {
+    const reading = Reading.parse(
+      JSON.parse(await readFile(join(projectDir(slug), 'reading.json'), 'utf8')),
+    );
+    const factsheet = await loadFactsheet(slug).catch(() => null);
+    return factsheet ? dropFieldRings(reading, factsheet) : reading;
+  };
 
   // In-memory create-job status, mirrored to job.json for durability/visibility.
   const jobs = new Map<string, JobStatus>();
@@ -588,6 +597,32 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
   // target's predefined entry, so the kiosk can show it offline later. Without
   // this the predefined library only ever grows by hand; with it, ordinary
   // offsite work fills it as a side effect.
+  /**
+   * Whether `save-predefined` would overwrite something: this target already
+   * has text for this role in the user's library. Asked before saving so the
+   * page can say so — the library is shared by every project of the target,
+   * and the save is not undoable from here.
+   */
+  app.get('/api/projects/:slug/predefined-status', async (req, res) => {
+    try {
+      const asked = typeof req.query.style === 'string' ? req.query.style : undefined;
+      const style = isRoleId(asked) ? asked! : defaultRoleId();
+      const reading = await loadReport(req.params.slug);
+      const factsheet = await loadFactsheet(req.params.slug).catch(() => null);
+      const primary = factsheet?.objects.find((o) => o.tier !== 'B');
+      const ids = [
+        ...(primary ? [...primary.names, ...primary.designations] : []),
+        reading.object.name.en,
+        ...reading.object.aliases,
+      ].filter(Boolean);
+      const library = await loadReadingLibrary(userReadingsPath());
+      const found = library ? findPredefined(library, ids) : undefined;
+      res.json({ ok: true, exists: !!found?.styles[style], updatedAt: found?.updated_at });
+    } catch (e) {
+      res.status(400).json({ ok: false, error: (e as Error).message });
+    }
+  });
+
   app.post('/api/projects/:slug/save-predefined', async (req, res) => {
     try {
       // The style key a reading is promoted under is the role it was written
@@ -647,71 +682,115 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
   // Hand-drawn features → the user's own atlas overlay, projected back to sky
   // coordinates. Without this a curator's tweak dies with the project; with it,
   // the next image of the same target inherits the work.
+  //
+  // Saving again replaces what this project saved before rather than adding a
+  // second copy: every annotation's id says which project and which feature
+  // it came from (`anno_user_<slug>_<feature>`), so the earlier save can be
+  // found and taken out first — including features deleted since. The one
+  // exception is an annotation this project now reads *back* from the atlas
+  // (after a re-identify): it is no longer a drawing here but an atlas
+  // feature, so it is not in `fresh`, and dropping it would delete the work.
+  const savedPrefix = (slug: string): string => `anno_user_${slug}_`;
+
+  const planAnnotationSave = async (slug: string) => {
+    const reading = await loadReport(slug);
+    const factsheet = await loadFactsheet(slug);
+    const wcs = factsheet.solve.wcs;
+    if (!wcs) throw new Error('This project has no WCS — annotations can only be stored by sky position.');
+
+    const primary = factsheet.objects.find((o) => o.tier !== 'B');
+    if (!primary) throw new Error('No identified object to attach annotations to.');
+
+    const byObj = new Map(factsheet.objects.map((o) => [o.id, o]));
+    // Only what a person actually drew here. Two things are deliberately
+    // excluded: atlas-sourced features (re-saving them duplicates the
+    // baseline) and catalogued A-class objects — those come back from a
+    // catalogue query on any future image, so storing them as hand
+    // annotations would just pollute the overlay with things it doesn't own.
+    const fresh = reading.features.filter((f) => {
+      if (!f.fact_ref) return true; // added by hand in the editor
+      const obj = byObj.get(f.fact_ref.object_id);
+      return !!obj && obj.tier === 'B' && obj.detection_source !== 'atlas';
+    });
+
+    const toWorld = (p: [number, number]): [number, number] => {
+      const [ra, dec] = pixelToWorld(wcs, p[0], p[1]);
+      return [ra, dec];
+    };
+    const annotations = fresh
+      .map((f) => {
+        const kind = f.shape === 'polyline' ? 'polyline' : f.polygon?.length ? 'polygon' : 'point';
+        const verts =
+          kind === 'point'
+            ? [toWorld([f.circle.cx, f.circle.cy])]
+            : (f.polygon ?? []).map(toWorld);
+        if (!verts.length) return null;
+        const radiusArcmin =
+          kind === 'point' && factsheet.solve.pixscale_arcsec
+            ? (f.circle.r * factsheet.solve.pixscale_arcsec) / 60
+            : undefined;
+        return {
+          id: `${savedPrefix(slug)}${f.id}`,
+          // The atlas drawing vocabulary, not the palette key — recovered from
+          // the fact object when there is one, else a neutral region callout.
+          feature_type: atlasTypeFor(
+            (f.fact_ref ? byObj.get(f.fact_ref.object_id) : undefined)?.feature_type,
+          ),
+          geometry: {
+            type: kind,
+            vertices: verts,
+            ...(radiusArcmin ? { radius_arcmin: radiusArcmin } : {}),
+          },
+          label: f.label,
+          ...(f.explanation.zh || f.explanation.en ? { note: f.explanation } : {}),
+        };
+      })
+      .filter((a): a is NonNullable<typeof a> => !!a);
+
+    const inUseHere = new Set(
+      factsheet.objects.map((o) => o.atlas_annotation_id).filter((x): x is string => !!x),
+    );
+    const isEarlierSave = (id: string | undefined): boolean =>
+      !!id && id.startsWith(savedPrefix(slug)) && !inUseHere.has(id);
+
+    const path = userRegistryPath();
+    const existing = (await loadRegistry(path)) ?? { schema_version: 1 as const, objects: [] };
+    const replaced = existing.objects.reduce(
+      (n, o) => n + o.annotations.filter((a) => isEarlierSave(a.id)).length,
+      0,
+    );
+    return { reading, primary, annotations, existing, isEarlierSave, replaced, path };
+  };
+
+  /** How many annotations a save would replace — asked first, so the page can say. */
+  app.get('/api/projects/:slug/annotations-status', async (req, res) => {
+    try {
+      const { replaced } = await planAnnotationSave(req.params.slug);
+      res.json({ ok: true, replaced });
+    } catch (e) {
+      res.status(400).json({ ok: false, error: (e as Error).message });
+    }
+  });
+
   app.post('/api/projects/:slug/save-annotations', async (req, res) => {
     try {
-      const reading = await loadReport(req.params.slug);
-      const factsheet = await loadFactsheet(req.params.slug);
-      const wcs = factsheet.solve.wcs;
-      if (!wcs) throw new Error('This project has no WCS — annotations can only be stored by sky position.');
+      const { reading, primary, annotations, existing, isEarlierSave, replaced, path } =
+        await planAnnotationSave(req.params.slug);
 
-      const primary = factsheet.objects.find((o) => o.tier !== 'B');
-      if (!primary) throw new Error('No identified object to attach annotations to.');
-
-      const byObj = new Map(factsheet.objects.map((o) => [o.id, o]));
-      // Only what a person actually drew here. Two things are deliberately
-      // excluded: atlas-sourced features (re-saving them duplicates the
-      // baseline) and catalogued A-class objects — those come back from a
-      // catalogue query on any future image, so storing them as hand
-      // annotations would just pollute the overlay with things it doesn't own.
-      const fresh = reading.features.filter((f) => {
-        if (!f.fact_ref) return true; // added by hand in the editor
-        const obj = byObj.get(f.fact_ref.object_id);
-        return !!obj && obj.tier === 'B' && obj.detection_source !== 'atlas';
-      });
-
-      const toWorld = (p: [number, number]): [number, number] => {
-        const [ra, dec] = pixelToWorld(wcs, p[0], p[1]);
-        return [ra, dec];
-      };
-      const annotations = fresh
-        .map((f, i) => {
-          const kind = f.shape === 'polyline' ? 'polyline' : f.polygon?.length ? 'polygon' : 'point';
-          const verts =
-            kind === 'point'
-              ? [toWorld([f.circle.cx, f.circle.cy])]
-              : (f.polygon ?? []).map(toWorld);
-          if (!verts.length) return null;
-          const radiusArcmin =
-            kind === 'point' && factsheet.solve.pixscale_arcsec
-              ? (f.circle.r * factsheet.solve.pixscale_arcsec) / 60
-              : undefined;
-          return {
-            id: `anno_user_${Date.now().toString(36)}_${i}`,
-            // The atlas drawing vocabulary, not the palette key — recovered from
-            // the fact object when there is one, else a neutral region callout.
-            feature_type: atlasTypeFor(
-              (f.fact_ref ? byObj.get(f.fact_ref.object_id) : undefined)?.feature_type,
-            ),
-            geometry: {
-              type: kind,
-              vertices: verts,
-              ...(radiusArcmin ? { radius_arcmin: radiusArcmin } : {}),
-            },
-            label: f.label,
-            ...(f.explanation.zh || f.explanation.en ? { note: f.explanation } : {}),
-          };
-        })
-        .filter((a): a is NonNullable<typeof a> => !!a);
-
-      if (!annotations.length) {
+      if (!annotations.length && !replaced) {
         res.json({ ok: true, saved: 0, note: 'Nothing new to save — every feature already comes from the atlas.' });
         return;
       }
 
-      const path = userRegistryPath();
-      const existing = (await loadRegistry(path)) ?? { schema_version: 1 as const, objects: [] };
+      const kept = {
+        ...existing,
+        objects: existing.objects.map((o) => ({
+          ...o,
+          annotations: o.annotations.filter((a) => !isEarlierSave(a.id)),
+        })),
+      };
       const merged = mergeRegistries([
-        existing,
+        kept,
         Registry.parse({
           schema_version: 1,
           objects: [
@@ -725,7 +804,7 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
       ]);
       await mkdir(dirname(path), { recursive: true });
       await writeFile(path, JSON.stringify(merged, null, 2) + '\n', 'utf8');
-      res.json({ ok: true, saved: annotations.length, path, target: primary.names[0] });
+      res.json({ ok: true, saved: annotations.length, replaced, path, target: primary.names[0] });
     } catch (e) {
       res.status(400).json({ ok: false, error: (e as Error).message });
     }
@@ -748,8 +827,11 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
   app.post('/api/projects/:slug/export', async (req, res) => {
     try {
       const slug = req.params.slug;
-      const format = (req.body as ExportRequest).format;
-      const report = await loadReport(slug);
+      const { format, layout, lang } = req.body as ExportRequest;
+      const stored = await loadReport(slug);
+      // Every renderer writes in `display_language`, so asking for the page's
+      // language is a matter of setting it for this export only.
+      const report = lang === 'zh' || lang === 'en' ? { ...stored, display_language: lang } : stored;
       const dir = projectDir(slug);
       const imagePath = join(dir, report.image.src);
       const want = (f: ExportFormat): boolean => format === 'all' || format === f;
@@ -774,20 +856,16 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
         });
       }
       let dataUri = '';
-      if (want('embed') || want('poster')) {
+      if (want('poster')) {
         const mime = extname(imagePath).toLowerCase() === '.png' ? 'image/png' : 'image/jpeg';
         dataUri = `data:${mime};base64,${(await readFile(imagePath)).toString('base64')}`;
       }
-      if (want('embed')) {
-        const html = generateEmbedHtml(report, { imageDataUri: dataUri });
-        files.push({
-          name: `${stem}_embed.html`,
-          base64: Buffer.from(html, 'utf8').toString('base64'),
-          contentType: 'text/html',
-        });
-      }
       if (want('poster')) {
-        const posters = await renderPosterBuffers({ report, imageDataUri: dataUri });
+        const posters = await renderPosterBuffers({
+          report,
+          imageDataUri: dataUri,
+          layouts: layout ? [layout] : undefined,
+        });
         for (const p of posters) {
           files.push({
             name: `${stem}_${p.name}`,

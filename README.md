@@ -25,10 +25,13 @@ The studio is the one you'll spend most time in:
   **style** presets (audience: kids/experienced/playful · focus: artistic/history/cultures) or
   type your own, and ASTELLUM identifies + auto-annotates it (~1 min), then opens the editor.
 - **Open existing** — reopen any past reading to keep tweaking it.
-- **Editor** — drag circles to reposition/resize, edit the text and color keys, then
-  **Export ▾** an annotated image, an interactive `embed.html`, or a shareable poster.
-  The export uses a native folder picker (needs a Chromium-based browser — Chrome / Edge / Arc),
-  and saves the files to wherever you choose.
+- **Editor** — the right side is a live preview of what will be exported, in one of three
+  formats (labels only · landscape poster · portrait poster); drag numbers, rings and insets on
+  it directly. The left side is for changes when something needs one: the facts and
+  re-identify, and the reading text with its role. **Export** writes the format on screen, in
+  the language on screen. Chromium browsers (Chrome / Edge / Arc) ask for a folder; others
+  save to downloads. Anything that would overwrite existing text, library entries or files
+  asks first. (The interactive `embed.html` is still available from the CLI's `render`.)
 
 Edits auto-save. Stop the server with Ctrl+C. Everything lives under `out/<name>/`.
 

@@ -4,6 +4,7 @@ import type {
   CreateProjectResponse,
   ExportFile,
   ExportFormat,
+  ExportRequest,
   ExportResponse,
   FactsheetResponse,
   JobStatus,
@@ -109,11 +110,16 @@ export async function saveReport(slug: string, report: Reading): Promise<void> {
   if (!body.ok) throw new Error(body.error ?? `Save failed (${res.status})`);
 }
 
-export async function exportProject(slug: string, format: ExportFormat): Promise<ExportFile[]> {
+export async function exportProject(
+  slug: string,
+  format: ExportFormat,
+  layout?: ExportRequest['layout'],
+  lang?: ExportRequest['lang'],
+): Promise<ExportFile[]> {
   const res = await fetch(`/api/projects/${encodeURIComponent(slug)}/export`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ format }),
+    body: JSON.stringify({ format, layout, lang }),
   });
   const body = (await res.json()) as ExportResponse;
   if (!body.ok) throw new Error(body.error ?? `Export failed (${res.status})`);
@@ -131,6 +137,17 @@ export async function getConfig(): Promise<ConfigResponse> {
 }
 
 /** Promote this project's reading into the predefined library (the F3 loop). */
+/** Whether the user's library already has this target's text for `style`. */
+export async function predefinedExists(slug: string, style: string): Promise<boolean> {
+  const res = await fetch(
+    `/api/projects/${encodeURIComponent(slug)}/predefined-status?style=${encodeURIComponent(style)}`,
+    NO_STORE,
+  );
+  const body = (await res.json()) as { ok: boolean; exists?: boolean; error?: string };
+  if (!body.ok) throw new Error(body.error ?? `Could not check the library (${res.status})`);
+  return !!body.exists;
+}
+
 export async function savePredefined(slug: string, style?: string): Promise<SavePredefinedResponse> {
   const res = await fetch(`/api/projects/${encodeURIComponent(slug)}/save-predefined`, {
     method: 'POST',
@@ -143,6 +160,14 @@ export async function savePredefined(slug: string, style?: string): Promise<Save
 }
 
 /** Save the human-drawn features into the user's atlas overlay (the F2 loop). */
+/** How many annotations from this project's earlier save a new save replaces. */
+export async function annotationsToReplace(slug: string): Promise<number> {
+  const res = await fetch(`/api/projects/${encodeURIComponent(slug)}/annotations-status`, NO_STORE);
+  const body = (await res.json()) as { ok: boolean; replaced?: number; error?: string };
+  if (!body.ok) throw new Error(body.error ?? `Could not check the atlas overlay (${res.status})`);
+  return body.replaced ?? 0;
+}
+
 export async function saveAnnotations(
   slug: string,
 ): Promise<{ ok: boolean; saved: number; target?: string; note?: string }> {

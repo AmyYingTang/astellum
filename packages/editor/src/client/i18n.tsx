@@ -22,12 +22,9 @@ export interface Strings {
   hintPlaceholder: string;
   generate: string;
   generating: string;
-  styleLabel: string;
   calloutLabel: string;
   calloutHint: string;
   roleLabel: string;
-  /** Prefix, with its own separator: '当前角色:' / 'Writing for: '. */
-  roleInEffect: string;
   switchingRole: string;
   focusLabel: string;
   styleFreePlaceholder: string;
@@ -42,10 +39,7 @@ export interface Strings {
   exportLabel: string;
   exporting: string;
   exported: string;
-  pickerUnsupported: string;
   savedTo: string;
-  saveModeFolder: string;
-  saveModeDownload: string;
   browserDefault: string;
   loadFailed: string;
   errorLabel: string;
@@ -62,7 +56,6 @@ export interface Strings {
   phPhysics: string;
   phInteresting: string;
   fmtAnnotated: string;
-  fmtEmbed: string;
   fmtPoster: string;
   fmtAll: string;
   stageSolving: string;
@@ -79,6 +72,19 @@ export interface Strings {
   reidentify: string;
   reidentifying: string;
   reidentifyConfirm: string;
+  /** `{n}` is the number of written passages that would be lost. */
+  reidClearsText: string;
+  /** Overwrite confirmations. `{n}` passages, `{role}` a role, `{files}` names. */
+  genOverwrite: string;
+  genOverwriteBtn: string;
+  roleOverwrite: string;
+  roleOverwriteBtn: string;
+  predefOverwrite: string;
+  predefOverwriteBtn: string;
+  exportOverwrite: string;
+  annsOverwrite: string;
+  annsOverwriteBtn: string;
+  exportOverwriteBtn: string;
   reidConfirmBtn: string;
   reidCancel: string;
   starMagLabel: string;
@@ -87,7 +93,6 @@ export interface Strings {
   titleHint: string;
   gridShow: string;
   gridHide: string;
-  factsTitle: string;
   factsSolve: string;
   factsObjects: string;
   factsFeaturesB: string;
@@ -96,6 +101,19 @@ export interface Strings {
   factsBSourceAi: string;
   factsBSourceAtlas: string;
   factsNoneYet: string;
+  editTitle: string;
+  editSub: string;
+  panelFacts: string;
+  panelReading: string;
+  dragDivider: string;
+  previewTitle: string;
+  pvAnnotated: string;
+  pvLandscape: string;
+  pvPortrait: string;
+  fmtPosterLandscape: string;
+  fmtPosterPortrait: string;
+  exportAll: string;
+  previewHint: string;
 }
 
 const STRINGS: Record<UiLang, Strings> = {
@@ -117,11 +135,9 @@ const STRINGS: Record<UiLang, Strings> = {
     hintPlaceholder: '对象名提示(可选),如 "Sh2-308"',
     generate: '生成读图',
     generating: '识别中…',
-    styleLabel: '风格(可选)',
     calloutLabel: '放大框',
     calloutHint: '太小看不清时,在画面空处放一个放大图。最多三个,拖动框可以换位置。',
     roleLabel: '角色',
-    roleInEffect: '当前角色:',
     switchingRole: '切换角色中…',
     focusLabel: '侧重',
     styleFreePlaceholder: '其他要求…(可选,会附加到提示词)',
@@ -136,10 +152,7 @@ const STRINGS: Record<UiLang, Strings> = {
     exportLabel: '导出',
     exporting: '导出中…',
     exported: '已导出:',
-    pickerUnsupported: '当前浏览器不支持选择文件夹,请使用 Chrome / Edge / Arc 等基于 Chromium 的浏览器。',
     savedTo: '已保存到',
-    saveModeFolder: '选择文件夹',
-    saveModeDownload: '直接下载',
     browserDefault: '浏览器默认下载位置',
     loadFailed: '加载失败',
     errorLabel: '出错',
@@ -156,7 +169,6 @@ const STRINGS: Record<UiLang, Strings> = {
     phPhysics: '物理机制(可选)',
     phInteresting: '冷知识(可选)',
     fmtAnnotated: '标注图 (JPG)',
-    fmtEmbed: '互动网页 (HTML)',
     fmtPoster: '海报 (PNG)',
     fmtAll: '全部',
     stageSolving: '正在解像(plate-solve,可能 30 秒到几分钟)…',
@@ -174,6 +186,21 @@ const STRINGS: Record<UiLang, Strings> = {
     reidentifying: '识别中…',
     reidentifyConfirm: '重新识别会覆盖当前标注和已生成的解读文字,不可撤销。',
     reidConfirmBtn: '确认重新识别',
+    genOverwrite:
+      '已经有 {n} 段解读文字。重新生成会用 AI 新写的文字替换它们,现在的文字(包括你手改过的)都会丢失。',
+    genOverwriteBtn: '替换并生成',
+    roleOverwrite:
+      '切换到「{role}」会从解读库读入这个角色的文字,替换现在的 {n} 段文字(包括你手改过的)。',
+    roleOverwriteBtn: '切换角色',
+    predefOverwrite:
+      '解读库里已经有这个目标「{role}」的文字。保存会用现在的文字覆盖其中相同的部分,这个目标的其他作品读到的也会跟着变。',
+    predefOverwriteBtn: '覆盖保存',
+    exportOverwrite: '这个文件夹里已经有同名文件:{files}。导出会覆盖它们。',
+    exportOverwriteBtn: '覆盖导出',
+    annsOverwrite:
+      '你之前从这个作品存过 {n} 个标注到标注库。再存一次会用现在的版本替换它们;上次保存之后你在这里删掉的标注,也会从标注库里删掉。',
+    annsOverwriteBtn: '替换标注',
+    reidClearsText: '这份作品已经写好了 {n} 段解读文字(导读和要素说明)。重新识别会把它们全部清空,无法恢复。想留着的话,先「存为预定义解读」。',
     reidCancel: '取消',
     starMagLabel: '亮星阈值 V <',
     genReading: '✦ 生成解读',
@@ -181,7 +208,6 @@ const STRINGS: Record<UiLang, Strings> = {
     titleHint: '主题标题(可改),例如改成 Antares 或「天空中的调色盘」',
     gridShow: '⊞ 显示网格',
     gridHide: '⊞ 隐藏网格',
-    factsTitle: '事实层 (Facts)',
     factsSolve: '解像',
     factsObjects: '目录天体',
     factsFeaturesB: '形态特征 (B 类 · 推断)',
@@ -190,6 +216,20 @@ const STRINGS: Record<UiLang, Strings> = {
     factsBSourceAi: 'AI 推断',
     factsBSourceAtlas: '基准标注库',
     factsNoneYet: '没有事实层(此项目早于识别阶段)。',
+    editTitle: '编辑',
+    editSub: '需要时才改 · 改动实时反映在右侧预览',
+    panelFacts: '识别与事实',
+    panelReading: '解读文字',
+    dragDivider: '拖动调整编辑 / 预览宽度',
+    previewTitle: '预览 · 所见即所得',
+    pvAnnotated: '🏷️ 仅标签',
+    pvLandscape: '🖼️ 横版解说',
+    pvPortrait: '📜 竖版解说',
+    fmtPosterLandscape: '横版海报 (PNG)',
+    fmtPosterPortrait: '竖版海报 (PNG)',
+    exportAll: '导出全部格式',
+    previewHint:
+      '图上可以直接拖动:编号、圆圈、放大框都能挪位置;点选圆圈后拖它边上的小圆点可改大小。点图上空白处或按 Esc 取消选中,⌘/Ctrl+Z 撤销。',
   },
   en: {
     newReading: 'New reading',
@@ -210,12 +250,10 @@ const STRINGS: Record<UiLang, Strings> = {
     hintPlaceholder: 'Object hint (optional), e.g. "Sh2-308"',
     generate: 'Generate',
     generating: 'Reading…',
-    styleLabel: 'Style (optional)',
     calloutLabel: 'Magnify',
     calloutHint:
       'When it is too small to read, show the patch enlarged in an empty part of the frame. Three at most; drag the panel to move it.',
     roleLabel: 'Role',
-    roleInEffect: 'Writing for: ',
     switchingRole: 'Switching role…',
     focusLabel: 'Focus',
     styleFreePlaceholder: 'Other instructions… (optional, appended to the prompt)',
@@ -230,10 +268,7 @@ const STRINGS: Record<UiLang, Strings> = {
     exportLabel: 'Export',
     exporting: 'Exporting…',
     exported: 'Exported:',
-    pickerUnsupported: 'This browser does not support the folder picker. Use a Chromium-based browser (Chrome / Edge / Arc).',
     savedTo: 'Saved to',
-    saveModeFolder: 'Folder picker',
-    saveModeDownload: 'Browser download',
     browserDefault: 'browser default location',
     loadFailed: 'Failed to load',
     errorLabel: 'Error',
@@ -250,7 +285,6 @@ const STRINGS: Record<UiLang, Strings> = {
     phPhysics: 'physics (optional)',
     phInteresting: 'interesting (optional)',
     fmtAnnotated: 'Annotated JPG',
-    fmtEmbed: 'Embed HTML',
     fmtPoster: 'Poster PNG',
     fmtAll: 'All',
     stageSolving: 'Plate-solving (this can take 30s–a few minutes)…',
@@ -268,6 +302,21 @@ const STRINGS: Record<UiLang, Strings> = {
     reidentifying: 'Identifying…',
     reidentifyConfirm: 'Re-identifying overwrites the current annotations and any generated reading text. Cannot be undone.',
     reidConfirmBtn: 'Re-identify',
+    genOverwrite:
+      'There are already {n} written passages. Generating again replaces them with new AI text — the current text, including your edits, will be lost.',
+    genOverwriteBtn: 'Replace and generate',
+    roleOverwrite:
+      'Switching to “{role}” reads that role’s text from the library and replaces the current {n} passages, including your edits.',
+    roleOverwriteBtn: 'Switch role',
+    predefOverwrite:
+      'The library already has text for this target as “{role}”. Saving overwrites the matching parts with the current text, and every other project of this target will read the new version.',
+    predefOverwriteBtn: 'Overwrite',
+    exportOverwrite: 'This folder already has: {files}. Exporting overwrites them.',
+    exportOverwriteBtn: 'Overwrite',
+    annsOverwrite:
+      'You saved {n} annotations from this project to your atlas overlay before. Saving again replaces them with the current version — anything you have deleted here since the last save is removed from the overlay too.',
+    annsOverwriteBtn: 'Replace annotations',
+    reidClearsText: 'This reading already has {n} written passages (narrative and feature notes). Re-identifying erases all of them and they cannot be recovered. To keep them, use “Save as predefined reading” first.',
     reidCancel: 'Cancel',
     starMagLabel: 'Bright-star V <',
     genReading: '✦ Generate reading',
@@ -275,7 +324,6 @@ const STRINGS: Record<UiLang, Strings> = {
     titleHint: 'Theme title (editable) — e.g. rename to Antares or "A palette in the sky"',
     gridShow: '⊞ Show grid',
     gridHide: '⊞ Hide grid',
-    factsTitle: 'Facts',
     factsSolve: 'Solve',
     factsObjects: 'Catalog objects',
     factsFeaturesB: 'Morphological features (Class B · inferred)',
@@ -284,6 +332,20 @@ const STRINGS: Record<UiLang, Strings> = {
     factsBSourceAi: 'AI',
     factsBSourceAtlas: 'Feature atlas',
     factsNoneYet: 'No fact sheet (this project predates the identification stage).',
+    editTitle: 'Edit',
+    editSub: 'Only when needed · changes show in the preview',
+    panelFacts: 'Identification & facts',
+    panelReading: 'Reading text',
+    dragDivider: 'Drag to resize edit / preview',
+    previewTitle: 'Preview · what you export',
+    pvAnnotated: '🏷️ Labels only',
+    pvLandscape: '🖼️ Landscape',
+    pvPortrait: '📜 Portrait',
+    fmtPosterLandscape: 'Landscape poster (PNG)',
+    fmtPosterPortrait: 'Portrait poster (PNG)',
+    exportAll: 'Export all formats',
+    previewHint:
+      'Drag on the picture: numbers, rings and magnified insets all move; select a ring and drag the dot on its edge to resize. Click empty sky or press Esc to deselect; ⌘/Ctrl+Z to undo.',
   },
 };
 

@@ -9,6 +9,7 @@ import {
   type Reading,
 } from '@astellum/schema';
 import { useUi } from './i18n.js';
+import { writtenPassages } from './state.js';
 
 export interface ReidentifyOptions {
   starMagMax?: number;
@@ -19,11 +20,10 @@ interface Props {
   factsheet: FactSheet | null;
   selectedId: string | null;
   onSelect: (id: string) => void;
-  collapsed: boolean;
-  onToggleCollapse: () => void;
   onReidentify: (opts: ReidentifyOptions) => void;
   reidentifying: boolean;
-  style?: React.CSSProperties;
+  /** Further buttons for the action row, beside re-identify. */
+  actions?: React.ReactNode;
 }
 
 type FactObject = FactSheet['objects'][number];
@@ -92,7 +92,7 @@ function bFeatureDetail(f: RFeature, byId: Map<string, FactObject>, lang: 'zh' |
 }
 
 /**
- * Left panel: the full grounding fact sheet — solve geometry + a numbered legend
+ * The facts half of the edit column: the full grounding fact sheet — solve geometry + a numbered legend
  * mapping each badge on the image to its object (color · number · name · type ·
  * RA/Dec · size · distance · catalog ids · confidence). Read-only; clicking a row
  * selects that annotation.
@@ -102,11 +102,9 @@ export function FactsPanel({
   factsheet,
   selectedId,
   onSelect,
-  collapsed,
-  onToggleCollapse,
   onReidentify,
   reidentifying,
-  style,
+  actions,
 }: Props): React.JSX.Element {
   const { t, lang } = useUi();
   const objById = new Map((factsheet?.objects ?? []).map((o) => [o.id, o]));
@@ -118,32 +116,24 @@ export function FactsPanel({
   const bFeatures = reading.features.filter((f) => isB(f));
   const s = factsheet?.solve;
   const [reidOpen, setReidOpen] = useState(false);
+  // Written text is the one thing a re-identification destroys that took
+  // real time to make, so when there is some the warning says how much.
+  const textCount = writtenPassages(reading);
   const [starMag, setStarMag] = useState(4);
 
-  if (collapsed) {
-    return (
-      <aside className="facts-panel collapsed">
-        <button className="collapse-btn" onClick={onToggleCollapse} title={t.factsTitle}>
-          ›
-        </button>
-      </aside>
-    );
-  }
-
   return (
-    <aside className="facts-panel" style={style}>
-      <button className="collapse-btn" onClick={onToggleCollapse} title="收起 / collapse">
-        ‹
-      </button>
-      <div className="facts-body">
+    <div className="facts-panel">
       <div className="facts-head">
-        <h2>{t.factsTitle}</h2>
+        {actions}
         <div className="reid">
           <button className="primary" onClick={() => setReidOpen((v) => !v)} disabled={reidentifying}>
             {reidentifying ? t.reidentifying : `${t.reidentify} ▾`}
           </button>
           {reidOpen && (
             <div className="reid-menu">
+              {textCount > 0 && (
+                <p className="reid-danger">⚠ {t.reidClearsText.replace('{n}', String(textCount))}</p>
+              )}
               <p className="reid-warn">⚠ {t.reidentifyConfirm}</p>
               <label className="reid-param">
                 <span>{t.starMagLabel}</span>
@@ -157,7 +147,7 @@ export function FactsPanel({
               <div className="reid-actions">
                 <button onClick={() => setReidOpen(false)}>{t.reidCancel}</button>
                 <button
-                  className="primary"
+                  className={textCount > 0 ? 'danger' : 'primary'}
                   onClick={() => {
                     setReidOpen(false);
                     onReidentify({ starMagMax: starMag });
@@ -310,7 +300,6 @@ export function FactsPanel({
           })}
         </>
       )}
-      </div>
-    </aside>
+    </div>
   );
 }

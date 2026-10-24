@@ -19,26 +19,40 @@ describe('overlayLabel', () => {
   });
 
   // The background under a name can go from black sky to a white core within a
-  // few hundred pixels, so the glyph carries its own contrast.
-  it('paints a dark halo under the feature colour', () => {
+  // few hundred pixels, so the name brings its own background — one colour
+  // for every feature, not the feature's.
+  it('sets light text on a dark plate, whatever the feature colour', () => {
     const svg = overlayLabel(base);
-    expect(svg).toContain('fill="#bb9af7"');
-    expect(svg).toContain('stroke="#0b0e14"');
-    expect(svg).toContain('paint-order="stroke"');
+    expect(svg).toContain('fill="#080b12"');
+    expect(svg).toContain('fill="#f2f5fb"');
+    expect(svg).not.toContain('#bb9af7');
   });
 
+  const rectOf = (svg: string): { x: number; w: number } => {
+    const m = /<rect x="(-?\d+)" y="-?\d+" width="(\d+)"/.exec(svg)!;
+    return { x: Number(m[1]), w: Number(m[2]) };
+  };
+
   it('sits to the right of the badge in open space', () => {
-    const svg = overlayLabel(base);
-    expect(svg).toContain('text-anchor="start"');
-    expect(svg).toMatch(/x="1[0-9][0-9]"/); // pushed right of x=100
+    const r = rectOf(overlayLabel(base));
+    expect(r.x).toBeGreaterThan(100);
   });
 
   // Nothing else in the kiosk guards the frame edge, and half a name hanging
   // off the picture is worse than no name.
   it('changes sides rather than running off the right edge', () => {
-    const svg = overlayLabel({ ...base, x: 900 });
-    expect(svg).toContain('text-anchor="end"');
-    expect(svg).toMatch(/x="8[0-9][0-9]"/); // pulled back left of x=900
+    const r = rectOf(overlayLabel({ ...base, x: 900 }));
+    expect(r.x + r.w).toBeLessThan(900);
+  });
+
+  // librsvg cannot measure, so the plate is sized from the characters: a CJK
+  // name of the same length needs a wider one than a Latin name.
+  it('sizes the plate to the name', () => {
+    const latin = rectOf(overlayLabel({ ...base, text: 'Pillar' }));
+    const cjk = rectOf(overlayLabel({ ...base, text: '象鼻柱状体' }));
+    const long = rectOf(overlayLabel({ ...base, text: 'Pillar with a long name' }));
+    expect(cjk.w).toBeGreaterThan(latin.w);
+    expect(long.w).toBeGreaterThan(cjk.w);
   });
 
   it('carries both languages when asked, as its only content', () => {

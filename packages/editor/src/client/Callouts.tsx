@@ -163,6 +163,8 @@ export function Callouts({
   if (!callouts.length) return null;
   const { width, height } = report.image;
   const band = Math.max(4, Math.min(width, height) / 100);
+  // The frame's weight in image pixels, as annotate.ts draws it: half a mark's.
+  const frameW = Math.max(1, Math.round(Math.max(2, Math.round(Math.min(width, height) / 300)) * 0.5));
 
   const pairs = callouts
     .map((c) => ({ c, f: report.features.find((x) => x.id === c.id) }))
@@ -205,7 +207,7 @@ export function Callouts({
               cornerRadius={px(6)}
               fill="rgba(0,0,0,0.001)"
               stroke={color.stroke}
-              strokeWidth={px(2)}
+              strokeWidth={frameW}
               draggable
               onDragStart={() => dispatch({ type: 'beginChange' })}
               onDragMove={(ev) =>

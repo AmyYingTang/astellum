@@ -29,6 +29,10 @@ function escapeXml(s: string): string {
  * second time, at a different size, and two copies of this would be two
  * drawings of one shape that drift apart.
  */
+/** A dotted line: zero-length dashes with round caps, one dot per `period`
+ *  stroke widths. The studio canvas draws the same. */
+const DOT = { on: 0.01, period: 2.2 } as const;
+
 function featureShape(f: Feature, strokeW: number): string[] {
   const color = COLOR_PALETTE[f.color_key];
   const { cx, cy, r } = f.circle;
@@ -68,11 +72,14 @@ function featureShape(f: Feature, strokeW: number): string[] {
       `<polyline points="${rpts}" fill="none" stroke="${color.stroke}" stroke-width="${Math.max(1, Math.round(strokeW * 0.8))}" stroke-linecap="round" stroke-linejoin="round"/>`,
     );
   } else if (f.shape === 'polygon' && f.polygon && f.polygon.length > 1) {
-    // Class-B morphology suggestion (e.g. a pillar): a soft dashed outline,
-    // never a hard box. An optional arrow shows the 迎光 / illumination direction.
+    // Class-B morphology suggestion (e.g. a pillar): a soft dotted outline,
+    // never a hard box — as fine as the rim line beside it, so the two read as
+    // one family. An optional arrow shows the 迎光 / illumination direction.
     const pts = f.polygon.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+    const w = Math.max(1, Math.round(strokeW * 0.8));
     parts.push(
-      `<polygon points="${pts}" fill="none" stroke="${color.stroke}" stroke-width="${strokeW}" stroke-dasharray="${strokeW * 4} ${strokeW * 3}" stroke-linejoin="round"/>`,
+      `<polygon points="${pts}" fill="none" stroke="${color.stroke}" stroke-width="${w}" ` +
+        `stroke-dasharray="${DOT.on} ${(w * DOT.period).toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/>`,
     );
     if (f.arrow_to) {
       const [ax, ay] = f.arrow_to;
@@ -86,12 +93,17 @@ function featureShape(f: Feature, strokeW: number): string[] {
       );
     }
   } else if (f.shape !== 'field') {
-    // A-class solid ring, or a Class-B shell sample (small dashed circle).
+    // A-class solid ring, or a Class-B shell sample (small dotted circle, as
+    // fine as the polygon outline: one style for "suggested, not catalogued").
     // 'field' is the subject the frame is a crop of: a ring around it would
     // claim a boundary this picture does not contain, so it gets none.
-    const dash = f.shape === 'shell' ? ` stroke-dasharray="${strokeW * 5} ${strokeW * 3}"` : '';
+    const fine = Math.max(1, Math.round(strokeW * 0.8));
+    const ring =
+      f.shape === 'shell'
+        ? `stroke-width="${fine}" stroke-dasharray="${DOT.on} ${(fine * DOT.period).toFixed(1)}" stroke-linecap="round"`
+        : `stroke-width="${strokeW}"`;
     parts.push(
-      `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color.stroke}" stroke-width="${strokeW}"${dash}/>`,
+      `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color.stroke}" ${ring}/>`,
     );
   }
   return parts;
@@ -262,7 +274,7 @@ function calloutMarkup(
   // obviously the same thing.
   parts.push(
     `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${Math.round(strokeW * 2)}" fill="none" ` +
-      `stroke="${color.stroke}" stroke-width="${strokeW}"/>`,
+      `stroke="${color.stroke}" stroke-width="${Math.max(1, Math.round(strokeW * 0.5))}"/>`,
   );
   const br = Math.round(Math.min(w, h) * 0.09);
   const bx = x + br * 1.4;

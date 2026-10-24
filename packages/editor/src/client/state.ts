@@ -1,5 +1,17 @@
 import type { Circle, ColorKey, Feature, Reading } from '@astellum/schema';
 
+/**
+ * How many passages of written text a reading carries — the narrative and
+ * each feature's explanation. The thing that takes real time to make, and so
+ * what every overwrite warning counts.
+ */
+export function writtenPassages(r: Reading): number {
+  return (
+    (r.narrative.zh || r.narrative.en ? 1 : 0) +
+    r.features.filter((f) => f.explanation.zh || f.explanation.en).length
+  );
+}
+
 export interface EditorState {
   report: Reading;
   selectedId: string | null;
@@ -31,8 +43,10 @@ export type Action =
   | { type: 'redo' }
   | { type: 'markSaved' };
 
+// Nothing selected on arrival: the page opens on a frame ready to export, and
+// a highlighted mark would be one more thing that looks like it needs doing.
 export function initState(report: Reading): EditorState {
-  return { report, selectedId: report.features[0]?.id ?? null, past: [], future: [], dirty: false };
+  return { report, selectedId: null, past: [], future: [], dirty: false };
 }
 
 function mapFeature(report: Reading, id: string, fn: (f: Feature) => Feature): Reading {

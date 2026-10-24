@@ -1,5 +1,5 @@
 import type * as React from 'react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ColorKey, COLOR_PALETTE, type Reading } from '@astellum/schema';
 import type { Action } from './state.js';
 import { useUi } from './i18n.js';
@@ -28,7 +28,29 @@ export function Sidebar({
 }: Props): React.JSX.Element {
   const { t, lang } = useUi();
   const obj = report.object;
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  // Everything starts folded: the column is shared with the facts and the
+  // generator now, and a frame that needs no edits should not make anyone
+  // scroll past its text. A feature added later is not in the set, so it opens.
+  const [collapsed, setCollapsed] = useState<Set<string>>(
+    () => new Set(report.features.map((f) => f.id)),
+  );
+  const [narrativeOpen, setNarrativeOpen] = useState(false);
+  // Picking a mark on the picture opens its card — folded, it would be selected
+  // with nothing there to edit.
+  // Only on a change: the page opens with a mark already selected, and that
+  // one should start folded like the rest.
+  const lastSelected = useRef(selectedId);
+  useEffect(() => {
+    if (selectedId === lastSelected.current) return;
+    lastSelected.current = selectedId;
+    if (!selectedId) return;
+    setCollapsed((s) => {
+      if (!s.has(selectedId)) return s;
+      const n = new Set(s);
+      n.delete(selectedId);
+      return n;
+    });
+  }, [selectedId]);
   const toggleCollapse = (id: string): void =>
     setCollapsed((s) => {
       const n = new Set(s);
@@ -62,16 +84,23 @@ export function Sidebar({
       </header>
 
       <section className="block">
-        <label className="field-label">{t.narrative}</label>
-        <textarea
-          className="narrative"
-          value={report.narrative[lang]}
-          rows={5}
-          onFocus={() => dispatch({ type: 'beginChange' })}
-          onChange={(e) =>
-            dispatch({ type: 'setNarrative', lang, value: e.target.value, commit: false })
-          }
-        />
+        <div className="block-head">
+          <button className="fold-head" onClick={() => setNarrativeOpen((v) => !v)}>
+            <span className="collapse-toggle">{narrativeOpen ? '▾' : '▸'}</span>
+            <span className="field-label">{t.narrative}</span>
+          </button>
+        </div>
+        {narrativeOpen && (
+          <textarea
+            className="narrative"
+            value={report.narrative[lang]}
+            rows={5}
+            onFocus={() => dispatch({ type: 'beginChange' })}
+            onChange={(e) =>
+              dispatch({ type: 'setNarrative', lang, value: e.target.value, commit: false })
+            }
+          />
+        )}
       </section>
 
       <section className="block">

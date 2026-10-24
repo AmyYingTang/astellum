@@ -1,5 +1,5 @@
 import type * as React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import {
   Stage,
   Layer,
@@ -9,11 +9,13 @@ import {
   Group,
   Text,
   Line,
+  Rect,
   Arrow,
 } from 'react-konva';
 import type Konva from 'konva';
 import {
   COLOR_PALETTE,
+  badgeAnchor,
   fieldRadiusDeg,
   formatRaHm,
   formatDecDm,
@@ -23,7 +25,6 @@ import {
   type Wcs,
 } from '@astellum/schema';
 import type { Action } from './state.js';
-import { useUi } from './i18n.js';
 import { Callouts } from './Callouts.js';
 
 /** Round a raw degree step to a "nice" value, aiming for ~12 lines across the field. */
@@ -117,6 +118,28 @@ function useImage(src: string): HTMLImageElement | null {
   return img;
 }
 
+/**
+ * The name plate. A copy of `LABEL_PLATE` in the renderer's overlayLabel.ts,
+ * which the browser cannot import — change the two together.
+ */
+const PLATE = {
+  fill: '#080b12',
+  opacity: 0.9,
+  text: '#f2f5fb',
+  padX: 0.4,
+  height: 1.5,
+  radius: 0.3,
+} as const;
+
+let measureCtx: CanvasRenderingContext2D | null = null;
+/** Measured here, where the export can only estimate: a browser can ask. */
+function textWidth(text: string, fontSize: number): number {
+  measureCtx ??= document.createElement('canvas').getContext('2d');
+  if (!measureCtx) return text.length * fontSize * 0.6;
+  measureCtx.font = `700 ${fontSize}px sans-serif`;
+  return measureCtx.measureText(text).width;
+}
+
 function useSize(): [React.RefObject<HTMLDivElement>, { w: number; h: number }] {
   const ref = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 800, h: 600 });
@@ -139,7 +162,6 @@ function useSize(): [React.RefObject<HTMLDivElement>, { w: number; h: number }] 
   return [ref, size];
 }
 
-const ANCHOR = 0.7071;
 
 interface Props {
   report: Reading;
@@ -148,11 +170,18 @@ interface Props {
   imageUrl: string;
   style?: React.CSSProperties;
   gridWcs?: Wcs | null;
+  /** Its switch lives in the preview's header, out of the picture. */
   showGrid?: boolean;
-  onToggleGrid?: () => void;
+  /** The language names are drawn in. */
+  lang: 'zh' | 'en';
 }
 
-export function Canvas({
+/**
+ * Memoised: everything else on the page re-renders on every fold and keystroke
+ * in the edit column, and none of that changes the picture — redrawing a
+ * multi-megapixel photograph and its insets for it is the cost to avoid.
+ */
+export const Canvas = memo(function Canvas({
   report,
   selectedId,
   dispatch,
@@ -160,9 +189,8 @@ export function Canvas({
   style,
   gridWcs,
   showGrid,
-  onToggleGrid,
+  lang,
 }: Props): React.JSX.Element {
-  const { t } = useUi();
   const img = useImage(imageUrl);
   const [ref, { w: containerW, h: containerH }] = useSize();
   const grid = showGrid && gridWcs ? buildGrid(gridWcs) : null;
@@ -177,17 +205,13 @@ export function Canvas({
   const stageW = width * scale;
   const stageH = height * scale;
   const px = (screen: number): number => screen / scale; // screen px -> image px
+  // Line weights in image pixels, as annotate.ts draws them, so the canvas
+  // shows the weight the export will have rather than a fixed screen hairline.
+  const strokeW = Math.max(2, Math.round(Math.min(width, height) / 300));
+  const fineW = Math.max(1, Math.round(strokeW * 0.8)); // rims and outlines
 
   return (
     <div className="canvas" ref={ref} style={style}>
-      {gridWcs && (
-        <button
-          className={`grid-toggle-float${showGrid ? ' active' : ''}`}
-          onClick={onToggleGrid}
-        >
-          {showGrid ? t.gridHide : t.gridShow}
-        </button>
-      )}
       <Stage
         width={stageW}
         height={stageH}
@@ -195,6 +219,16 @@ export function Canvas({
         scaleY={scale}
         onMouseDown={(e) => {
           if (e.target === e.target.getStage()) dispatch({ type: 'select', id: null });
+        }}
+        // Say what can be moved before anyone tries: a pointer that changes
+        // over a number, a ring or an inset is the hint that needs no reading.
+        onMouseMove={(e) => {
+          const n = e.target;
+          const stage = n.getStage();
+          if (!stage) return;
+          const movable = n !== stage && (n.draggable() || !!n.getParent()?.draggable());
+          stage.container().style.cursor =
+            n.name() === 'resize' ? 'nwse-resize' : movable ? 'move' : 'default';
         }}
       >
         <Layer>{img && <KImage image={img} width={width} height={height} listening={false} />}</Layer>
@@ -229,10 +263,10 @@ export function Canvas({
             const color = COLOR_PALETTE[f.color_key];
             const { cx, cy, r } = f.circle;
             const selected = f.id === selectedId;
-            // Anchor the badge just outside the circle (offset by r + bubble radius)
-            // so it never covers small circles.
-            const anchorX = cx + (r + f.badge.bubble_r) * ANCHOR;
-            const anchorY = cy - (r + f.badge.bubble_r) * ANCHOR;
+            // The same origin every renderer uses, so a stored offset puts the
+            // number where the export will — a rim rule of our own drew
+            // polygons' numbers somewhere the frame never shows them.
+            const [anchorX, anchorY] = badgeAnchor(f, f.badge.bubble_r);
             // Keep the whole badge inside the image, even when the circle's edge
             // would push it off-frame (a big circle near an edge).
             const br = f.badge.bubble_r;
@@ -293,7 +327,7 @@ export function Canvas({
                   <Line
                     points={f.polygon.flatMap((p) => [p[0], p[1]])}
                     stroke={color.stroke}
-                    strokeWidth={px(selected ? 2 : 1)}
+                    strokeWidth={selected ? fineW * 1.5 : fineW}
                     lineCap="round"
                     lineJoin="round"
                     opacity={selected ? 1 : 0.85}
@@ -301,16 +335,18 @@ export function Canvas({
                     onTap={() => dispatch({ type: 'select', id: f.id })}
                   />
                 ) : f.shape === 'polygon' && f.polygon ? (
-                  // Class-B morphology suggestion (pillar): a soft dashed contour
-                  // outline + the 迎光 illumination arrow. Suggestion-only.
+                  // Class-B morphology suggestion (pillar): a soft dotted contour,
+                  // as fine as a rim line, + the 迎光 illumination arrow.
+                  // Dots as annotate.ts makes them: zero-length dashes, round caps.
                   <>
                     <Line
                       points={f.polygon.flatMap((p) => [p[0], p[1]])}
                       closed
                       stroke={color.stroke}
-                      strokeWidth={px(selected ? 3 : 2)}
-                      dash={[px(9), px(7)]}
-                      opacity={selected ? 1 : 0.8}
+                      strokeWidth={selected ? fineW * 1.5 : fineW}
+                      dash={[0.01, fineW * 2.2]}
+                      lineCap="round"
+                      opacity={selected ? 1 : 0.85}
                       lineJoin="round"
                       onClick={() => dispatch({ type: 'select', id: f.id })}
                       onTap={() => dispatch({ type: 'select', id: f.id })}
@@ -327,18 +363,19 @@ export function Canvas({
                       />
                     )}
                   </>
-                ) : (
+                ) : f.shape === 'field' ? null : (
                   // A-class solid ring, or a Class-B shell sample — a small
-                  // dashed circle dropped on a point of the shell's rim. Both
+                  // dotted circle dropped on a point of the shell's rim. Both
                   // draggable + resizable.
                   <KCircle
                     x={cx}
                     y={cy}
                     radius={r}
                     stroke={color.stroke}
-                    strokeWidth={px(selected ? 3 : 2)}
+                    strokeWidth={(f.shape === 'shell' ? fineW : strokeW) * (selected ? 1.5 : 1)}
                     opacity={selected ? 1 : 0.75}
-                    dash={f.shape === 'shell' ? [px(14), px(9)] : undefined}
+                    dash={f.shape === 'shell' ? [0.01, fineW * 2.2] : undefined}
+                    lineCap="round"
                     draggable
                     onClick={() => dispatch({ type: 'select', id: f.id })}
                     onTap={() => dispatch({ type: 'select', id: f.id })}
@@ -361,6 +398,7 @@ export function Canvas({
                   f.shape !== 'arrow' &&
                   f.shape !== 'arc' &&
                   f.shape !== 'dot' &&
+                  f.shape !== 'field' &&
                   f.shape !== 'polygon' &&
                   f.shape !== 'polyline' && (
                   <KCircle
@@ -370,6 +408,7 @@ export function Canvas({
                     fill={color.stroke}
                     stroke="#0b0e14"
                     strokeWidth={px(1)}
+                    name="resize"
                     draggable
                     onDragStart={() => dispatch({ type: 'beginChange' })}
                     onDragMove={(e) => {
@@ -423,6 +462,42 @@ export function Canvas({
                     verticalAlign="middle"
                     listening={false}
                   />
+                  {/* The name beside the number, on the plate `overlayLabel`
+                      writes into the export, sized and sided the same way, so
+                      the studio shows what the frame will carry. In the page's
+                      language, which is the one the export is asked for. */}
+                  {(() => {
+                    const name = f.label[lang].trim();
+                    if (!name) return null;
+                    const fs = Math.round(br * 0.95);
+                    const gap = br * 1.5;
+                    const onLeft = bx > width * 0.66;
+                    const w = textWidth(name, fs) + PLATE.padX * 2 * fs;
+                    const h = PLATE.height * fs;
+                    return (
+                      <Group x={onLeft ? -gap - w : gap} y={-h / 2} listening={false}>
+                        <Rect
+                          width={w}
+                          height={h}
+                          cornerRadius={fs * PLATE.radius}
+                          fill={PLATE.fill}
+                          opacity={PLATE.opacity}
+                        />
+                        <Text
+                          text={name}
+                          fontSize={fs}
+                          fontFamily="sans-serif"
+                          fontStyle="700"
+                          fill={PLATE.text}
+                          width={w}
+                          height={h}
+                          align="center"
+                          verticalAlign="middle"
+                          wrap="none"
+                        />
+                      </Group>
+                    );
+                  })()}
                 </Group>
               </Group>
             );
@@ -436,4 +511,4 @@ export function Canvas({
       </Stage>
     </div>
   );
-}
+});

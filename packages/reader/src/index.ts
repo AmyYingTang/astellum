@@ -222,6 +222,41 @@ function spreadBadges(features: Spreadable[], width: number, height: number): vo
  * friendly name. Explanatory text comes from `byId`/`narrative` (LLM, or empty
  * for a facts-only stub).
  */
+/**
+ * Objects the frame is a crop of, rather than objects in the frame.
+ *
+ * The Carina Nebula is 3½° across and the picture covers under three; its
+ * ring would be larger than the image. Capping it does not help — a ring at a
+ * fifth of the frame says the nebula is that blob in the middle, which is a
+ * plain falsehood. Such a subject gets its name and no ring at all.
+ */
+export function subjectFillsFrame(obj: FactObject, factsheet: FactSheet): boolean {
+  const pixscale = factsheet.solve.pixscale_arcsec;
+  if (!obj.size_arcmin || !pixscale) return false;
+  const r = (obj.size_arcmin[0] * 60) / pixscale / 2;
+  return r > Math.min(factsheet.image.width, factsheet.image.height) * 0.5;
+}
+
+/**
+ * Bring a reading written before `subjectFillsFrame` up to it.
+ *
+ * Readings keep the shape they were built with, so one made before the rule
+ * still rings the Carina Nebula — on a page that otherwise looks current. Only
+ * a catalogue ring is touched; anything a curator could have drawn is not.
+ */
+export function dropFieldRings(reading: Reading, factsheet: FactSheet): Reading {
+  const byId = new Map(factsheet.objects.map((o) => [o.id, o]));
+  let changed = false;
+  const features = reading.features.map((f) => {
+    if (f.shape !== 'circle') return f;
+    const o = byId.get(f.fact_ref?.object_id ?? f.id);
+    if (!o || o.tier === 'B' || !subjectFillsFrame(o, factsheet)) return f;
+    changed = true;
+    return { ...f, shape: 'field' as const };
+  });
+  return changed ? { ...reading, features } : reading;
+}
+
 function buildReading(
   factsheet: FactSheet,
   narrative: LocalizedString,
@@ -241,18 +276,7 @@ function buildReading(
     const r = trueRadius(obj);
     return r === null ? starR : Math.max(starR, Math.min(maxR, Math.round(r)));
   };
-  /**
-   * Objects the frame is a crop of, rather than objects in the frame.
-   *
-   * The Carina Nebula is 3½° across and the picture covers under three; its
-   * ring would be larger than the image. Capping it does not help — a ring at a
-   * fifth of the frame says the nebula is that blob in the middle, which is a
-   * plain falsehood. Such a subject gets its name and no ring at all.
-   */
-  const fillsFrame = (obj: FactObject): boolean => {
-    const r = trueRadius(obj);
-    return r !== null && r > Math.min(width, height) * 0.5;
-  };
+  const fillsFrame = (obj: FactObject): boolean => subjectFillsFrame(obj, factsheet);
 
   // A-class objects → solid circles. Class-B: a *shell* is marked with a small
   // dashed sample circle placed on a point of its rim (not a ring around the

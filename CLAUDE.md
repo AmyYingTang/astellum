@@ -124,6 +124,22 @@ position moves whenever anything else does). The kiosk draws none of this: it
 already solves the problem with the pointer, and a fixed panel would fight the
 live one for the same screen.
 
+## The studio page
+
+It opens on a frame that could be exported untouched: the right side is the
+export itself, previewed (labels only · landscape · portrait poster, laid out
+at Puppeteer's width and scaled), and the left is where you go only to change
+something. So the preview has to *be* the export — the canvas uses the shared
+`badgeAnchor`, the export's line weights and the same name plate, and export
+is asked for in the page's language rather than the reading's stored one.
+`Preview.tsx` and `Canvas.tsx` copy two small renderer constants the browser
+cannot import (poster headings, `LABEL_PLATE`); change them in pairs.
+
+Anything that replaces existing work asks first — re-identify, generate,
+role switch in `predefined` mode, save to the library, export over files,
+save to the atlas overlay. The overlay save replaces that project's earlier
+save (ids are `anno_user_<slug>_<feature>`) rather than appending a copy.
+
 ## Order of work that matters
 
 Annotate → draft the text → review shape and words **together** → export.

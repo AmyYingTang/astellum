@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { FactSheet } from '@astellum/schema';
-import { readingFromFactsheet } from './index.js';
+import { dropFieldRings, readingFromFactsheet } from './index.js';
 
 /**
  * The Carina Nebula is 3½° across; the picture that prompted this covers
@@ -45,5 +45,21 @@ describe('a subject wider than the frame', () => {
   it('leaves an object that does fit alone', () => {
     const r = readingFromFactsheet(sheet(20), { toolVersion: 't' });
     expect(r.features[0]!.shape).toBe('circle');
+  });
+});
+
+describe('a reading written before the rule', () => {
+  const old = (sizeArcmin: number) => {
+    const r = readingFromFactsheet(sheet(sizeArcmin), { toolVersion: 't' });
+    return { ...r, features: r.features.map((f) => ({ ...f, shape: 'circle' as const })) };
+  };
+
+  it('loses the ring it should never have had', () => {
+    expect(dropFieldRings(old(210), sheet(210)).features[0]!.shape).toBe('field');
+  });
+
+  it('keeps a ring around something the frame does contain', () => {
+    const r = old(20);
+    expect(dropFieldRings(r, sheet(20))).toBe(r);
   });
 });

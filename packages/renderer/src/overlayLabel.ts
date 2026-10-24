@@ -6,11 +6,11 @@
  * in. The name next to the mark removes that errand.
  *
  * Legibility over an astrophoto is the whole difficulty: the background can be
- * anything from black sky to a white core within a few hundred pixels. A plate
- * behind each name would solve it and litter the picture with boxes, so this
- * does what the atlas canvas already does — the feature's own colour, painted
- * over a dark halo (`paint-order="stroke"` puts the stroke underneath instead
- * of eating the glyph from both sides).
+ * anything from black sky to a white core within a few hundred pixels. Every
+ * name sits on the same dark plate, light text on it, so nothing depends on the
+ * colour behind it. (It began as the feature's colour over a dark halo, which
+ * kept the picture freer of boxes and was unreadable whenever the colour was
+ * grey and the background bright — the kiosk moved to plates first.)
  */
 
 export interface OverlayLabelOptions {
@@ -27,17 +27,51 @@ export interface OverlayLabelOptions {
   bubbleR: number;
   /** Radius the badge is actually drawn at, if the renderer shrank it. */
   drawnR?: number;
-  /** The feature's stroke colour. */
+  /** The feature's stroke colour. Not painted — the plate is one colour for
+   *  every name — but kept so callers describe the feature the same way. */
   color: string;
   /** Frame width, to decide which side of the badge the name goes on. */
   frameWidth: number;
   className?: string;
-  /** Put the text on a solid plate instead of giving it a halo, and let the
-   *  caller size that plate at runtime. A halo keeps the feature's colour,
-   *  which is unreadable when the colour is grey and the background is a white
-   *  core — the case that forced this. The plate is one dark slab for every
-   *  label, so nothing depends on the colour behind it. */
+  /** Leave the plate unsized for the caller to fit at runtime — the kiosk,
+   *  which can measure the text in a browser. Otherwise the plate is sized
+   *  here, from an estimate (see `estimateTextEm`). */
   plate?: boolean;
+}
+
+/** The plate's look, shared by every surface that draws one. */
+export const LABEL_PLATE = {
+  fill: '#080b12',
+  opacity: 0.9,
+  text: '#f2f5fb',
+  /** Horizontal padding, in font sizes. */
+  padX: 0.4,
+  /** Plate height, in font sizes. */
+  height: 1.5,
+  /** Corner radius, in font sizes. */
+  radius: 0.3,
+} as const;
+
+/**
+ * How wide a string sets in bold sans, in ems.
+ *
+ * An estimate, because librsvg — which renders the exported frame — cannot be
+ * asked. The text is centred on its plate, so an error of a few percent shows
+ * as a hair more or less padding on both sides rather than a name running off
+ * one end.
+ */
+export function estimateTextEm(text: string): number {
+  let em = 0;
+  for (const ch of text) {
+    const c = ch.codePointAt(0)!;
+    if (c >= 0x2e80) em += 1; // CJK and full-width punctuation
+    else if (/[ijlI.,:;!|'·\s]/.test(ch)) em += 0.3;
+    else if (/[A-Z]/.test(ch)) em += 0.7;
+    else if (/[0-9]/.test(ch)) em += 0.58;
+    else if (/[mwMW]/.test(ch)) em += 0.85;
+    else em += 0.57;
+  }
+  return em;
 }
 
 function esc(s: string): string {
@@ -76,11 +110,16 @@ export function overlayLabel(o: OverlayLabelOptions): string {
     );
   }
 
+  const w = (estimateTextEm(text) + LABEL_PLATE.padX * 2) * fontSize;
+  const h = LABEL_PLATE.height * fontSize;
+  const left = onLeft ? x - w : x;
   return (
-    `<text${cls}${i18n} x="${Math.round(x)}" y="${Math.round(o.y)}" ` +
+    `<g${cls}><rect x="${Math.round(left)}" y="${Math.round(o.y - h / 2)}" ` +
+    `width="${Math.round(w)}" height="${Math.round(h)}" rx="${Math.round(fontSize * LABEL_PLATE.radius)}" ` +
+    `fill="${LABEL_PLATE.fill}" fill-opacity="${LABEL_PLATE.opacity}"/>` +
+    `<text${i18n} x="${Math.round(left + w / 2)}" y="${Math.round(o.y)}" ` +
     `font-family="sans-serif" font-size="${fontSize}" font-weight="700" ` +
-    `fill="${o.color}" stroke="#0b0e14" stroke-width="${Math.max(1, Math.round(fontSize * 0.05))}" ` +
-    `paint-order="stroke" text-anchor="${anchor}" ` +
-    `dominant-baseline="central">${esc(text)}</text>`
+    `fill="${LABEL_PLATE.text}" text-anchor="middle" ` +
+    `dominant-baseline="central">${esc(text)}</text></g>`
   );
 }

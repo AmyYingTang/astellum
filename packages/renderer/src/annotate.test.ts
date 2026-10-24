@@ -56,10 +56,10 @@ describe('buildOverlaySvg', () => {
 
   // A printed frame has no list to look a number up in, so the name has to
   // survive whatever is under it — hence the dark halo rather than a plate.
-  it('gives the name a halo in the feature\u2019s own colour', () => {
+  it('sets the name on the same dark plate the kiosk uses', () => {
     const svg = buildOverlaySvg(report);
-    expect(svg).toContain('fill="#ffd84a" stroke="#0b0e14"');
-    expect(svg).toContain('paint-order="stroke"');
+    expect(svg).toContain('fill="#080b12" fill-opacity="0.9"');
+    expect(svg).toContain('fill="#f2f5fb"');
   });
 
   it('colors strokes from the palette', () => {
@@ -165,9 +165,12 @@ describe('a panel the picture shows through', () => {
   it('paints nothing over the picture inside the frame', () => {
     const svg = buildOverlaySvg(withShape('polygon', { polygon: tri }));
     // No wash, and no copy of the patch laid down behind one: the only filled
-    // rectangles left in the file are the mask's own white ground.
+    // rectangles left in the file are the mask's own white ground (and the
+    // name plates, which sit beside the numbers, not in the panel).
     expect(svg).not.toContain('rgba(3,5,10');
-    const fills = svg.match(/<rect[^>]*fill="(?!none)[^"]*"[^>]*>/g) ?? [];
+    const fills = (svg.match(/<rect[^>]*fill="(?!none)[^"]*"[^>]*>/g) ?? []).filter(
+      (r) => !r.includes('#080b12'),
+    );
     expect(fills.every((r) => r.includes('#fff'))).toBe(true);
   });
 
