@@ -71,6 +71,20 @@ export interface SaveResponse {
 
 /** `all` is the frame and both posters. The interactive embed page is the
  *  CLI's (`astellum render --format embed`); the studio no longer offers it. */
+/**
+ * The file-name stem of everything exported for a reading. Here rather than in
+ * the server because the page needs it too: a Save dialog has to be opened
+ * with its suggested name before the export is fetched — the browser only
+ * allows the dialog straight from the click.
+ */
+export function objectStem(name: string): string {
+  const cleaned = name
+    .replace(/[/\\:*?"<>|]+/g, '-')
+    .replace(/\s+/g, '')
+    .replace(/^[.-]+|[.-]+$/g, '');
+  return cleaned || 'report';
+}
+
 export type ExportFormat = 'annotated' | 'poster' | 'all';
 
 export interface ExportRequest {

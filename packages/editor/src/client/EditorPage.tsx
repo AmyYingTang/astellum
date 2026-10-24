@@ -1,7 +1,7 @@
 import type * as React from 'react';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import type { Reading, FactSheet } from '@astellum/schema';
-import type { ExportFormat } from '../shared.js';
+import { objectStem, type ExportFile } from '../shared.js';
 import {
   exportProject,
   fetchFactsheet,
@@ -18,7 +18,7 @@ import {
   saveReport,
 } from './api.js';
 import { initState, reducer, writtenPassages } from './state.js';
-import { Canvas } from './Canvas.js';
+import { Canvas, FIT, MAX_ZOOM, zoomAt, type View } from './Canvas.js';
 import { Sidebar } from './Sidebar.js';
 import { FactsPanel } from './FactsPanel.js';
 import { PosterPreview, type PreviewFormat } from './Preview.js';
@@ -39,6 +39,12 @@ type Picker = (options?: {
   startIn?: string;
   id?: string;
 }) => Promise<FileSystemDirectoryHandle>;
+type SavePicker = (options?: {
+  suggestedName?: string;
+  startIn?: string;
+  id?: string;
+  types?: { description: string; accept: Record<string, string[]> }[];
+}) => Promise<FileSystemFileHandle>;
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -114,11 +120,6 @@ function Editor({
   factsheet: FactSheet | null;
 }): React.JSX.Element {
   const { t, lang: uiLang } = useUi();
-  const exportLabels: Record<ExportFormat, string> = {
-    annotated: t.fmtAnnotated,
-    poster: t.fmtPoster,
-    all: t.fmtAll,
-  };
   const previewLabels: Record<PreviewFormat, string> = {
     annotated: t.pvAnnotated,
     landscape: t.pvLandscape,
@@ -138,6 +139,8 @@ function Editor({
   const [factsOpen, setFactsOpen] = useState(false);
   const [readingOpen, setReadingOpen] = useState(true);
   const [previewFormat, setPreviewFormat] = useState<PreviewFormat>('annotated');
+  // Preview zoom. Only the view — the export is always the whole frame.
+  const [view, setView] = useState<View>(FIT);
   const [reidentifying, setReidentifying] = useState(false);
   const [generating, setGenerating] = useState(false);
   // Off by default: the grid is a checking aid, and what is on screen should be
@@ -219,7 +222,7 @@ function Editor({
     window.addEventListener('mouseup', up);
   };
   const [exporting, setExporting] = useState<string | null>(null);
-  const [exported, setExported] = useState<{ dir: string; files: string[] } | null>(null);
+  const [exported, setExported] = useState<{ dir: string | null; files: string[] } | null>(null);
 
   const doSave = useCallback(async () => {
     try {
@@ -244,6 +247,19 @@ function Editor({
   } | null>(null);
   const confirmOverwrite = (message: string, confirm: string): Promise<boolean> =>
     new Promise((resolve) => setAsk({ message, confirm, resolve }));
+  /** The same dialog with a text box: a name, or null when cancelled. */
+  const [naming, setNaming] = useState<{
+    message: string;
+    value: string;
+    confirm: string;
+    resolve: (v: string | null) => void;
+  } | null>(null);
+  const promptName = (message: string, value: string, confirm: string): Promise<string | null> =>
+    new Promise((resolve) => setNaming({ message, value, confirm, resolve }));
+  const answerName = (v: string | null): void => {
+    naming?.resolve(v);
+    setNaming(null);
+  };
   const answer = (ok: boolean): void => {
     ask?.resolve(ok);
     setAsk(null);
@@ -438,22 +454,52 @@ function Editor({
     return () => window.removeEventListener('keydown', onKey);
   }, [doSave]);
 
-  const runExport = async (
-    format: ExportFormat,
-    layout?: 'portrait' | 'landscape',
-    label: string = exportLabels[format],
-  ): Promise<void> => {
+  /** Write one exported file through a handle, and check it landed whole. */
+  const writeFile = async (fh: FileSystemFileHandle, f: ExportFile): Promise<string> => {
+    if (!f.base64) throw new Error(`Empty payload for ${f.name}`);
+    const bytes = base64ToBytes(f.base64);
+    const w = await fh.createWritable();
+    await w.write(new Blob([bytes], { type: f.contentType }));
+    await w.close();
+    const onDisk = await fh.getFile();
+    if (onDisk.size !== bytes.length)
+      throw new Error(`${fh.name}: wrote ${bytes.length} bytes but file is ${onDisk.size} bytes on disk`);
+    return `${fh.name} (${formatSize(onDisk.size)})`;
+  };
+  const download = (f: ExportFile, name = f.name): string => {
+    const bytes = base64ToBytes(f.base64);
+    downloadBlob(new Blob([bytes], { type: f.contentType }), name);
+    return `${name} (${formatSize(bytes.length)})`;
+  };
+  const stem = (): string =>
+    objectStem(stateRef.current.report.object.name.en || stateRef.current.report.object.name.zh);
 
-    // No choice offered: where the browser can open a folder (Chromium, on
-    // macOS and Windows alike) it asks for one, and remembers it by `id`;
-    // where it cannot (Safari, Firefox) the files go to its downloads.
-    let dirHandle: FileSystemDirectoryHandle | null = null;
-    const picker = (window as unknown as { showDirectoryPicker?: Picker }).showDirectoryPicker;
+  /**
+   * The format on screen, as one file, through the system's Save dialog — so
+   * the name and the place are chosen there, and so is replacing a file of
+   * the same name (the dialog asks). Opened before anything is fetched: the
+   * browser only allows it straight from the click. Where there is no such
+   * dialog (Safari, Firefox) the file goes to the browser's downloads.
+   */
+  const exportOne = async (): Promise<void> => {
+    const poster = previewFormat !== 'annotated';
+    const ext = poster ? '.png' : '.jpg';
+    const mime = poster ? 'image/png' : 'image/jpeg';
+    const label = previewExportLabels[previewFormat];
+    const suggestedName = poster ? `${stem()}_poster-${previewFormat}${ext}` : `${stem()}_annotated${ext}`;
+
+    let fh: FileSystemFileHandle | null = null;
+    const picker = (window as unknown as { showSaveFilePicker?: SavePicker }).showSaveFilePicker;
     if (picker) {
       try {
-        dirHandle = await picker({ mode: 'readwrite', startIn: 'downloads', id: 'astellum-export' });
+        fh = await picker({
+          suggestedName,
+          id: 'astellum-export',
+          startIn: 'downloads',
+          types: [{ description: label, accept: { [mime]: [ext] } }],
+        });
       } catch {
-        return; // user cancelled the picker
+        return; // cancelled
       }
     }
 
@@ -461,66 +507,75 @@ function Editor({
     setExporting(label);
     try {
       if (stateRef.current.dirty) await doSave();
+      const files = await exportProject(
+        slug,
+        poster ? 'poster' : 'annotated',
+        poster ? (previewFormat as 'portrait' | 'landscape') : undefined,
+        uiLang,
+      );
+      const f = files.find((x) => x.contentType === mime);
+      if (!f) throw new Error('Server returned no image');
+      const written = fh ? await writeFile(fh, f) : download(f, suggestedName);
+      setExported({ dir: fh ? null : t.browserDefault, files: [written] });
+    } catch (e) {
+      setSaveError((e as Error).message);
+    } finally {
+      setExporting(null);
+    }
+  };
 
-      if (dirHandle) {
-        const reqPerm =
-          (dirHandle as unknown as { requestPermission?: (o: { mode: string }) => Promise<string> })
-            .requestPermission;
-        if (reqPerm) {
-          const state = await reqPerm.call(dirHandle, { mode: 'readwrite' });
-          if (state !== 'granted')
-            throw new Error(`Write permission ${state} for ${dirHandle.name}`);
-        }
+  /**
+   * Every format at once, as a set: named as a folder of its own, which goes
+   * wherever the curator puts it. The folder is only created once the files
+   * are in hand, and anything of the same name inside it is asked about.
+   */
+  const exportAll = async (): Promise<void> => {
+    const picker = (window as unknown as { showDirectoryPicker?: Picker }).showDirectoryPicker;
+    let parent: FileSystemDirectoryHandle | null = null;
+    let folder = '';
+    if (picker) {
+      const asked = await promptName(t.exportAllPrompt, stem(), t.exportAllPickBtn);
+      if (asked === null) return;
+      folder = asked.replace(/[/\\:*?"<>|]+/g, '-').trim();
+      if (!folder) return;
+      try {
+        // Straight from the dialog's button, which is the click the browser needs.
+        parent = await picker({ mode: 'readwrite', startIn: 'downloads', id: 'astellum-export' });
+      } catch {
+        return; // cancelled
       }
+    }
 
-      const files = await exportProject(slug, format, layout, uiLang);
+    setExported(null);
+    setExporting(t.fmtAll);
+    try {
+      if (stateRef.current.dirty) await doSave();
+      const files = await exportProject(slug, 'all', undefined, uiLang);
       if (files.length === 0) throw new Error('Server returned no files');
 
-      if (dirHandle) {
-        // Writing with `create` replaces a file of the same name silently.
+      if (!parent) {
+        setExported({ dir: t.browserDefault, files: files.map((f) => download(f)) });
+        return;
+      }
+      const existing = await parent.getDirectoryHandle(folder).catch(() => null);
+      if (existing) {
         const clashes: string[] = [];
         for (const f of files) {
-          try {
-            await dirHandle.getFileHandle(f.name);
-            clashes.push(f.name);
-          } catch {
-            // not there: nothing to overwrite
-          }
+          if (await existing.getFileHandle(f.name).then(() => true, () => false)) clashes.push(f.name);
         }
         if (
           clashes.length &&
           !(await confirmOverwrite(
-            t.exportOverwrite.replace('{files}', clashes.join('、')),
+            t.exportOverwrite.replace('{files}', clashes.join(t.listSep)),
             t.exportOverwriteBtn,
           ))
         )
           return;
       }
-
+      const dir = existing ?? (await parent.getDirectoryHandle(folder, { create: true }));
       const written: string[] = [];
-      for (const f of files) {
-        if (!f.base64) throw new Error(`Empty payload for ${f.name}`);
-        const bytes = base64ToBytes(f.base64);
-        const blob = new Blob([bytes], { type: f.contentType });
-
-        if (dirHandle) {
-          const fh = await dirHandle.getFileHandle(f.name, { create: true });
-          const w = await fh.createWritable();
-          await w.write(blob);
-          await w.close();
-          const onDisk = await fh.getFile();
-          if (onDisk.size !== bytes.length) {
-            throw new Error(
-              `${f.name}: wrote ${bytes.length} bytes but file is ${onDisk.size} bytes on disk`,
-            );
-          }
-          written.push(`${f.name} (${formatSize(onDisk.size)})`);
-        } else {
-          downloadBlob(blob, f.name);
-          written.push(`${f.name} (${formatSize(bytes.length)})`);
-        }
-      }
-      setExported({ dir: dirHandle ? dirHandle.name : t.browserDefault, files: written });
+      for (const f of files) written.push(await writeFile(await dir.getFileHandle(f.name, { create: true }), f));
+      setExported({ dir: `${parent.name}/${folder}`, files: written });
     } catch (e) {
       setSaveError((e as Error).message);
     } finally {
@@ -537,6 +592,9 @@ function Editor({
       gridWcs={factsheet?.solve.wcs ?? null}
       showGrid={showGrid}
       lang={uiLang}
+      view={view}
+      onView={setView}
+      wheelZooms={previewFormat === 'annotated'}
     />
   );
 
@@ -702,6 +760,25 @@ function Editor({
                 {showGrid ? t.gridHide : t.gridShow}
               </button>
             )}
+            <div className="zoom-ctl" role="group" aria-label={t.zoomLabel}>
+              <button
+                onClick={() => setView((v) => zoomAt(v, 1 / 1.5))}
+                disabled={view.k <= 1}
+                title={t.zoomOut}
+              >
+                −
+              </button>
+              <button onClick={() => setView(FIT)} title={t.zoomFit}>
+                {Math.round(view.k * 100)}%
+              </button>
+              <button
+                onClick={() => setView((v) => zoomAt(v, 1.5))}
+                disabled={view.k >= MAX_ZOOM}
+                title={t.zoomIn}
+              >
+                +
+              </button>
+            </div>
             <div className="fmt-tabs" role="radiogroup" aria-label={t.previewTitle}>
               {PREVIEW_FORMATS.map((f) => (
                 <label key={f} className={`fmt-tab${previewFormat === f ? ' active' : ''}`}>
@@ -709,7 +786,10 @@ function Editor({
                     type="radio"
                     name="preview-format"
                     checked={previewFormat === f}
-                    onChange={() => setPreviewFormat(f)}
+                    onChange={() => {
+                      setPreviewFormat(f);
+                      setView(FIT); // a different box; start from the whole picture
+                    }}
                   />
                   {previewLabels[f]}
                 </label>
@@ -731,11 +811,7 @@ function Editor({
             <button
               className="primary export-main"
               disabled={exporting !== null}
-              onClick={() =>
-                void (previewFormat === 'annotated'
-                  ? runExport('annotated')
-                  : runExport('poster', previewFormat, previewExportLabels[previewFormat]))
-              }
+              onClick={() => void exportOne()}
             >
               {exporting
                 ? `${t.exporting} (${exporting})`
@@ -745,7 +821,7 @@ function Editor({
                 in one go — the frame and both posters. */}
             <button
               className="export-all"
-              onClick={() => void runExport('all')}
+              onClick={() => void exportAll()}
               disabled={exporting !== null}
             >
               {t.exportAll}
@@ -757,7 +833,13 @@ function Editor({
       {exported && (
         <div className="export-result">
           <span>
-            {t.savedTo} <b>{exported.dir}/</b>
+            {exported.dir ? (
+              <>
+                {t.savedTo} <b>{exported.dir}/</b>
+              </>
+            ) : (
+              t.exported
+            )}
           </span>
           {exported.files.map((name) => (
             <span key={name} className="exported-file">
@@ -770,6 +852,38 @@ function Editor({
         </div>
       )}
       {saveError && <div className="save-error">{t.errorLabel}: {saveError}</div>}
+
+      {naming && (
+        <div className="overlay" onClick={() => answerName(null)}>
+          <form
+            className="confirm-box"
+            role="dialog"
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={(e) => {
+              e.preventDefault();
+              answerName(naming.value);
+            }}
+          >
+            <label className="name-prompt">
+              <span>{naming.message}</span>
+              <input
+                autoFocus
+                value={naming.value}
+                onChange={(e) => setNaming({ ...naming, value: e.target.value })}
+                onFocus={(e) => e.target.select()}
+              />
+            </label>
+            <div className="reid-actions">
+              <button type="button" onClick={() => answerName(null)}>
+                {t.reidCancel}
+              </button>
+              <button type="submit" className="primary" disabled={!naming.value.trim()}>
+                {naming.confirm}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {ask && (
         <div className="overlay" onClick={() => answer(false)}>

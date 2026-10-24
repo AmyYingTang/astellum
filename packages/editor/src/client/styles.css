@@ -571,6 +571,13 @@ textarea.explanation {
   flex-direction: column;
   gap: 8px;
 }
+.name-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
 .confirm-box {
   width: 420px;
   max-width: calc(100vw - 32px);
@@ -986,11 +993,34 @@ button.danger {
   display: flex;
   flex-direction: column;
 }
+.zoom-ctl {
+  display: flex;
+  margin-left: auto;
+}
+.zoom-ctl button {
+  font-size: 12px;
+  padding: 4px 9px;
+  border-radius: 0;
+  min-width: 30px;
+  font-variant-numeric: tabular-nums;
+}
+.zoom-ctl button:first-child {
+  border-radius: 6px 0 0 6px;
+}
+.zoom-ctl button:last-child {
+  border-radius: 0 6px 6px 0;
+}
+.zoom-ctl button + button {
+  margin-left: -1px;
+}
+.zoom-ctl button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 .fmt-tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  margin-left: auto;
 }
 .fmt-tab {
   white-space: nowrap;

@@ -58,6 +58,7 @@ import type {
   ReportResponse,
   SaveRequest,
 } from './shared.js';
+import { objectStem } from './shared.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const clientDist = resolve(here, 'client');
@@ -86,14 +87,6 @@ function slugify(s: string): string {
 /** Filesystem-safe stem from an object name for export filenames: drop spaces
  * (so "NGC 3372" → "NGC3372"), keep hyphens ("Sh2-308" stays intact),
  * neutralize unsafe chars. Falls back to "report". */
-function objectStem(name: string): string {
-  const cleaned = name
-    .replace(/[/\\:*?"<>|]+/g, '-')
-    .replace(/\s+/g, '')
-    .replace(/^[.-]+|[.-]+$/g, '');
-  return cleaned || 'report';
-}
-
 async function exists(p: string): Promise<boolean> {
   try {
     await access(p);

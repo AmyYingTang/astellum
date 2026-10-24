@@ -163,6 +163,37 @@ function useSize(): [React.RefObject<HTMLDivElement>, { w: number; h: number }] 
 }
 
 
+/**
+ * How far in, and where. `k` multiplies the fit-to-box scale (1 = the whole
+ * picture); `x`/`y` are the stage's offset as fractions of the box, so the
+ * view means the same thing whatever size the box is. Held by the page, so
+ * its buttons and the wheel here move the same view.
+ */
+export interface View {
+  k: number;
+  x: number;
+  y: number;
+}
+export const FIT: View = { k: 1, x: 0, y: 0 };
+export const MAX_ZOOM = 8;
+
+/** Keep the picture covering the box: no panning off into empty space. */
+export function clampView(v: View): View {
+  const k = Math.min(MAX_ZOOM, Math.max(1, v.k));
+  return {
+    k,
+    x: Math.min(0, Math.max(1 - k, v.x)),
+    y: Math.min(0, Math.max(1 - k, v.y)),
+  };
+}
+
+/** Zoom by `factor` keeping the point (fx, fy) — fractions of the box — where it is. */
+export function zoomAt(v: View, factor: number, fx = 0.5, fy = 0.5): View {
+  const k = Math.min(MAX_ZOOM, Math.max(1, v.k * factor));
+  const r = k / v.k;
+  return clampView({ k, x: fx - (fx - v.x) * r, y: fy - (fy - v.y) * r });
+}
+
 interface Props {
   report: Reading;
   selectedId: string | null;
@@ -174,6 +205,11 @@ interface Props {
   showGrid?: boolean;
   /** The language names are drawn in. */
   lang: 'zh' | 'en';
+  view: View;
+  onView: React.Dispatch<React.SetStateAction<View>>;
+  /** Whether a plain wheel zooms. Where the page itself scrolls (the posters)
+   *  only a pinch or ⌘/Ctrl+wheel does, so scrolling the page still works. */
+  wheelZooms: boolean;
 }
 
 /**
@@ -190,6 +226,9 @@ export const Canvas = memo(function Canvas({
   gridWcs,
   showGrid,
   lang,
+  view,
+  onView,
+  wheelZooms,
 }: Props): React.JSX.Element {
   const img = useImage(imageUrl);
   const [ref, { w: containerW, h: containerH }] = useSize();
@@ -201,9 +240,12 @@ export const Canvas = memo(function Canvas({
   const callouts = planCallouts(report);
   // Fit the image fully within the container so it never overflows (which
   // would trigger a scrollbar and a ResizeObserver feedback loop).
-  const scale = Math.min(containerW / width, containerH / height) || 1;
-  const stageW = width * scale;
-  const stageH = height * scale;
+  const fit = Math.min(containerW / width, containerH / height) || 1;
+  const stageW = width * fit;
+  const stageH = height * fit;
+  // The box stays the fitted picture's size; zooming scales what is inside it.
+  const v = clampView(view);
+  const scale = fit * v.k;
   const px = (screen: number): number => screen / scale; // screen px -> image px
   // Line weights in image pixels, as annotate.ts draws them, so the canvas
   // shows the weight the export will have rather than a fixed screen hairline.
@@ -217,7 +259,34 @@ export const Canvas = memo(function Canvas({
         height={stageH}
         scaleX={scale}
         scaleY={scale}
-        onMouseDown={(e) => {
+        x={v.x * stageW}
+        y={v.y * stageH}
+        // Zoomed in, empty sky pans; marks keep their own drag. A click (not a
+        // pan) on empty sky still deselects — Konva only calls it a click when
+        // the pointer did not move.
+        draggable={v.k > 1}
+        dragBoundFunc={(p) => {
+          const c = clampView({ k: v.k, x: p.x / stageW, y: p.y / stageH });
+          return { x: c.x * stageW, y: c.y * stageH };
+        }}
+        onDragEnd={(e) => {
+          if (e.target === e.target.getStage())
+            onView({ k: v.k, x: e.target.x() / stageW, y: e.target.y() / stageH });
+        }}
+        onWheel={(e) => {
+          const ev = e.evt;
+          // A trackpad pinch arrives as a wheel with ctrlKey set.
+          if (!wheelZooms && !ev.ctrlKey && !ev.metaKey) return;
+          ev.preventDefault();
+          const stage = e.target.getStage();
+          const p = stage?.getPointerPosition();
+          if (!p) return;
+          onView(zoomAt(v, Math.exp(-ev.deltaY * 0.0025), p.x / stageW, p.y / stageH));
+        }}
+        onClick={(e) => {
+          if (e.target === e.target.getStage()) dispatch({ type: 'select', id: null });
+        }}
+        onTap={(e) => {
           if (e.target === e.target.getStage()) dispatch({ type: 'select', id: null });
         }}
         // Say what can be moved before anyone tries: a pointer that changes
@@ -228,7 +297,13 @@ export const Canvas = memo(function Canvas({
           if (!stage) return;
           const movable = n !== stage && (n.draggable() || !!n.getParent()?.draggable());
           stage.container().style.cursor =
-            n.name() === 'resize' ? 'nwse-resize' : movable ? 'move' : 'default';
+            n.name() === 'resize'
+              ? 'nwse-resize'
+              : movable
+                ? 'move'
+                : n === stage && v.k > 1
+                  ? 'grab'
+                  : 'default';
         }}
       >
         <Layer>{img && <KImage image={img} width={width} height={height} listening={false} />}</Layer>

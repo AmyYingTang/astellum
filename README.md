@@ -29,8 +29,10 @@ The studio is the one you'll spend most time in:
   formats (labels only · landscape poster · portrait poster); drag numbers, rings and insets on
   it directly. The left side is for changes when something needs one: the facts and
   re-identify, and the reading text with its role. **Export** writes the format on screen, in
-  the language on screen. Chromium browsers (Chrome / Edge / Arc) ask for a folder; others
-  save to downloads. Anything that would overwrite existing text, library entries or files
+  the language on screen, through a Save dialog where you name the file; **Export all** asks
+  for a folder name and puts every format in that new folder. The preview zooms (wheel,
+  pinch or the − / + buttons) without affecting the export. Chromium browsers
+  (Chrome / Edge / Arc) have those dialogs; others save to downloads. Anything that would overwrite existing text, library entries or files
   asks first. (The interactive `embed.html` is still available from the CLI's `render`.)
 
 Edits auto-save. Stop the server with Ctrl+C. Everything lives under `out/<name>/`.

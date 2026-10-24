@@ -56,7 +56,6 @@ export interface Strings {
   phPhysics: string;
   phInteresting: string;
   fmtAnnotated: string;
-  fmtPoster: string;
   fmtAll: string;
   stageSolving: string;
   stageReading: string;
@@ -113,7 +112,15 @@ export interface Strings {
   fmtPosterLandscape: string;
   fmtPosterPortrait: string;
   exportAll: string;
+  exportAllPrompt: string;
+  exportAllPickBtn: string;
+  /** Between items of a list in running text. */
+  listSep: string;
   previewHint: string;
+  zoomLabel: string;
+  zoomIn: string;
+  zoomOut: string;
+  zoomFit: string;
 }
 
 const STRINGS: Record<UiLang, Strings> = {
@@ -169,7 +176,6 @@ const STRINGS: Record<UiLang, Strings> = {
     phPhysics: '物理机制(可选)',
     phInteresting: '冷知识(可选)',
     fmtAnnotated: '标注图 (JPG)',
-    fmtPoster: '海报 (PNG)',
     fmtAll: '全部',
     stageSolving: '正在解像(plate-solve,可能 30 秒到几分钟)…',
     stageReading: '正在生成双语解读…',
@@ -228,8 +234,15 @@ const STRINGS: Record<UiLang, Strings> = {
     fmtPosterLandscape: '横版海报 (PNG)',
     fmtPosterPortrait: '竖版海报 (PNG)',
     exportAll: '导出全部格式',
+    exportAllPrompt: '这一组文件会放进一个新文件夹。给它起个名字,下一步再选放在哪里:',
+    exportAllPickBtn: '选择位置…',
+    listSep: '、',
     previewHint:
-      '图上可以直接拖动:编号、圆圈、放大框都能挪位置;点选圆圈后拖它边上的小圆点可改大小。点图上空白处或按 Esc 取消选中,⌘/Ctrl+Z 撤销。',
+      '图上可以直接拖动:编号、圆圈、放大框都能挪位置;点选圆圈后拖它边上的小圆点可改大小。点图上空白处或按 Esc 取消选中,⌘/Ctrl+Z 撤销。滚轮或双指缩放(海报格式下按住 ⌘/Ctrl),放大后拖空白处平移。',
+    zoomLabel: '缩放',
+    zoomIn: '放大',
+    zoomOut: '缩小',
+    zoomFit: '回到整图',
   },
   en: {
     newReading: 'New reading',
@@ -285,7 +298,6 @@ const STRINGS: Record<UiLang, Strings> = {
     phPhysics: 'physics (optional)',
     phInteresting: 'interesting (optional)',
     fmtAnnotated: 'Annotated JPG',
-    fmtPoster: 'Poster PNG',
     fmtAll: 'All',
     stageSolving: 'Plate-solving (this can take 30s–a few minutes)…',
     stageReading: 'Writing the bilingual reading…',
@@ -344,8 +356,15 @@ const STRINGS: Record<UiLang, Strings> = {
     fmtPosterLandscape: 'Landscape poster (PNG)',
     fmtPosterPortrait: 'Portrait poster (PNG)',
     exportAll: 'Export all formats',
+    exportAllPrompt: 'The files go into a new folder. Name it, then choose where it goes:',
+    exportAllPickBtn: 'Choose location…',
+    listSep: ', ',
     previewHint:
-      'Drag on the picture: numbers, rings and magnified insets all move; select a ring and drag the dot on its edge to resize. Click empty sky or press Esc to deselect; ⌘/Ctrl+Z to undo.',
+      'Drag on the picture: numbers, rings and magnified insets all move; select a ring and drag the dot on its edge to resize. Click empty sky or press Esc to deselect; ⌘/Ctrl+Z to undo. Scroll or pinch to zoom (hold ⌘/Ctrl on the posters); zoomed in, drag empty sky to pan.',
+    zoomLabel: 'Zoom',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    zoomFit: 'Whole picture',
   },
 };
 
