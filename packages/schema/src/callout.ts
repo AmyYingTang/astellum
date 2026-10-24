@@ -348,14 +348,17 @@ export function insetEdgePoint(
 }
 
 /**
- * How a magnified region is raised off the patch it sits in.
+ * How a magnified region is raised above the picture.
  *
- * The wash alone says *which* pixels are the feature; it says nothing about
- * depth, and a flat bright patch reads as a stain rather than as a piece of
- * the picture lifted out of it. Two cues together do read as lifted: a shadow
- * cast onto the dimmed surround, and the piece drawn a little larger, because
- * a thing held nearer the eye is bigger. The shadow alone was tried first and
- * is nearly invisible.
+ * A panel is a frame and the piece inside it — nothing else. The picture goes
+ * on showing through, so a magnified mark costs the viewer only the outline of
+ * a box and the footprint of the piece itself, instead of a square of
+ * photograph painted over.
+ *
+ * Two cues make the piece read as lifted rather than pasted: a shadow onto the
+ * picture below, and the piece drawn a little larger, because a thing held
+ * nearer the eye is bigger. The shadow alone was tried first and is nearly
+ * invisible; the size change is what carries it.
  *
  * Shares of the inset's own size, so a panel on a 1200px frame and one on a
  * 4000px frame are lifted by the same amount to look at.
@@ -366,8 +369,6 @@ export const LIFT = {
   /** Shadow offset, down and to the right. */
   offsetShare: 0.03,
   blurShare: 0.035,
-  /** Opacity of the wash over everything the piece is not. */
-  wash: 0.55,
   shadowOpacity: 0.9,
 } as const;
 

@@ -191,27 +191,26 @@ function calloutMarkup(
   // up, then bring the crop's own origin to zero.
   const tf = `translate(${x} ${y}) scale(${c.scale}) translate(${-c.crop.x} ${-c.crop.y})`;
   parts.push(`<g clip-path="url(#${escapeXml(clipId)})">`);
-  if (imageHref) {
-    parts.push(
-      `<g transform="${tf}"><image href="${imageHref}" x="0" y="0" width="${frameW}" height="${frameH}" preserveAspectRatio="none"/></g>`,
-    );
-  }
   // Hold the surround back, the way the kiosk's magnifier does: a wash over
   // everything in the panel except the region being named. Not blacked out —
   // this is a crop of a photograph, and the region has to sit in the sky
   // around it for naming it to mean anything.
   //
-  // The region is not left flat. It is raised off the patch: drawn a little
-  // larger, as a thing held nearer the eye is, with a shadow cast onto the
-  // dimmed surround. `LIFT` carries the numbers, because the exported frame
-  // composites this piece with sharp and the studio canvas draws it again, and
-  // three pieces drawn from three slightly different centres are three pieces
-  // that miss their own shadows.
+  // Nothing fills the panel. The picture goes on showing through it, so a
+  // magnified mark costs the viewer the outline of a box and the footprint of
+  // the piece, and not a square of photograph painted over. What makes the
+  // piece read as lifted rather than pasted is the pair of cues in `LIFT`: a
+  // shadow onto the picture below, and the piece drawn a little larger.
   //
-  // Both the wash and the shadow wear a mask that excludes the *raised* shape,
-  // so neither can reach the piece however the host orders its layers — which
-  // is what lets the exported frame put the piece in as a raster layer under
-  // this whole overlay.
+  // `LIFT` is in the schema because the exported frame composites this piece
+  // with sharp and the studio canvas draws it again, and three pieces scaled
+  // about three slightly different centres are three pieces that miss their
+  // own shadows.
+  //
+  // The shadow wears a mask that excludes the *raised* shape, so it cannot
+  // reach the piece however the host orders its layers — which is what lets
+  // the exported frame put the piece in as a raster layer under this whole
+  // overlay.
   const near = raisedTransform(f);
   const maskId = `${clipId}-m`;
   const raisedHole = `<g transform="${tf}"><g transform="${near}">${shapeHole(f, Math.min(frameW, frameH))}</g></g>`;
@@ -220,7 +219,6 @@ function calloutMarkup(
       `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff"/>` +
       raisedHole +
       `</mask>`,
-    `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="rgba(3,5,10,${LIFT.wash})" mask="url(#${escapeXml(maskId)})"/>`,
   );
 
   const lift = Math.max(3, Math.min(w, h) * LIFT.offsetShare);
@@ -243,7 +241,11 @@ function calloutMarkup(
     parts.push(
       `<mask id="${escapeXml(pieceId)}" maskUnits="userSpaceOnUse" x="${x}" y="${y}" width="${w}" height="${h}">` +
         `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#000"/>` +
-        `<g transform="${tf}"><g transform="${near}" fill="#fff" stroke="#fff">${shapeHole(f, Math.min(frameW, frameH))}</g></g>` +
+        // White, passed in rather than inherited: `shapeHole` writes its own
+        // fill, so a colour set on the group above it is overridden and the
+        // mask ends up black on black — leaving only the hairline the stroke
+        // inherits, which is exactly what the panel showed.
+        `<g transform="${tf}"><g transform="${near}">${shapeHole(f, Math.min(frameW, frameH), undefined, '#fff')}</g></g>` +
         `</mask>`,
       `<g mask="url(#${escapeXml(pieceId)})"><g transform="${tf}"><g transform="${near}">` +
         `<image href="${imageHref}" x="0" y="0" width="${frameW}" height="${frameH}" preserveAspectRatio="none"/>` +
@@ -251,10 +253,9 @@ function calloutMarkup(
     );
   }
 
-  // No contour inside the panel. The wash already says exactly which part of
-  // the patch is the feature — that is what it is for — and a dashed outline
-  // drawn on top of that boundary only competes with it, leaving the eye less
-  // sure which pixels are being named rather than more.
+  // No contour around the piece. Its own edge against the picture already
+  // says where it ends, and a second line on that same boundary competes with
+  // it — which leaves the eye less sure what is being named, not more.
   parts.push(`</g>`);
 
   // The frame, and the number in its corner so the inset and the mark are
@@ -356,18 +357,13 @@ async function calloutLayers(
   for (const c of callouts) {
     const f = report.features.find((x) => x.id === c.id);
     try {
-      const buf = await sharp(imagePath)
-        .extract({ left: c.crop.x, top: c.crop.y, width: c.crop.w, height: c.crop.h })
-        .resize(c.inset.w, c.inset.h, { fit: 'fill' })
-        .png()
-        .toBuffer();
-      layers.push({ input: buf, left: c.inset.x, top: c.inset.y });
       if (f) layers.push(await raisedLayer(imagePath, c, f));
     } catch {
       // A crop that will not extract — a stale geometry against a resized
-      // image, say — loses its pixels, not the whole export. The frame and the
-      // line are still drawn, and an empty frame is obvious; a failed render
-      // is a curator with nothing.
+      // image, say — loses its piece, not the whole export. The frame and the
+      // line are still drawn over a picture that was going to show through
+      // anyway, so what is left is an empty box: obvious, and better than a
+      // curator with no export at all.
     }
   }
   return layers;
@@ -379,8 +375,8 @@ async function calloutLayers(
  * Transparent everywhere but the shape. `dest-in` keeps the destination where
  * the *mask's alpha* is, so a black background is not "keep nothing" — it is
  * opaque, and keeps everything. Getting that wrong leaves a square of
- * magnified picture on the frame, and the wash over it hides the mistake well
- * enough that it survived until a panel was drawn without one.
+ * magnified picture on the frame — which is what a panel used to look like,
+ * and why the mistake went unseen until the panel became see-through.
  */
 export function pieceMask(c: Callout, f: Feature): string {
   const toInset = (x: number, y: number): [number, number] => {

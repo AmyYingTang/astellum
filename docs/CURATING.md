@@ -228,20 +228,17 @@ photograph, and a panel there covers the subject even where no *mark* happens
 to be under it. An edge with something on it is already occupied, so the search
 passes over it without needing to be told.
 
-Inside a panel the surround is **held back, not blacked out** — the same wash
-the kiosk puts under your finger. The region being named keeps the picture; the
-sky around it is dimmed so the eye goes to the shape. It is still a crop of a
-photograph, which is what makes naming it mean anything.
+A panel is **a frame and the piece inside it — nothing else**. The picture goes
+on showing through it, so a magnified mark costs you the outline of a box and
+the footprint of the piece, not a square of photograph painted over.
 
-That wash is the only thing marking the shape in there. The outline is not
-drawn a second time inside the panel: it would sit on the same boundary the
-wash already draws and compete with it, which leaves the eye less sure which
-pixels are being named rather than more.
+The piece is **raised above the picture**: it casts a shadow onto what is below
+and is drawn a little larger, the way a thing held nearer the eye is. That is
+what makes it read as lifted rather than pasted on. The shadow alone was not
+enough to see; it is the two together that work.
 
-The region is also **raised** off the patch — it casts a shadow onto the dimmed
-sky and is drawn a little larger, the way a thing held nearer the eye is — so
-it reads as a piece lifted out of the picture rather than as a bright stain on
-it. The shadow alone was not enough to see; it is the two together that work.
+No outline is drawn around the piece. Its own edge against the picture already
+says where it ends, and a second line on that boundary competes with it.
 
 If a frame is busy enough that a panel would have to cover another mark, it is
 left out instead.

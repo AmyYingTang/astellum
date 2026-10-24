@@ -131,12 +131,12 @@ describe('magnified insets', () => {
 });
 
 /*
- * The surround inside an inset is held back, not blacked out — the same thing
- * the kiosk's magnifier does under a finger. This is a crop of a photograph,
- * and the region being named has to sit in the sky around it for naming it to
- * mean anything.
+ * A panel is a frame and the piece inside it. Nothing fills it: the picture
+ * goes on showing through, so a magnified mark costs the viewer a box outline
+ * and the piece's own footprint instead of a square of photograph painted
+ * over. What marks the region is the piece being raised, not a wash.
  */
-describe('holding the surround back', () => {
+describe('a panel the picture shows through', () => {
   const withShape = (shape: string, extra: object): Reading =>
     ({
       ...report,
@@ -162,14 +162,23 @@ describe('holding the surround back', () => {
     [815, 665],
   ];
 
-  it('washes the panel and cuts the region out of the wash', () => {
+  it('paints nothing over the picture inside the frame', () => {
     const svg = buildOverlaySvg(withShape('polygon', { polygon: tri }));
-    expect(svg).toContain('mask id="k-cal-g1-m"');
-    expect(svg).toContain(`fill="rgba(3,5,10,${LIFT.wash})"`);
-    expect(svg).toContain('<polygon points="785.0,635.0 815.0,635.0 815.0,665.0" fill="#000"/>');
+    // No wash, and no copy of the patch laid down behind one: the only filled
+    // rectangles left in the file are the mask's own white ground.
+    expect(svg).not.toContain('rgba(3,5,10');
+    const fills = svg.match(/<rect[^>]*fill="(?!none)[^"]*"[^>]*>/g) ?? [];
+    expect(fills.every((r) => r.includes('#fff'))).toBe(true);
   });
 
-  /* An open line encloses nothing, so it gets a band along itself instead. */
+  it('still keeps the shadow off the piece, which is what the mask is now for', () => {
+    const svg = buildOverlaySvg(withShape('polygon', { polygon: tri }));
+    expect(svg).toContain('mask id="k-cal-g1-m"');
+    expect(svg).toContain('<polygon points="785.0,635.0 815.0,635.0 815.0,665.0" fill="#000"/>');
+    expect(svg).toMatch(/<g mask="url\(#k-cal-g1-m\)" opacity="0\.9">/);
+  });
+
+  /* An open line encloses nothing, so its region is a band along itself. */
   it('gives an open line a band rather than an area', () => {
     const svg = buildOverlaySvg(withShape('polyline', { polygon: tri }));
     expect(svg).toMatch(/<polyline points="785\.0,635\.0 815\.0,635\.0 815\.0,665\.0" fill="none" stroke="#000"/);
@@ -203,8 +212,8 @@ describe('holding the surround back', () => {
   it('casts a shadow and keeps it off the piece it lifts', () => {
     const svg = buildOverlaySvg(withShape('polygon', { polygon: tri }));
     expect(svg).toContain('<feGaussianBlur');
-    // The shadow wears the wash's mask, which excludes the raised shape — so
-    // it falls on the surround and never on the thing it is lifting.
+    // The shadow's mask excludes the raised shape, so it falls on the picture
+    // and never on the thing it is lifting.
     expect(svg).toMatch(/<g mask="url\(#k-cal-g1-m\)" opacity="0\.9">/);
     // And it is offset: a shadow exactly under its own shape is no shadow.
     expect(svg).toMatch(/<g transform="translate\(\d+(\.\d+)? \d+(\.\d+)?\)" filter="url\(#k-cal-g1-s\)">/);

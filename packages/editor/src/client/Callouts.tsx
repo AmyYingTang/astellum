@@ -66,15 +66,16 @@ function tracePiece(ctx: CanvasRenderingContext2D, c: Callout, f: Feature, band:
 const isBand = (f: Feature): boolean => f.shape === 'polyline' || f.shape === 'arc';
 
 /**
- * The panel's pixels: the patch, dimmed, with the named region raised out of
- * it — a shadow on the dimmed sky and the piece itself drawn a little larger,
- * as a thing held nearer the eye is.
+ * The piece, raised above the picture: a shadow onto what is below it and the
+ * piece itself drawn a little larger, as a thing held nearer the eye is.
  *
- * Hand-drawn on a canvas context because the effect is an ordering one, and
- * Konva has no mask. Everything is plain source-over painting: patch, wash,
- * shadow, then the piece over the top of all three. An earlier version reached
- * for `destination-out` and had to reason about what else was on the layer;
- * this needs no such care.
+ * Nothing fills the panel. The picture shows through, so a magnified mark
+ * costs the viewer a box outline and the piece's own footprint rather than a
+ * square of photograph painted over.
+ *
+ * Hand-drawn on a canvas context because Konva has no mask. Everything is
+ * plain source-over painting — shadow, then piece — except the cut, which is
+ * made offscreen.
  */
 function patchSceneFunc(
   c: Callout,
@@ -94,9 +95,7 @@ function patchSceneFunc(
     raw.rect(x, y, w, h);
     raw.clip();
 
-    raw.drawImage(image, c.crop.x, c.crop.y, c.crop.w, c.crop.h, x, y, w, h);
-    raw.fillStyle = `rgba(3,5,10,${LIFT.wash})`;
-    raw.fillRect(x, y, w, h);
+    // Nothing fills the panel: the picture below goes on showing through it.
 
     // The shadow. The shape is painted solid only so that it casts one; the
     // piece lands on top of it a moment later.

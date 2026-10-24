@@ -106,18 +106,19 @@ schema, beside `badgeAnchor`, because four surfaces have to agree on the
 answer) picks up to three marks too small to read and finds empty space for a
 panel. Only drawn contours qualify — a catalogue ring enlarged is the same ring
 — and a frame with no free space gets none rather than one laid over another
-mark. Panels go to the frame's edge, and inside one the surround is dimmed the
-way the kiosk's magnifier dims it — the region keeps the picture, the sky around
-it is held back. That wash is the *only* marking in there; the contour is not
-redrawn inside the panel, where it would sit on the boundary the wash already
-draws and compete with it. The region is raised out of the patch — a cast
-shadow plus `LIFT.scale`, the piece drawn larger as a nearer thing is — and
-the numbers live in the schema beside the layout because three surfaces draw
-that piece: an SVG transform, a sharp crop cut with `dest-in`, a canvas path.
-The exported frame lays the piece down as a raster layer *under* the overlay,
-which is safe only because the wash and the shadow both wear a mask that
-excludes it. Handing librsvg the whole photograph as base64 instead would be
-one code path and twice the render time — measured. A curator can refuse a panel (`feature.callout.off`,
+mark. Panels go to the frame's edge, and a panel is **a frame and the piece —
+nothing else**: the picture shows through, so a magnified mark costs a box
+outline and the piece's footprint, not a square of photograph painted over.
+(It began as an opaque card with the surround washed back, the way the kiosk
+dims under a finger; see-through occludes less and is what Amy chose.) The
+piece is raised above the picture — a cast shadow plus `LIFT.scale`, drawn
+larger as a nearer thing is — and no contour is redrawn on it: its own edge
+already says where it ends. `LIFT` lives in the schema beside the layout
+because three surfaces draw that piece: an SVG transform, a sharp crop cut
+with `dest-in`, a canvas path. The exported frame lays the piece down as a
+raster layer *under* the overlay, which is safe only because the shadow wears
+a mask that excludes it. Handing librsvg the whole photograph as base64
+instead would be one code path and twice the render time — measured. A curator can refuse a panel (`feature.callout.off`,
 reversible) or drag it (`callout.x`/`y`, absolute, because the automatic
 position moves whenever anything else does). The kiosk draws none of this: it
 already solves the problem with the pointer, and a fixed panel would fight the
