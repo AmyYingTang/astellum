@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LIFT, type Reading } from '@astellum/schema';
-import { buildOverlaySvg } from './annotate.js';
+import { buildOverlaySvg, pieceMask } from './annotate.js';
 
 const report = {
   version: '2.0',
@@ -217,5 +217,51 @@ describe('holding the surround back', () => {
     });
     expect(poster).toContain('mask id="k-cal-g1-p"');
     expect(poster).toContain(`scale(${LIFT.scale})`);
+  });
+});
+
+/**
+ * The stencil that cuts the raised piece for the exported frame.
+ *
+ * `dest-in` keeps the destination where the *mask's alpha* is. A background
+ * rect of any colour is opaque and therefore keeps everything — which pasted
+ * a square of magnified picture onto the frame. The wash over it hid that well
+ * enough that it survived until a panel was drawn without one.
+ */
+describe('cutting the piece for the exported frame', () => {
+  const c = {
+    id: 'g1',
+    num: '9',
+    crop: { x: 700, y: 550, w: 200, h: 200 },
+    inset: { x: 10, y: 10, w: 400, h: 400 },
+    scale: 2,
+    anchor: { x: 800, y: 650 },
+  };
+  const f = {
+    id: 'g1',
+    shape: 'polygon',
+    circle: { cx: 800, cy: 650, r: 15 },
+    polygon: [
+      [785, 635],
+      [815, 635],
+      [815, 665],
+    ],
+  } as unknown as Parameters<typeof pieceMask>[1];
+
+  it('is transparent everywhere but the shape', () => {
+    const mask = pieceMask(c, f);
+    expect(mask).toContain('<polygon');
+    expect(mask).not.toContain('<rect');
+  });
+
+  it('speaks in the panel\u2019s own pixels, raised', () => {
+    const mask = pieceMask(c, f);
+    // The feature's centre sits at the middle of the panel either way; the
+    // raised outline is the one that is LIFT.scale further out from it.
+    const half = (800 - c.crop.x) * c.scale;
+    expect(half).toBe(200);
+    const xs = [...mask.matchAll(/(\d+\.\d),\d+\.\d/g)].map((m) => Number(m[1]));
+    const spread = Math.max(...xs) - Math.min(...xs);
+    expect(spread).toBeCloseTo(30 * c.scale * LIFT.scale, 1);
   });
 });

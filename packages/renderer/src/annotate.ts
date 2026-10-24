@@ -374,6 +374,27 @@ async function calloutLayers(
 }
 
 /**
+ * The alpha stencil that cuts the raised piece out of its rectangle.
+ *
+ * Transparent everywhere but the shape. `dest-in` keeps the destination where
+ * the *mask's alpha* is, so a black background is not "keep nothing" — it is
+ * opaque, and keeps everything. Getting that wrong leaves a square of
+ * magnified picture on the frame, and the wash over it hides the mistake well
+ * enough that it survived until a panel was drawn without one.
+ */
+export function pieceMask(c: Callout, f: Feature): string {
+  const toInset = (x: number, y: number): [number, number] => {
+    const [rx, ry] = raisedPoint(f, x, y);
+    return [(rx - c.crop.x) * c.scale, (ry - c.crop.y) * c.scale];
+  };
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${c.inset.w}" height="${c.inset.h}">` +
+    shapeHole(f, Math.min(c.inset.w, c.inset.h) * 2, toInset, '#fff') +
+    `</svg>`
+  );
+}
+
+/**
  * The raised piece, as pixels cut to its own shape.
  *
  * The overlay cannot draw this one: it has no picture to draw it from, and
@@ -398,20 +419,10 @@ async function raisedLayer(
     width: Math.max(1, Math.round(r.w)),
     height: Math.max(1, Math.round(r.h)),
   };
-  // The outline in the panel's own pixels, which is what the alpha mask is.
-  const toInset = (x: number, y: number): [number, number] => {
-    const [rx, ry] = raisedPoint(f, x, y);
-    return [(rx - c.crop.x) * c.scale, (ry - c.crop.y) * c.scale];
-  };
-  const mask =
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${c.inset.w}" height="${c.inset.h}">` +
-    `<rect width="${c.inset.w}" height="${c.inset.h}" fill="#000"/>` +
-    shapeHole(f, Math.min(c.inset.w, c.inset.h) * 2, toInset, '#fff') +
-    `</svg>`;
   const piece = await sharp(imagePath)
     .extract(win)
     .resize(c.inset.w, c.inset.h, { fit: 'fill' })
-    .composite([{ input: Buffer.from(mask), blend: 'dest-in' }])
+    .composite([{ input: Buffer.from(pieceMask(c, f)), blend: 'dest-in' }])
     .png()
     .toBuffer();
   return { input: piece, left: c.inset.x, top: c.inset.y };
