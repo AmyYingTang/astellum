@@ -41,7 +41,10 @@ export type Action =
   | { type: 'deleteFeature'; id: string }
   | { type: 'undo' }
   | { type: 'redo' }
-  | { type: 'markSaved' };
+  | { type: 'markSaved' }
+  /** A reading rewritten on the server (generated, re-read, re-identified):
+   *  start over from it. Its undo history belongs to text that is gone. */
+  | { type: 'replace'; report: Reading };
 
 // Nothing selected on arrival: the page opens on a frame ready to export, and
 // a highlighted mark would be one more thing that looks like it needs doing.
@@ -257,6 +260,9 @@ export function reducer(state: EditorState, action: Action): EditorState {
 
     case 'markSaved':
       return { ...state, dirty: false };
+
+    case 'replace':
+      return initState(action.report);
 
     default:
       return state;

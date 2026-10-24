@@ -112,7 +112,7 @@ function Editor({
   slug,
   initial,
   imageName,
-  factsheet,
+  factsheet: initialFactsheet,
 }: {
   slug: string;
   initial: Reading;
@@ -120,6 +120,8 @@ function Editor({
   factsheet: FactSheet | null;
 }): React.JSX.Element {
   const { t, lang: uiLang } = useUi();
+  // Held here, not only passed in: a re-identification replaces it in place.
+  const [factsheet, setFactsheet] = useState(initialFactsheet);
   const previewLabels: Record<PreviewFormat, string> = {
     annotated: t.pvAnnotated,
     landscape: t.pvLandscape,
@@ -321,6 +323,17 @@ function Editor({
     }
   };
 
+  /**
+   * Pick up what the server just rewrote, in place. It used to reload the
+   * page, which put everything the curator had set back to its default — the
+   * role among them, so a role switch in `predefined` mode could never stick.
+   */
+  const refresh = async (withFacts = false): Promise<void> => {
+    const r = await fetchReport(slug);
+    dispatch({ type: 'replace', report: r.report });
+    if (withFacts) setFactsheet(await fetchFactsheet(slug).then((x) => x.factsheet, () => null));
+  };
+
   const doGenerate = async (tone?: string): Promise<void> => {
     const n = writtenPassages(stateRef.current.report);
     if (n > 0 && !(await confirmOverwrite(t.genOverwrite.replace('{n}', String(n)), t.genOverwriteBtn)))
@@ -336,9 +349,10 @@ function Editor({
         if (s.state === 'failed') throw new Error(s.error ?? 'reading failed');
         await new Promise((r) => setTimeout(r, 2000));
       }
-      location.reload(); // reload to show the AI explanations
+      await refresh();
     } catch (e) {
       setSaveError((e as Error).message);
+    } finally {
       setGenerating(false);
     }
   };
@@ -346,8 +360,8 @@ function Editor({
   /**
    * Switch role.
    *
-   * On the predefined side this re-reads the library and reloads — a second,
-   * no network. In `ai` mode there is nothing to re-read: the role is simply
+   * On the predefined side this re-reads the library — a second, no
+   * network. In `ai` mode there is nothing to re-read: the role is simply
    * who the next generation is for, so changing it only changes the prompt.
    */
   const doSetRole = async (next: string): Promise<void> => {
@@ -368,11 +382,12 @@ function Editor({
     setSwitchingRole(true);
     setSaveError(null);
     try {
-      if (stateRef.current.dirty) await doSave(); // don't lose edits to a reload
+      if (stateRef.current.dirty) await doSave(); // the server rewrites the saved file
       await readPredefinedText(slug, next);
-      location.reload();
+      await refresh();
     } catch (e) {
       setSaveError((e as Error).message);
+    } finally {
       setSwitchingRole(false);
     }
   };
@@ -391,9 +406,10 @@ function Editor({
         if (s.state === 'failed') throw new Error(s.error ?? 'identification failed');
         await new Promise((r) => setTimeout(r, 2000));
       }
-      location.reload(); // reload to pick up the fresh factsheet + reading
+      await refresh(true); // a fresh fact sheet as well as a fresh reading
     } catch (e) {
       setSaveError((e as Error).message);
+    } finally {
       setReidentifying(false);
     }
   };
