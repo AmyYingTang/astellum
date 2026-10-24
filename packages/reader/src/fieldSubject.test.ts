@@ -63,3 +63,14 @@ describe('a reading written before the rule', () => {
     expect(dropFieldRings(r, sheet(20))).toBe(r);
   });
 });
+
+// An English name reads fine in a Chinese label; the reverse does not.
+describe('a common name known only in Chinese', () => {
+  it('does not become the English label', () => {
+    const s = sheet(20);
+    (s.objects[0] as { common_name?: { zh?: string; en?: string } }).common_name = { zh: '船底座星云' };
+    const label = readingFromFactsheet(s, { toolVersion: 't' }).features[0]!.label;
+    expect(label.zh).toBe('船底座星云');
+    expect(label.en).toBe('NGC 3372');
+  });
+});

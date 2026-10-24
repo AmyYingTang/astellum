@@ -158,8 +158,10 @@ function nameFor(
 ): { zh: string; en: string } {
   const zh = anno.label.zh.trim();
   const en = anno.label.en.trim();
-  if (zh || en) return { zh: zh || en, en: en || zh };
   const tax = FEATURE_TAXONOMY[ftKey];
+  // English reads fine in the Chinese label; Chinese in the English one does
+  // not, so a Chinese-only name gets the taxonomy's English name instead.
+  if (zh || en) return { zh: zh || en, en: en || tax.en };
   const suffix = ord != null ? ` ${ord}` : '';
   return { zh: `${tax.zh}${suffix}`, en: `${tax.en}${suffix}` };
 }
