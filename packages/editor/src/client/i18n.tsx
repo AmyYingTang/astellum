@@ -24,6 +24,8 @@ export interface Strings {
   generating: string;
   calloutLabel: string;
   calloutHint: string;
+  calloutOn: string;
+  calloutOff: string;
   roleLabel: string;
   switchingRole: string;
   focusLabel: string;
@@ -143,6 +145,8 @@ const STRINGS: Record<UiLang, Strings> = {
     generate: '生成读图',
     generating: '识别中…',
     calloutLabel: '放大框',
+    calloutOn: '开',
+    calloutOff: '关',
     calloutHint: '太小看不清时,在画面空处放一个放大图。最多三个,拖动框可以换位置。',
     roleLabel: '角色',
     switchingRole: '切换角色中…',
@@ -264,6 +268,8 @@ const STRINGS: Record<UiLang, Strings> = {
     generate: 'Generate',
     generating: 'Reading…',
     calloutLabel: 'Magnify',
+    calloutOn: 'on',
+    calloutOff: 'off',
     calloutHint:
       'When it is too small to read, show the patch enlarged in an empty part of the frame. Three at most; drag the panel to move it.',
     roleLabel: 'Role',

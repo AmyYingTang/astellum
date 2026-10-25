@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Reading } from './reading.js';
 import {
   LIFT,
+  canMagnify,
   featureBounds,
   insetEdgePoint,
   planCallouts,
@@ -321,5 +322,32 @@ describe('raising the piece', () => {
     const inOrdinary = (2000 - c!.crop.x) / c!.crop.w;
     const inRaised = (2000 - r.x) / r.w;
     expect(inRaised).toBeCloseTo(inOrdinary, 6);
+  });
+});
+
+describe('canMagnify', () => {
+  const img = { width: 2000, height: 1000 };
+  const poly = (side: number) =>
+    ({
+      shape: 'polygon',
+      circle: { cx: 500, cy: 500, r: side / 2 },
+      polygon: [
+        [500, 500],
+        [500 + side, 500],
+        [500 + side, 500 + side],
+      ],
+    }) as unknown as Parameters<typeof canMagnify>[0];
+
+  it('offers it for a small drawn contour', () => {
+    expect(canMagnify(poly(40), img)).toBe(true);
+  });
+
+  // A front running across a third of the frame is readable as it is.
+  it('does not for one already large enough to read', () => {
+    expect(canMagnify(poly(400), img)).toBe(false);
+  });
+
+  it('does not for a ring, which magnified shows nothing new', () => {
+    expect(canMagnify({ ...poly(40), shape: 'circle' } as never, img)).toBe(false);
   });
 });

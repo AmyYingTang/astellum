@@ -133,6 +133,22 @@ const DEFAULTS = {
   marginShare: 0.02,
 } as const;
 
+/**
+ * Whether a mark is one an inset could be for: a drawn contour too small to
+ * read. Says nothing about whether one is planned — the curator may have
+ * refused it, three may already be taken, the frame may have no free space —
+ * only whether asking the question makes sense. The studio uses it to decide
+ * which marks get the switch at all.
+ */
+export function canMagnify(
+  f: Feature,
+  image: { width: number; height: number },
+  maxShare: number = DEFAULTS.maxShare,
+): boolean {
+  const short = Math.min(image.width, image.height);
+  return MAGNIFIABLE.has(f.shape) && longerSide(featureBounds(f)) < maxShare * short;
+}
+
 export interface Callout {
   /** The feature this magnifies. */
   id: string;
@@ -182,12 +198,8 @@ export function planCallouts(report: Reading, opts: CalloutOptions = {}): Callou
     });
   }
 
-  const tooSmall = o.maxShare * short;
   const candidates = drawn
-    .filter(
-      (f) =>
-        !f.callout?.off && MAGNIFIABLE.has(f.shape) && longerSide(featureBounds(f)) < tooSmall,
-    )
+    .filter((f) => !f.callout?.off && canMagnify(f, report.image, o.maxShare))
     .map((f) => ({ f, bounds: featureBounds(f) }))
     // A panel somebody placed by hand keeps its place in the queue: it exists
     // because they wanted it, so it is not the one to drop when the cap bites.
