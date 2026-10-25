@@ -39,6 +39,18 @@ export interface OverlayLabelOptions {
   plate?: boolean;
 }
 
+/**
+ * Where to put a line's baseline so its letters sit centred on a point: this
+ * many font sizes below it.
+ *
+ * `dominant-baseline="central"` says the same thing and browsers honour it,
+ * but librsvg — which renders the exported frame — ignores it and sets the
+ * baseline on the centre, so every name and number sat in the top half of its
+ * plate or badge. Measured there: 0.35 centres Latin capitals, CJK and digits
+ * alike (descenders hang below, as they should).
+ */
+export const CENTRE_BASELINE = 0.35;
+
 /** The plate's look, shared by every surface that draws one. */
 export const LABEL_PLATE = {
   fill: '#080b12',
@@ -117,9 +129,8 @@ export function overlayLabel(o: OverlayLabelOptions): string {
     `<g${cls}><rect x="${Math.round(left)}" y="${Math.round(o.y - h / 2)}" ` +
     `width="${Math.round(w)}" height="${Math.round(h)}" rx="${Math.round(fontSize * LABEL_PLATE.radius)}" ` +
     `fill="${LABEL_PLATE.fill}" fill-opacity="${LABEL_PLATE.opacity}"/>` +
-    `<text${i18n} x="${Math.round(left + w / 2)}" y="${Math.round(o.y)}" ` +
+    `<text${i18n} x="${Math.round(left + w / 2)}" y="${Math.round(o.y + fontSize * CENTRE_BASELINE)}" ` +
     `font-family="sans-serif" font-size="${fontSize}" font-weight="700" ` +
-    `fill="${LABEL_PLATE.text}" text-anchor="middle" ` +
-    `dominant-baseline="central">${esc(text)}</text></g>`
+    `fill="${LABEL_PLATE.text}" text-anchor="middle">${esc(text)}</text></g>`
   );
 }

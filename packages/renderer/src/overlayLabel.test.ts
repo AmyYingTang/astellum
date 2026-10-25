@@ -72,3 +72,17 @@ describe('overlayLabel', () => {
     );
   });
 });
+
+// librsvg ignores dominant-baseline, so a name centred that way sat in the top
+// half of its plate in every exported frame. The baseline is placed instead.
+describe('a name on its plate', () => {
+  it('is centred by its baseline, not by an attribute librsvg ignores', () => {
+    const svg = overlayLabel(base);
+    expect(svg).not.toContain('dominant-baseline');
+    const plate = /<rect x="-?\d+" y="(-?\d+)" width="\d+" height="(\d+)"/.exec(svg)!;
+    const textY = Number(/<text[^>]* y="(-?\d+)"/.exec(svg)![1]);
+    const centre = Number(plate[1]) + Number(plate[2]) / 2;
+    expect(textY).toBeGreaterThan(centre); // baseline below the middle
+    expect(textY - centre).toBeCloseTo(Math.round(30 * 0.95) * 0.35, 0);
+  });
+});

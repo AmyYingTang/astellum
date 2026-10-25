@@ -12,7 +12,7 @@ import {
   type Feature,
   type Reading,
 } from '@astellum/schema';
-import { overlayLabel } from './overlayLabel.js';
+import { CENTRE_BASELINE, overlayLabel } from './overlayLabel.js';
 
 function escapeXml(s: string): string {
   return s
@@ -281,7 +281,7 @@ function calloutMarkup(
   const by = y + br * 1.4;
   parts.push(
     `<circle cx="${bx}" cy="${by}" r="${br}" fill="${color.badge}" stroke="#0b0e14" stroke-width="${Math.max(1, Math.round(strokeW / 2))}"/>`,
-    `<text x="${bx}" y="${by}" font-family="sans-serif" font-size="${Math.round(br * 1.1)}" font-weight="700" fill="#0b0e14" text-anchor="middle" dominant-baseline="central">${escapeXml(c.num)}</text>`,
+    `<text x="${bx}" y="${Math.round(by + br * 1.1 * CENTRE_BASELINE)}" font-family="sans-serif" font-size="${Math.round(br * 1.1)}" font-weight="700" fill="#0b0e14" text-anchor="middle">${escapeXml(c.num)}</text>`,
   );
   return parts.join('');
 }
@@ -324,7 +324,7 @@ export function buildOverlaySvg(report: Reading, opts: OverlaySvgOptions = {}): 
       `<circle cx="${bx}" cy="${by}" r="${br}" fill="${color.badge}" stroke="#0b0e14" stroke-width="${Math.max(1, Math.round(strokeW / 2))}"/>`,
     );
     parts.push(
-      `<text x="${bx}" y="${by}" font-family="sans-serif" font-size="${fontSize}" font-weight="700" fill="#0b0e14" text-anchor="middle" dominant-baseline="central">${escapeXml(f.badge.num)}</text>`,
+      `<text x="${bx}" y="${Math.round(by + fontSize * CENTRE_BASELINE)}" font-family="sans-serif" font-size="${fontSize}" font-weight="700" fill="#0b0e14" text-anchor="middle">${escapeXml(f.badge.num)}</text>`,
     );
     // The name, beside the number. A printed frame has no list to look the
     // number up in, so without this the badge is a riddle. Full strength: there
