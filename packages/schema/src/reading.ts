@@ -113,6 +113,13 @@ export const Reading = z.object({
   }),
   display_language: z.enum(['zh', 'en']).default('zh'), // viewer default; content holds both
   tone: z.string().optional(), // tailoring tone/audience
+  /**
+   * The role the text was written or read for (a style key: `primary`,
+   * `adult`, `teacher`). So a surface reopening the reading shows the role the
+   * words belong to, not the configured default. Absent on readings made
+   * before it was recorded, and on a stub with no text yet.
+   */
+  role: z.string().optional(),
   object: ObjectInfo,
   narrative: LocalizedString, // overall intro paragraph
   features: z.array(Feature),

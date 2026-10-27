@@ -1,6 +1,6 @@
 import type * as React from 'react';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
-import type { Reading, FactSheet } from '@astellum/schema';
+import { roleOfReading, type Reading, type FactSheet } from '@astellum/schema';
 import { objectStem, type ExportFile } from '../shared.js';
 import {
   exportProject,
@@ -158,7 +158,12 @@ function Editor({
   // Who this reading is for. One role is always in force — a reading is
   // written for somebody — and it is the same axis the library is keyed by,
   // so it decides both the prompt and which pre-written text is shown.
-  const [role, setRole] = useState<string>(DEFAULT_ROLE_ID);
+  // Opens on the role the text on screen belongs to — recorded in the reading,
+  // or recognised from its tone — and only falls back to the default when
+  // there is no telling (no text yet, or text from before either existed).
+  const [role, setRole] = useState<string>(
+    () => roleOfReading(initial, PRESETS) ?? DEFAULT_ROLE_ID,
+  );
   // Whether a role change has text to re-read. `ai` means the model writes it,
   // and replacing its prose with the library's on a role change would throw
   // away the generation the curator is looking at.
@@ -174,7 +179,7 @@ function Editor({
         const roles = (c.stylePresets?.length ? c.stylePresets : PRESETS).filter(
           (x) => x.group === 'audience',
         );
-        const want = c.defaultRole ?? DEFAULT_ROLE_ID;
+        const want = roleOfReading(initial, roles) ?? c.defaultRole ?? DEFAULT_ROLE_ID;
         setRole(roles.some((x) => x.id === want) ? want : (roles[0]?.id ?? want));
       })
       .catch(() => undefined);

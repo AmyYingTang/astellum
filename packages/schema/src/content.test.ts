@@ -14,6 +14,7 @@ import {
   stylePresets,
   defaultRoleId,
   isRoleId,
+  roleOfReading,
 } from './index.js';
 
 beforeEach(() => setContentOverlay({}));
@@ -154,5 +155,27 @@ describe('reading roles', () => {
     // Still true: a frame written before the overlay narrowed the list has to
     // keep resolving.
     expect(isRoleId('adult')).toBe(true);
+  });
+});
+
+describe('roleOfReading', () => {
+  const roles = BUILT_IN_STYLE_PRESETS.filter((p) => p.group === 'audience');
+  const teacher = roles.find((p) => p.id === 'teacher')!;
+
+  it('takes the recorded role', () => {
+    expect(roleOfReading({ role: 'primary', tone: teacher.textEn }, roles)).toBe('primary');
+  });
+
+  // Readings from before the field: the role's text leads the tone, with any
+  // focus presets and free text after it.
+  it('recognises the role an older reading was written for, in either language', () => {
+    expect(roleOfReading({ tone: `${teacher.textEn}\nMore history, please.` }, roles)).toBe('teacher');
+    expect(roleOfReading({ tone: teacher.textZh }, roles)).toBe('teacher');
+  });
+
+  it('does not guess from wording it does not recognise', () => {
+    expect(roleOfReading({ tone: 'Target audience is secondary school science teachers.' }, roles)).toBeUndefined();
+    expect(roleOfReading({}, roles)).toBeUndefined();
+    expect(roleOfReading({ role: 'nobody' }, roles)).toBeUndefined();
   });
 });

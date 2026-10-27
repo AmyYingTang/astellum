@@ -325,7 +325,11 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
               }),
               coverage: null,
             };
-      await writeFile(join(dir, 'reading.json'), JSON.stringify(reading, null, 2) + '\n', 'utf8');
+      // Library text is text for a role; a stub has none yet, and no role.
+      const style = opts.role ?? config.reading.style;
+      const written =
+        coverage && isRoleId(style) ? { ...reading, role: style } : reading;
+      await writeFile(join(dir, 'reading.json'), JSON.stringify(written, null, 2) + '\n', 'utf8');
       if (coverage) {
         const c = coverageSummary(coverage);
         console.error(
@@ -423,7 +427,10 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
           // precise taxonomy type — offsite is where precision is wanted.
           const factsheet = await loadFactsheet(slug).catch(() => undefined);
           const tailored = await tailorReading(reading, { imagePath, tone, factsheet });
-          await writeFile(join(dir, 'reading.json'), JSON.stringify(tailored, null, 2) + '\n', 'utf8');
+          // Who it was written for, so the studio reopens on that role. Unset
+          // when the caller named none — the previous role no longer applies.
+          const written = { ...tailored, role: isRoleId(body.role) ? body.role : undefined };
+          await writeFile(join(dir, 'reading.json'), JSON.stringify(written, null, 2) + '\n', 'utf8');
           await setJob(slug, { state: 'done', stage: 'done' });
         } catch (e) {
           // On parse failure, save the raw LLM output so it can be inspected.
@@ -483,7 +490,11 @@ export async function startStudioServer(opts: StudioServerOptions): Promise<Stud
           fallback: config.reading.fallback,
         },
       );
-      await writeFile(join(dir, 'reading.json'), JSON.stringify(reading, null, 2) + '\n', 'utf8');
+      await writeFile(
+        join(dir, 'reading.json'),
+        JSON.stringify({ ...reading, role }, null, 2) + '\n',
+        'utf8',
+      );
       res.json({ ok: true, role, matchedStyle: coverage.style ?? null });
     } catch (e) {
       res.status(400).json({ ok: false, error: (e as Error).message });

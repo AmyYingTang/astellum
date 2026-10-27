@@ -202,6 +202,27 @@ export function defaultRoleId(): string {
 }
 
 /**
+ * The role a reading's text belongs to, as far as can be told.
+ *
+ * Recorded since the field existed; before that, only the instruction text
+ * the model was given survives in `tone`, and a role's text leads it — so a
+ * tone that starts with one of `roles`' texts (either language) was written
+ * for that role. Text from an earlier wording of the roles matches nothing,
+ * and gets undefined rather than a guess.
+ */
+export function roleOfReading(
+  r: { role?: string; tone?: string },
+  roles: readonly StylePreset[],
+): string | undefined {
+  if (r.role && roles.some((p) => p.id === r.role)) return r.role;
+  const tone = r.tone?.trim();
+  if (!tone) return undefined;
+  return roles.find(
+    (p) => p.group === 'audience' && (tone.startsWith(p.textZh) || tone.startsWith(p.textEn)),
+  )?.id;
+}
+
+/**
  * Is this one of the roles currently on offer?
  *
  * Guards the query strings and request bodies the roles now travel in: an
