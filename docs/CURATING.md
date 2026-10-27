@@ -274,7 +274,7 @@ file. A type with no note falls through to the fact template and is marked ※
 onsite, which is a fine place to leave one until you have the words. They are written for the level a visitor actually follows; a test fails if
 jargon creeps in.
 
-Deliberately **not** editable this way: the taxonomies (41 feature types, 15
+Deliberately **not** editable this way: the taxonomies (42 feature types, 16
 drawing types, 64 otype labels), the palette, and UI strings. Those are coupled
 to enums and colour mappings, and turning them into data would trade a compile
 error for a runtime one.

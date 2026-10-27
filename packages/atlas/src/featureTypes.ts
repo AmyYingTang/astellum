@@ -34,6 +34,7 @@ export const FEATURE_TYPES: readonly FeatureType[] = [
 
   { key: 'bright_rim',       zh: '电离锋面',             en: 'Ionization Front',            geometry: 'polyline', defaultOn: true,  hint: '#2ac3de' },
   { key: 'filament',         zh: '丝状结构',             en: 'Filament',                    geometry: 'polyline', defaultOn: true,  hint: '#bb9af7' },
+  { key: 'shock_front',      zh: '激波结构',             en: 'Shock Front',                 geometry: 'polyline', defaultOn: true,  hint: '#4ec3e0' },
   { key: 'silhouette',       zh: '剪影暗形',             en: 'Dark Silhouette',             geometry: 'polygon',  defaultOn: true,  hint: '#565f89' },
 
   // Globules. Bok and cometary are different objects, not two words for one —

@@ -30,6 +30,7 @@ export const ATLAS_TO_PIPELINE: Record<string, FeatureTypeKey> = {
   elephant_trunk: 'elephant_trunk',
   bright_rim: 'ionization_front',
   filament: 'snr_filament',
+  shock_front: 'shock_front',
   silhouette: 'silhouette_shape',
   bok_globule: 'bok_globule',
   cometary_globule: 'cometary_globule',

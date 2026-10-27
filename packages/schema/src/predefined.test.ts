@@ -151,6 +151,7 @@ describe('generic feature notes', () => {
         'ionization_front',
         'pillar',
         'silhouette_shape',
+        'shock_front',
         'snr_filament',
         'spiral_arm',
         'tidal_tail',

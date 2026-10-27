@@ -38,6 +38,10 @@ export const FEATURE_NOTES: Partial<Record<FeatureTypeKey, LocalizedString>> = {
     zh: '这些细丝是被冲击波扫过的气体。当爆炸或强烈的星风推着物质高速撞进周围的气体,被压缩加热的那一薄层就会发光。它们看起来像丝线,其实每一条都是一层很薄的壳,只是我们正好从侧面看过去。',
     en: 'These threads are gas swept up by a shock wave. When an explosion or a fierce stellar wind slams into the surrounding material, the thin compressed layer heats up and glows. They look like threads, but each one is really a very thin sheet seen edge-on.',
   },
+  shock_front: {
+    zh: '这条边是一道激波。强烈的星风,或者一颗在气体里飞奔的恒星,推着物质跑得比声音还快;前面的气体来不及让开,被一下子挤压、加热,于是发起光来。它和电离锋面不一样:电离锋面是被星光“照亮”的,激波是被“撞亮”的。',
+    en: "This edge is a shock. A fierce stellar wind, or a star racing through the gas, pushes material along faster than sound can travel. The gas ahead has no time to get out of the way, so it is suddenly squeezed and heated until it glows. It differs from an ionization front: that edge is lit up by starlight, while a shock is lit up by a collision.",
+  },
   silhouette_shape: {
     zh: '这里不是“什么都没有”,而是有一团又冷又密的尘埃云挡在前面,把后面的光遮住了,才显出一个黑色的形状。它的温度只有零下 260 度上下,是天空中最冷的东西之一,也正是将来恒星诞生的地方。',
     en: "The dark shape isn't empty space — it's a cold, dense cloud of dust sitting in front of everything, blocking the light behind it. At around −260 °C it is one of the coldest things in the sky, and exactly the kind of place where stars form later on.",

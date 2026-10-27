@@ -82,6 +82,13 @@ export const FEATURE_TAXONOMY = {
   central_cavity: { zh: '中央空腔/星风腔', en: 'Central cavity', default_class: 'B-visual', default_color_key: 'cavity', catalogs: ['morphology'], applies_to: ['emission_nebula', 'planetary_nebula'] },
   ansae_flier: { zh: 'ansae/FLIER', en: 'Ansae · FLIER', default_class: 'B-visual', default_color_key: 'shock', catalogs: ['morphology'], applies_to: ['planetary_nebula'] },
 
+  // — Shocks —
+  // A front made by a collision — a stellar wind, or a star moving faster than
+  // sound through the gas — rather than by starlight. Traced as an edge, like
+  // an ionization front; coloured with the other shocks so an audience reads
+  // the cyan as one family.
+  shock_front: { zh: '激波结构', en: 'Shock front', default_class: 'B-visual', default_color_key: 'shock', catalogs: ['morphology'], applies_to: ['emission_nebula', 'planetary_nebula', 'supernova_remnant'] },
+
   // — SNR —
   snr_filament: { zh: '遗迹丝状', en: 'SNR filament', default_class: 'B-visual', default_color_key: 'shock', catalogs: ['CV(Frangi)'], applies_to: ['supernova_remnant'] },
   emission_color_region: { zh: 'OIII/Hα 结构区', en: 'Emission color region', default_class: 'B-visual', default_color_key: 'front', catalogs: ['color region'], applies_to: ['supernova_remnant', 'emission_nebula'] },

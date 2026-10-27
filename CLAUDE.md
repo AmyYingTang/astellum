@@ -89,14 +89,14 @@ from the last two so nothing generic is passed off as specific:
 
 1. `readings.json` — this target, this role
 2. the annotation's own note in the atlas
-3. `content.json` → `featureNotes` — by drawable type (11 of the 15 have one)
+3. `content.json` → `featureNotes` — by drawable type (12 of the 16 have one)
 4. a template built from grounded facts
 
 **Editable as data** (`packages/atlas/data/content.json`, no rebuild):
 `featureNotes`, `nicknames`, `stylePresets`, `readingBrief`. Omit a section to
 keep the built-in; an empty section means "not specified", not "make it empty".
 
-**Deliberately still code:** the taxonomies (41 feature types, 15 drawing types,
+**Deliberately still code:** the taxonomies (42 feature types, 16 drawing types,
 64 otype labels), the palette, UI strings. They are coupled to enums and colour
 mappings — data-ifying them trades a compile error for a runtime one.
 
