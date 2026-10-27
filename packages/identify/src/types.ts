@@ -53,6 +53,11 @@ export interface CatalogCandidate {
   cross_match?: { id: string; sep_arcmin: number }[];
   /** Type resolved from Wikidata (P31), overriding a generic catalogue type. */
   wiki_type?: { category?: ObjectCategory; en?: string; zh?: string };
+  /** The catalogue says a star cluster sits in this nebula (OpenNGC `Cl+N`).
+   *  It stays a nebula, but its size no longer has to make it prominent: a
+   *  compact one like NGC 3603 is small on paper and the brightest thing in
+   *  the frame. */
+  with_cluster?: boolean;
 }
 
 export interface RegionQuery {

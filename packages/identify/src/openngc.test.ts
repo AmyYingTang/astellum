@@ -44,3 +44,19 @@ describe('parseOpenNgc', () => {
     expect(parseOpenNgc(lines.join('\n'))).toHaveLength(0);
   });
 });
+
+// OpenNGC types a nebula with a cluster in it as Cl+N. It stays a nebula —
+// M42 and the War and Peace Nebula are Cl+N — but says so, so the selector can
+// keep a compact one (NGC 3603) its size alone would drop.
+describe('a cluster with nebulosity', () => {
+  it('stays an emission nebula and is marked as holding a cluster', () => {
+    const c = parseOpenNgc([HEADER, row('NGC3603', 'Cl+N', '11:15:06.59', '-61:15:40.4', '3.30', '')].join('\n'));
+    expect(c[0]!.otype).toBe('EmO');
+    expect(c[0]!.with_cluster).toBe(true);
+  });
+
+  it('marks nothing else', () => {
+    const c = parseOpenNgc([HEADER, row('IC0434', 'EmN', '05:41:00.88', '-02:27:13.6', '', '', 'Flame Nebula')].join('\n'));
+    expect(c[0]!.with_cluster).toBeUndefined();
+  });
+});

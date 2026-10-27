@@ -181,8 +181,13 @@ function isProminent(g: GatedCandidate, opts: SelectOptions): boolean {
     default:
       // nebulae / clouds — must be a recognizable named object AND large enough.
       // Drops survey-only clumps (e.g. PGCC Planck cold clumps) that aren't the
-      // image's subject.
-      return hasRecognizableName(c) && major >= opts.nebulaMinArcmin;
+      // image's subject. A named nebula with a cluster in it is exempt from the
+      // size: the cluster is what makes it stand out, and a named cluster is
+      // never held to one either (NGC 3603 is 3.3′ on paper).
+      return (
+        hasRecognizableName(c) &&
+        (major >= opts.nebulaMinArcmin || (!!c.with_cluster && hasPrestige))
+      );
   }
 }
 

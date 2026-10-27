@@ -123,6 +123,8 @@ export function mergeCandidates(lists: CatalogCandidate[][]): CatalogCandidate[]
     if (major(c) > major(dup)) dup.size_arcmin = c.size_arcmin;
     // The common name can live on either source — keep whichever has it.
     if (!dup.common_name?.en && c.common_name?.en) dup.common_name = c.common_name;
+    // So does knowing there is a cluster in it.
+    if (c.with_cluster) dup.with_cluster = true;
     // Record the folded-in designation + its separation from the kept position,
     // so the UI can show the cross-ID is the same physical object. Skip when the
     // folded id equals the survivor's own designation (two sources of the same

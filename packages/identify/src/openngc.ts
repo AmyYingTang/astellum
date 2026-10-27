@@ -145,6 +145,7 @@ export function parseOpenNgc(text: string): CatalogCandidate[] {
       catalog_ids,
       source: 'OpenNGC',
       ...(commonEn ? { common_name: { en: commonEn } } : {}),
+      ...((f[iType] ?? '').trim() === 'Cl+N' ? { with_cluster: true } : {}),
     });
   }
   return out;
